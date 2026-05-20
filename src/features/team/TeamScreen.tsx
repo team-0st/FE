@@ -1,12 +1,16 @@
 import { mockTeams, mockUser } from '@api/mock';
-import { ListRow, Top, Txt } from '@toss/tds-react-native';
+import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
-import type { ZodiacId } from '../../shared/constants/zodiac';
+import type { AnimalTeamId } from '../../shared/constants/animalTeams';
 import { Screen } from '../../shared/ui/Screen';
 import { TeamAvatar } from '../../shared/ui/TeamAvatar';
 import { colors } from '../../shared/theme/colors';
 
-export function TeamScreen() {
+type TeamScreenProps = {
+    onPressSelectTeam: () => void;
+};
+
+export function TeamScreen({ onPressSelectTeam }: TeamScreenProps) {
     const myTeam = mockTeams.find((team) => team.name === mockUser.teamName) ?? mockTeams[0];
 
     return (
@@ -14,14 +18,16 @@ export function TeamScreen() {
             <Top
                 title={
                     <Top.TitleParagraph size={22}>
-                        {myTeam != null ? `${myTeam.name}띠` : mockUser.teamName}
+                        {myTeam != null ? `${myTeam.name} 팀` : mockUser.teamName}
                     </Top.TitleParagraph>
                 }
-                subtitle2={<Top.SubtitleParagraph>십이지신 팀 · 주간 포인트를 함께 모아요</Top.SubtitleParagraph>}
+                subtitle2={
+                    <Top.SubtitleParagraph>동물 팀 · 주간 포인트를 함께 모아요</Top.SubtitleParagraph>
+                }
             />
             {myTeam != null ? (
                 <View style={styles.avatarRow}>
-                    <TeamAvatar zodiacId={myTeam.id as ZodiacId} emoji={myTeam.emoji} size="medium" />
+                    <TeamAvatar animalId={myTeam.id as AnimalTeamId} emoji={myTeam.emoji} size="medium" />
                 </View>
             ) : null}
             <View style={styles.summary}>
@@ -35,25 +41,32 @@ export function TeamScreen() {
                     현재 {myTeam?.rank ?? '-'}위
                 </Txt>
             </View>
+            <Button size="medium" type="dark" style="weak" onPress={onPressSelectTeam}>
+                동물 팀 바꾸기
+            </Button>
             <Txt typography="t5" fontWeight="semibold" style={styles.section}>
-                다른 팀
+                전체 동물 팀
             </Txt>
             {mockTeams.map((team) => (
                 <ListRow
                     key={team.id}
                     left={
-                        <TeamAvatar zodiacId={team.id as ZodiacId} emoji={team.emoji} size="small" />
+                        <TeamAvatar animalId={team.id as AnimalTeamId} emoji={team.emoji} size="small" />
                     }
                     contents={
                         <ListRow.Texts
                             type="2RowTypeA"
-                            top={`${team.name}띠`}
+                            top={`${team.name} 팀`}
                             topProps={{ fontWeight: 'bold' }}
                             bottom={`${team.memberCount}명 · ${team.weeklyPoints}P`}
                         />
                     }
                     right={
-                        <ListRow.RightTexts type="1RowTypeA" top={`${team.rank}위`} topProps={{ color: 'grey600' }} />
+                        <ListRow.RightTexts
+                            type="1RowTypeA"
+                            top={`${team.rank}위`}
+                            topProps={{ color: 'grey600' }}
+                        />
                     }
                 />
             ))}
@@ -72,10 +85,11 @@ const styles = StyleSheet.create({
         padding: 20,
         borderWidth: 1,
         borderColor: colors.border,
-        marginBottom: 20,
+        marginBottom: 16,
         gap: 4,
     },
     section: {
+        marginTop: 8,
         marginBottom: 8,
     },
 });

@@ -20,13 +20,14 @@ export function OnboardingScreen({ onPressStart }: OnboardingScreenProps) {
                     }
                     subtitle2={
                         <Top.SubtitleParagraph>
-                            십이지신 띠 팀에 합류해 미션을 수행하고, 주간 랭킹으로 함께 성장해요.
+                            짧은 질문으로 맞춤 안내를 준비해요. 팀 선택과는 별도예요.
                         </Top.SubtitleParagraph>
                     }
                 />
                 <View style={styles.summary}>
                     <Txt typography="t6" color="grey600" style={styles.summaryText}>
-                        출석·미션·팀 활동을 한곳에서 기록하고, 주간 실천 현황을 확인할 수 있어요.
+                        제로웨이스트를 이미 실천 중인지, 관심은 있었는지 등 현재 상황을 알려주시면
+                        이후 미션·안내에 반영할 수 있어요.
                     </Txt>
                 </View>
             </View>

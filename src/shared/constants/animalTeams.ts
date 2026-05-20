@@ -1,5 +1,4 @@
-/** 십이지신(띠) 팀 — id는 영문, name은 화면 표기용 동물 이름 */
-export const ZODIAC_ANIMALS = [
+export const ANIMAL_TEAMS = [
     { id: 'rat', name: '쥐', emoji: '🐭', order: 1 },
     { id: 'ox', name: '소', emoji: '🐮', order: 2 },
     { id: 'tiger', name: '호랑이', emoji: '🐯', order: 3 },
@@ -14,4 +13,4 @@ export const ZODIAC_ANIMALS = [
     { id: 'pig', name: '돼지', emoji: '🐷', order: 12 },
 ] as const;
 
-export type ZodiacId = (typeof ZODIAC_ANIMALS)[number]['id'];
+export type AnimalTeamId = (typeof ANIMAL_TEAMS)[number]['id'];

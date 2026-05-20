@@ -4,11 +4,14 @@ import { Route as _IndexRoute } from '../pages/';
 import { Route as _LoginRoute } from '../pages/login';
 import { Route as _MissionsIdRoute } from '../pages/missions/[id]';
 import { Route as _MissionsRoute } from '../pages/missions';
+import { Route as _OnboardingExperienceRoute } from '../pages/onboarding/experience';
 import { Route as _OnboardingRoute } from '../pages/onboarding';
-import { Route as _OnboardingTeamRoute } from '../pages/onboarding/team';
+import { Route as _OnboardingInterestRoute } from '../pages/onboarding/interest';
+import { Route as _OnboardingPractitionerRoute } from '../pages/onboarding/practitioner';
 import { Route as _ProfileRoute } from '../pages/profile';
 import { Route as _RankingRoute } from '../pages/ranking';
 import { Route as _TeamRoute } from '../pages/team';
+import { Route as _TeamSelectRoute } from '../pages/team/select';
 
 declare module '@granite-js/react-native' {
   interface RegisterScreenInput {
@@ -16,11 +19,14 @@ declare module '@granite-js/react-native' {
     '/login': (typeof _LoginRoute)['_inputType'];
     '/missions/[id]': (typeof _MissionsIdRoute)['_inputType'];
     '/missions': (typeof _MissionsRoute)['_inputType'];
+    '/onboarding/experience': (typeof _OnboardingExperienceRoute)['_inputType'];
     '/onboarding': (typeof _OnboardingRoute)['_inputType'];
-    '/onboarding/team': (typeof _OnboardingTeamRoute)['_inputType'];
+    '/onboarding/interest': (typeof _OnboardingInterestRoute)['_inputType'];
+    '/onboarding/practitioner': (typeof _OnboardingPractitionerRoute)['_inputType'];
     '/profile': (typeof _ProfileRoute)['_inputType'];
     '/ranking': (typeof _RankingRoute)['_inputType'];
     '/team': (typeof _TeamRoute)['_inputType'];
+    '/team/select': (typeof _TeamSelectRoute)['_inputType'];
   }
 
   interface RegisterScreen {
@@ -28,10 +34,13 @@ declare module '@granite-js/react-native' {
     '/login': (typeof _LoginRoute)['_outputType'];
     '/missions/[id]': (typeof _MissionsIdRoute)['_outputType'];
     '/missions': (typeof _MissionsRoute)['_outputType'];
+    '/onboarding/experience': (typeof _OnboardingExperienceRoute)['_outputType'];
     '/onboarding': (typeof _OnboardingRoute)['_outputType'];
-    '/onboarding/team': (typeof _OnboardingTeamRoute)['_outputType'];
+    '/onboarding/interest': (typeof _OnboardingInterestRoute)['_outputType'];
+    '/onboarding/practitioner': (typeof _OnboardingPractitionerRoute)['_outputType'];
     '/profile': (typeof _ProfileRoute)['_outputType'];
     '/ranking': (typeof _RankingRoute)['_outputType'];
     '/team': (typeof _TeamRoute)['_outputType'];
+    '/team/select': (typeof _TeamSelectRoute)['_outputType'];
   }
 }

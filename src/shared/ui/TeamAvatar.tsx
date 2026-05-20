@@ -1,20 +1,20 @@
 import { Image, StyleSheet, View } from 'react-native';
 import { Txt } from '@toss/tds-react-native';
-import type { ZodiacId } from '../constants/zodiac';
+import type { AnimalTeamId } from '../constants/animalTeams';
 import { getTeamCharacterImage } from '../constants/teamCharacters';
 import { colors } from '../theme/colors';
 
 type TeamAvatarProps = {
-    zodiacId: ZodiacId;
+    animalId: AnimalTeamId;
     emoji: string;
     size?: 'small' | 'medium';
 };
 
 const SIZES = { small: 40, medium: 56 } as const;
 
-export function TeamAvatar({ zodiacId, emoji, size = 'medium' }: TeamAvatarProps) {
+export function TeamAvatar({ animalId, emoji, size = 'medium' }: TeamAvatarProps) {
     const dimension = SIZES[size];
-    const characterImage = getTeamCharacterImage(zodiacId);
+    const characterImage = getTeamCharacterImage(animalId);
 
     return (
         <View style={[styles.circle, { width: dimension, height: dimension, borderRadius: dimension / 2 }]}>

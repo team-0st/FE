@@ -1,10 +1,7 @@
-import type { ZodiacId } from './zodiac';
+import type { AnimalTeamId } from './animalTeams';
 
-/**
- * 팀 캐릭터 PNG를 `assets/characters/{zodiacId}.png` 에 넣은 뒤
- * 아래 require 주석을 해제하세요. (권장: 512×512, 배경 투명)
- */
-export const teamCharacterImages: Partial<Record<ZodiacId, number>> = {
+/** PNG: assets/characters/{id}.png → require 주석 해제 */
+export const teamCharacterImages: Partial<Record<AnimalTeamId, number>> = {
     // rat: require('../../../assets/characters/rat.png'),
     // ox: require('../../../assets/characters/ox.png'),
     // tiger: require('../../../assets/characters/tiger.png'),
@@ -19,6 +16,6 @@ export const teamCharacterImages: Partial<Record<ZodiacId, number>> = {
     // pig: require('../../../assets/characters/pig.png'),
 };
 
-export function getTeamCharacterImage(zodiacId: ZodiacId): number | undefined {
-    return teamCharacterImages[zodiacId];
+export function getTeamCharacterImage(animalId: AnimalTeamId): number | undefined {
+    return teamCharacterImages[animalId];
 }

@@ -1,4 +1,4 @@
-import { ZODIAC_ANIMALS } from '../../shared/constants/zodiac';
+import { ANIMAL_TEAMS } from '../../shared/constants/animalTeams';
 import type { Mission, RankingEntry, Team, UserProfile } from './types';
 
 /** mock 주간 포인트 (정렬 후 rank 부여) */
@@ -18,13 +18,13 @@ const TEAM_WEEKLY_STATS: Record<string, { weeklyPoints: number; memberCount: num
 };
 
 function buildMockTeams(): Team[] {
-    const teams = ZODIAC_ANIMALS.map((animal) => {
+    const teams = ANIMAL_TEAMS.map((animal) => {
         const stats = TEAM_WEEKLY_STATS[animal.id] ?? { weeklyPoints: 0, memberCount: 0 };
         return {
             id: animal.id,
             name: animal.name,
             emoji: animal.emoji,
-            zodiacOrder: animal.order,
+            animalOrder: animal.order,
             rank: 0,
             weeklyPoints: stats.weeklyPoints,
             memberCount: stats.memberCount,

@@ -1,7 +1,9 @@
 import { mockMissions, mockUser } from '@api/mock';
+import { getOnboardingResult } from '@api/mock/onboardingState';
 import { Button, Txt } from '@toss/tds-react-native';
 import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
+import { segmentLabel } from '../onboarding/surveyOptions';
 import { HomeHeader } from '../../shared/ui/HomeHeader';
 import { MissionCard } from '../../shared/ui/MissionCard';
 import { Screen } from '../../shared/ui/Screen';
@@ -28,6 +30,15 @@ export function HomeScreen({
 }: HomeScreenProps) {
     const [checkedIn, setCheckedIn] = useState(mockUser.checkedInToday);
     const weeklyLabel = `이번 주 ${mockUser.weeklyMissionDone}/${mockUser.weeklyMissionTotal}`;
+    const onboarding = getOnboardingResult();
+    const segmentSummary =
+        onboarding != null
+            ? segmentLabel({
+                  practitioner: onboarding.practitioner,
+                  practitionerSegment: onboarding.practitionerSegment,
+                  interestSegment: onboarding.interestSegment,
+              })
+            : null;
 
     return (
         <Screen scrollable>
@@ -45,7 +56,7 @@ export function HomeScreen({
                 />
                 <StatCard
                     label="내 팀"
-                    value={`${mockUser.teamName}띠`}
+                    value={`${mockUser.teamName} 팀`}
                     hint="팀 보기"
                     onPress={onPressTeam}
                 />
@@ -73,8 +84,13 @@ export function HomeScreen({
                     내 프로필
                 </Button>
             </View>
+            {segmentSummary != null ? (
+                <Txt typography="t7" color="grey600" style={styles.segmentHint}>
+                    {`내 상황: ${segmentSummary}`}
+                </Txt>
+            ) : null}
             <Txt typography="t7" color="blue500" style={styles.onboardingLink} onPress={onPressOnboarding}>
-                온보딩 다시 보기
+                시작 설문 다시 하기
             </Txt>
         </Screen>
     );
@@ -92,8 +108,12 @@ const styles = StyleSheet.create({
     actions: {
         gap: 10,
     },
-    onboardingLink: {
+    segmentHint: {
         marginTop: 16,
+        textAlign: 'center',
+    },
+    onboardingLink: {
+        marginTop: 8,
         textAlign: 'center',
     },
 });

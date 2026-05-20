@@ -1,14 +1,22 @@
 import { mockUser } from '@api/mock';
-import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
+import { getOnboardingResult } from '@api/mock/onboardingState';
+import { ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
+import { segmentLabel } from '../onboarding/surveyOptions';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
-type ProfileScreenProps = {
-    onPressLogin: () => void;
-};
+export function ProfileScreen() {
+    const onboarding = getOnboardingResult();
+    const segmentSummary =
+        onboarding != null
+            ? segmentLabel({
+                  practitioner: onboarding.practitioner,
+                  practitionerSegment: onboarding.practitionerSegment,
+                  interestSegment: onboarding.interestSegment,
+              })
+            : '설문 전';
 
-export function ProfileScreen({ onPressLogin }: ProfileScreenProps) {
     return (
         <Screen scrollable>
             <Top
@@ -20,7 +28,7 @@ export function ProfileScreen({ onPressLogin }: ProfileScreenProps) {
                     {mockUser.nickname}
                 </Txt>
                 <Txt typography="t6" color="grey600">
-                    {`${mockUser.teamName}띠 팀`}
+                    {`${mockUser.teamName} 팀`}
                 </Txt>
                 <View style={styles.stats}>
                     <Txt typography="t6">연속 {mockUser.streakDays}일</Txt>
@@ -31,21 +39,30 @@ export function ProfileScreen({ onPressLogin }: ProfileScreenProps) {
                 contents={
                     <ListRow.Texts
                         type="2RowTypeA"
+                        top="시작 설문 결과"
+                        bottom={segmentSummary}
+                    />
+                }
+            />
+            <ListRow
+                contents={
+                    <ListRow.Texts
+                        type="2RowTypeA"
                         top="알림 설정"
-                        bottom="하루 1회 요약 (MVP UI)"
+                        bottom="하루 1회 요약"
                     />
                 }
                 right={<ListRow.RightTexts type="1RowTypeA" top="ON" />}
             />
             <ListRow
                 contents={
-                    <ListRow.Texts type="2RowTypeA" top="토스 로그인" bottom="사업자 등록 후 연동 예정" />
+                    <ListRow.Texts
+                        type="2RowTypeA"
+                        top="계정"
+                        bottom="토스 로그인 없이 앱인토스 식별·저장소로 이용 (MVP)"
+                    />
                 }
-                onPress={onPressLogin}
             />
-            <Button size="medium" type="dark" style="weak" onPress={onPressLogin}>
-                로그인 플레이스홀더
-            </Button>
         </Screen>
     );
 }
@@ -61,7 +78,7 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
     },
     nickname: {
-        marginTop: 12,
+        marginTop: 4,
     },
     stats: {
         marginTop: 16,

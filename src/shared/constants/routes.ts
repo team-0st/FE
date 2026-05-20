@@ -2,9 +2,12 @@ export const ROUTES = {
     home: '/',
     login: '/login',
     onboarding: '/onboarding',
-    onboardingTeam: '/onboarding/team',
+    onboardingPractitioner: '/onboarding/practitioner',
+    onboardingExperience: '/onboarding/experience',
+    onboardingInterest: '/onboarding/interest',
     missions: '/missions',
     team: '/team',
+    teamSelect: '/team/select',
     ranking: '/ranking',
     profile: '/profile',
 } as const;
