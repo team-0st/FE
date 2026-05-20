@@ -1,3 +1,4 @@
 export * from './data';
 export * from './missions';
+export * from './personalRanking';
 export * from './types';

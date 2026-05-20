@@ -29,6 +29,15 @@ export type RankingEntry = {
     isMyTeam: boolean;
 };
 
+export type PersonalRankingEntry = {
+    rank: number;
+    nickname: string;
+    teamName: string;
+    teamId: string;
+    points: number;
+    isMe: boolean;
+};
+
 export type UserProfile = {
     nickname: string;
     teamName: string;
