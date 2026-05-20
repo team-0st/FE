@@ -47,8 +47,9 @@ else
       ;;
   esac
   echo ""
-  echo "  샌드박스 Metro 서버 주소에 입력:"
-  echo "    http://${IP}:8081"
+  echo "  샌드박스 Metro 서버 주소에 입력 (http:// 붙이지 마세요):"
+  echo "    ${IP}:8081"
+  echo "  (앱이 http:// 를 자동으로 붙입니다. http://http:... 오류 방지)"
   HOST="${IP}"
 fi
 

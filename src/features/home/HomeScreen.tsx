@@ -2,8 +2,7 @@ import { mockMissions, mockUser } from '@api/mock';
 import { Button, Txt } from '@toss/tds-react-native';
 import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { APP_DISPLAY_NAME } from '../../shared/constants/app';
-import { GamifiedHero } from '../../shared/ui/GamifiedHero';
+import { HomeHeader } from '../../shared/ui/HomeHeader';
 import { MissionCard } from '../../shared/ui/MissionCard';
 import { Screen } from '../../shared/ui/Screen';
 import { SectionHeader } from '../../shared/ui/SectionHeader';
@@ -32,7 +31,7 @@ export function HomeScreen({
 
     return (
         <Screen scrollable>
-            <GamifiedHero
+            <HomeHeader
                 nickname={mockUser.nickname}
                 streakDays={mockUser.streakDays}
                 weeklyLabel={weeklyLabel}
@@ -46,7 +45,7 @@ export function HomeScreen({
                 />
                 <StatCard
                     label="내 팀"
-                    value={mockUser.teamName}
+                    value={`${mockUser.teamName}띠`}
                     hint="팀 보기"
                     onPress={onPressTeam}
                 />
@@ -77,9 +76,6 @@ export function HomeScreen({
             <Txt typography="t7" color="blue500" style={styles.onboardingLink} onPress={onPressOnboarding}>
                 온보딩 다시 보기
             </Txt>
-            <Txt typography="t7" color="grey500" style={styles.footer}>
-                {APP_DISPLAY_NAME} · TDS + mock 데이터 MVP
-            </Txt>
         </Screen>
     );
 }
@@ -97,11 +93,7 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     onboardingLink: {
-        marginTop: 8,
-        textAlign: 'center',
-    },
-    footer: {
-        marginTop: 8,
+        marginTop: 16,
         textAlign: 'center',
     },
 });

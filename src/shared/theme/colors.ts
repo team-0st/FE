@@ -1,4 +1,4 @@
-/** TDS light-mode friendly palette + gamification accent */
+/** TDS light-mode friendly palette */
 export const colors = {
     background: '#F9FAFB',
     surface: '#FFFFFF',

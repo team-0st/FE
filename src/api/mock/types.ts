@@ -8,8 +8,12 @@ export type Mission = {
 };
 
 export type Team = {
+    /** 십이지신 id (rat, ox, …) */
     id: string;
+    /** 동물 이름 (쥐, 소, …) */
     name: string;
+    emoji: string;
+    zodiacOrder: number;
     rank: number;
     weeklyPoints: number;
     memberCount: number;

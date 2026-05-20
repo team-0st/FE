@@ -1,7 +1,9 @@
 import { mockTeams, mockUser } from '@api/mock';
 import { ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
+import type { ZodiacId } from '../../shared/constants/zodiac';
 import { Screen } from '../../shared/ui/Screen';
+import { TeamAvatar } from '../../shared/ui/TeamAvatar';
 import { colors } from '../../shared/theme/colors';
 
 export function TeamScreen() {
@@ -10,9 +12,18 @@ export function TeamScreen() {
     return (
         <Screen scrollable>
             <Top
-                title={<Top.TitleParagraph size={22}>{myTeam?.name ?? mockUser.teamName}</Top.TitleParagraph>}
-                subtitle2={<Top.SubtitleParagraph>팀원과 함께 주간 포인트를 모아요.</Top.SubtitleParagraph>}
+                title={
+                    <Top.TitleParagraph size={22}>
+                        {myTeam != null ? `${myTeam.name}띠` : mockUser.teamName}
+                    </Top.TitleParagraph>
+                }
+                subtitle2={<Top.SubtitleParagraph>십이지신 팀 · 주간 포인트를 함께 모아요</Top.SubtitleParagraph>}
             />
+            {myTeam != null ? (
+                <View style={styles.avatarRow}>
+                    <TeamAvatar zodiacId={myTeam.id as ZodiacId} emoji={myTeam.emoji} size="medium" />
+                </View>
+            ) : null}
             <View style={styles.summary}>
                 <Txt typography="t6" color="grey600">
                     이번 주 팀 포인트
@@ -30,10 +41,13 @@ export function TeamScreen() {
             {mockTeams.map((team) => (
                 <ListRow
                     key={team.id}
+                    left={
+                        <TeamAvatar zodiacId={team.id as ZodiacId} emoji={team.emoji} size="small" />
+                    }
                     contents={
                         <ListRow.Texts
                             type="2RowTypeA"
-                            top={team.name}
+                            top={`${team.name}띠`}
                             topProps={{ fontWeight: 'bold' }}
                             bottom={`${team.memberCount}명 · ${team.weeklyPoints}P`}
                         />
@@ -48,6 +62,10 @@ export function TeamScreen() {
 }
 
 const styles = StyleSheet.create({
+    avatarRow: {
+        alignItems: 'center',
+        marginBottom: 16,
+    },
     summary: {
         backgroundColor: colors.surface,
         borderRadius: 16,

@@ -1,34 +1,48 @@
-import { mockRanking } from '@api/mock';
+import { mockRanking, mockTeams } from '@api/mock';
 import { ListRow, Top } from '@toss/tds-react-native';
+import type { ZodiacId } from '../../shared/constants/zodiac';
 import { Screen } from '../../shared/ui/Screen';
+import { TeamAvatar } from '../../shared/ui/TeamAvatar';
 
 export function RankingScreen() {
     return (
-        <Screen>
+        <Screen scrollable>
             <Top
                 title={<Top.TitleParagraph size={22}>주간 팀 랭킹</Top.TitleParagraph>}
-                subtitle2={<Top.SubtitleParagraph>이번 주 월요일 00시 기준 (mock)</Top.SubtitleParagraph>}
+                subtitle2={<Top.SubtitleParagraph>십이지신 팀 · 이번 주 포인트 순위</Top.SubtitleParagraph>}
             />
-            {mockRanking.map((entry) => (
-                <ListRow
-                    key={entry.rank}
-                    contents={
-                        <ListRow.Texts
-                            type="2RowTypeA"
-                            top={`${entry.rank}위 ${entry.teamName}`}
-                            topProps={{ fontWeight: entry.isMyTeam ? 'bold' : 'medium' }}
-                            bottom={entry.isMyTeam ? '내 팀' : '다른 팀'}
-                        />
-                    }
-                    right={
-                        <ListRow.RightTexts
-                            type="1RowTypeA"
-                            top={`${entry.points}P`}
-                            topProps={{ color: entry.isMyTeam ? 'blue500' : 'grey600' }}
-                        />
-                    }
-                />
-            ))}
+            {mockRanking.map((entry) => {
+                const team = mockTeams.find((t) => t.name === entry.teamName);
+                return (
+                    <ListRow
+                        key={entry.rank}
+                        left={
+                            team != null ? (
+                                <TeamAvatar
+                                    zodiacId={team.id as ZodiacId}
+                                    emoji={team.emoji}
+                                    size="small"
+                                />
+                            ) : undefined
+                        }
+                        contents={
+                            <ListRow.Texts
+                                type="2RowTypeA"
+                                top={`${entry.rank}위 ${entry.teamName}띠`}
+                                topProps={{ fontWeight: entry.isMyTeam ? 'bold' : 'medium' }}
+                                bottom={entry.isMyTeam ? '내 팀' : '다른 팀'}
+                            />
+                        }
+                        right={
+                            <ListRow.RightTexts
+                                type="1RowTypeA"
+                                top={`${entry.points}P`}
+                                topProps={{ color: entry.isMyTeam ? 'blue500' : 'grey600' }}
+                            />
+                        }
+                    />
+                );
+            })}
         </Screen>
     );
 }

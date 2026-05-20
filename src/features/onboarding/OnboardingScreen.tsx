@@ -20,14 +20,13 @@ export function OnboardingScreen({ onPressStart }: OnboardingScreenProps) {
                     }
                     subtitle2={
                         <Top.SubtitleParagraph>
-                            짧은 미션으로 제로웨이스트를 기록하고, 팀과 함께 성장해요.
+                            십이지신 띠 팀에 합류해 미션을 수행하고, 주간 랭킹으로 함께 성장해요.
                         </Top.SubtitleParagraph>
                     }
                 />
-                <View style={styles.hero}>
-                    <Txt typography="t1">🌱</Txt>
-                    <Txt typography="t6" color="grey600" style={styles.heroText}>
-                        고양이마을처럼 재미있게, 토스 안에서는 깔끔하게.
+                <View style={styles.summary}>
+                    <Txt typography="t6" color="grey600" style={styles.summaryText}>
+                        출석·미션·팀 활동을 한곳에서 기록하고, 주간 실천 현황을 확인할 수 있어요.
                     </Txt>
                 </View>
             </View>
@@ -46,16 +45,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 12,
     },
-    hero: {
-        marginTop: 32,
-        backgroundColor: colors.heroTint,
-        borderRadius: 20,
-        padding: 24,
-        alignItems: 'center',
+    summary: {
+        marginTop: 24,
+        backgroundColor: colors.surface,
+        borderRadius: 16,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
-    heroText: {
-        marginTop: 12,
+    summaryText: {
         textAlign: 'center',
+        lineHeight: 22,
     },
     cta: {
         padding: 20,

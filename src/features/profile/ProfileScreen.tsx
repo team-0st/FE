@@ -12,16 +12,15 @@ export function ProfileScreen({ onPressLogin }: ProfileScreenProps) {
     return (
         <Screen scrollable>
             <Top
-                title={<Top.TitleParagraph size={22}>내 제로 카드</Top.TitleParagraph>}
-                subtitle2={<Top.SubtitleParagraph>고양이마을 신분증 카드 컨셉 (mock)</Top.SubtitleParagraph>}
+                title={<Top.TitleParagraph size={22}>프로필</Top.TitleParagraph>}
+                subtitle2={<Top.SubtitleParagraph>제로스트 활동 정보</Top.SubtitleParagraph>}
             />
             <View style={styles.card}>
-                <Txt typography="t1">🪪</Txt>
                 <Txt typography="t4" fontWeight="bold" style={styles.nickname}>
                     {mockUser.nickname}
                 </Txt>
                 <Txt typography="t6" color="grey600">
-                    {mockUser.teamName}
+                    {`${mockUser.teamName}띠 팀`}
                 </Txt>
                 <View style={styles.stats}>
                     <Txt typography="t6">연속 {mockUser.streakDays}일</Txt>
@@ -53,7 +52,7 @@ export function ProfileScreen({ onPressLogin }: ProfileScreenProps) {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: colors.heroTint,
+        backgroundColor: colors.surface,
         borderRadius: 20,
         padding: 24,
         alignItems: 'center',
