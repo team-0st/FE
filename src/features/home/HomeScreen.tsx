@@ -1,5 +1,6 @@
 import { Button, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
+import { APP_DISPLAY_NAME } from '../../shared/constants/app';
 import { Screen } from '../../shared/ui/Screen';
 
 type HomeScreenProps = {
@@ -11,7 +12,7 @@ export function HomeScreen({ onPressLogin }: HomeScreenProps) {
     <Screen>
       <View style={styles.content}>
         <Txt typography="t1" fontWeight="bold">
-          제로스타트
+          {APP_DISPLAY_NAME}
         </Txt>
         <Txt typography="t5" color="grey600" style={styles.subtitle}>
           Granite + Apps in Toss + TDS foundation

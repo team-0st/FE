@@ -3,6 +3,9 @@
   "private": true,
   "scripts": {
     "dev": "granite dev",
+    "ship": "bash scripts/ship.sh",
+    "dev:sandbox": "bash scripts/dev-sandbox.sh",
+    "dev:device": "granite dev --host $(ipconfig getifaddr en0 2>/dev/null || echo 127.0.0.1)",
     "build": "ait build",
     "test": "jest --passWithNoTests",
     "typecheck": "tsc --noEmit",
