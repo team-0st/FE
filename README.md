@@ -2,8 +2,6 @@
 
 제로스타트 **앱인토스 미니앱** 프론트엔드 (Granite + React Native + TDS).
 
-> GachonHack과 무관한 제품 레포입니다.
-
 ## Prerequisites
 
 - Node.js 20+
