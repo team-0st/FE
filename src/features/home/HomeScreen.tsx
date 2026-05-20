@@ -1,38 +1,107 @@
+import { mockMissions, mockUser } from '@api/mock';
 import { Button, Txt } from '@toss/tds-react-native';
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { APP_DISPLAY_NAME } from '../../shared/constants/app';
+import { GamifiedHero } from '../../shared/ui/GamifiedHero';
+import { MissionCard } from '../../shared/ui/MissionCard';
 import { Screen } from '../../shared/ui/Screen';
+import { SectionHeader } from '../../shared/ui/SectionHeader';
+import { StatCard } from '../../shared/ui/StatCard';
+import { WeekProgressSection } from '../../shared/ui/WeekProgressSection';
 
 type HomeScreenProps = {
-  onPressLogin: () => void;
+    onPressMissions: () => void;
+    onPressMission: (id: string) => void;
+    onPressTeam: () => void;
+    onPressRanking: () => void;
+    onPressProfile: () => void;
+    onPressOnboarding: () => void;
 };
 
-export function HomeScreen({ onPressLogin }: HomeScreenProps) {
-  return (
-    <Screen>
-      <View style={styles.content}>
-        <Txt typography="t1" fontWeight="bold">
-          {APP_DISPLAY_NAME}
-        </Txt>
-        <Txt typography="t5" color="grey600" style={styles.subtitle}>
-          Granite + Apps in Toss + TDS foundation
-        </Txt>
-        <Button size="large" onPress={onPressLogin}>
-          로그인 화면으로
-        </Button>
-      </View>
-    </Screen>
-  );
+export function HomeScreen({
+    onPressMissions,
+    onPressMission,
+    onPressTeam,
+    onPressRanking,
+    onPressProfile,
+    onPressOnboarding,
+}: HomeScreenProps) {
+    const [checkedIn, setCheckedIn] = useState(mockUser.checkedInToday);
+    const weeklyLabel = `이번 주 ${mockUser.weeklyMissionDone}/${mockUser.weeklyMissionTotal}`;
+
+    return (
+        <Screen scrollable>
+            <GamifiedHero
+                nickname={mockUser.nickname}
+                streakDays={mockUser.streakDays}
+                weeklyLabel={weeklyLabel}
+            />
+            <View style={styles.statRow}>
+                <StatCard
+                    label="오늘 출석"
+                    value={checkedIn ? '완료' : '미완료'}
+                    hint={checkedIn ? undefined : '탭해서 체크'}
+                    onPress={() => setCheckedIn(true)}
+                />
+                <StatCard
+                    label="내 팀"
+                    value={mockUser.teamName}
+                    hint="팀 보기"
+                    onPress={onPressTeam}
+                />
+            </View>
+            <WeekProgressSection done={mockUser.weeklyMissionDone} total={mockUser.weeklyMissionTotal} />
+            <SectionHeader title="오늘의 미션" actionLabel="전체" onPressAction={onPressMissions} />
+            <FlatList
+                horizontal
+                data={mockMissions}
+                keyExtractor={(item) => item.id}
+                showsHorizontalScrollIndicator={false}
+                renderItem={({ item }) => (
+                    <MissionCard mission={item} onPress={() => onPressMission(item.id)} />
+                )}
+                style={styles.missionList}
+            />
+            <View style={styles.actions}>
+                <Button size="large" type="primary" onPress={onPressMissions}>
+                    미션 하러 가기
+                </Button>
+                <Button size="medium" type="dark" style="weak" onPress={onPressRanking}>
+                    주간 랭킹 보기
+                </Button>
+                <Button size="medium" type="dark" style="weak" onPress={onPressProfile}>
+                    내 프로필
+                </Button>
+            </View>
+            <Txt typography="t7" color="blue500" style={styles.onboardingLink} onPress={onPressOnboarding}>
+                온보딩 다시 보기
+            </Txt>
+            <Txt typography="t7" color="grey500" style={styles.footer}>
+                {APP_DISPLAY_NAME} · TDS + mock 데이터 MVP
+            </Txt>
+        </Screen>
+    );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    gap: 16,
-  },
-  subtitle: {
-    marginBottom: 8,
-  },
+    statRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 16,
+    },
+    missionList: {
+        marginBottom: 20,
+    },
+    actions: {
+        gap: 10,
+    },
+    onboardingLink: {
+        marginTop: 8,
+        textAlign: 'center',
+    },
+    footer: {
+        marginTop: 8,
+        textAlign: 'center',
+    },
 });
