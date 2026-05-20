@@ -1,9 +1,9 @@
-import { mockMissions, mockUser } from '@api/mock';
-import { getOnboardingResult } from '@api/mock/onboardingState';
+import { DAILY_MISSIONS } from '@api/mock';
 import { Button, Txt } from '@toss/tds-react-native';
-import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { segmentLabel } from '../onboarding/surveyOptions';
+import { useUser } from '../user/UserProvider';
+import { isUserCheckedInToday, missionStatusFor, resolveTeamName } from '../user/selectors';
 import { HomeHeader } from '../../shared/ui/HomeHeader';
 import { MissionCard } from '../../shared/ui/MissionCard';
 import { Screen } from '../../shared/ui/Screen';
@@ -28,48 +28,48 @@ export function HomeScreen({
     onPressProfile,
     onPressOnboarding,
 }: HomeScreenProps) {
-    const [checkedIn, setCheckedIn] = useState(mockUser.checkedInToday);
-    const weeklyLabel = `이번 주 ${mockUser.weeklyMissionDone}/${mockUser.weeklyMissionTotal}`;
-    const onboarding = getOnboardingResult();
+    const { state, checkInToday } = useUser();
+    const checkedIn = isUserCheckedInToday(state);
+    const teamName = resolveTeamName(state.teamId);
+    const weeklyLabel = `이번 주 ${state.weeklyMissionDone}/${state.weeklyMissionTotal}`;
     const segmentSummary =
-        onboarding != null
+        state.onboarding != null
             ? segmentLabel({
-                  practitioner: onboarding.practitioner,
-                  practitionerSegment: onboarding.practitionerSegment,
-                  interestSegment: onboarding.interestSegment,
+                  practitioner: state.onboarding.practitioner,
+                  practitionerSegment: state.onboarding.practitionerSegment,
+                  interestSegment: state.onboarding.interestSegment,
               })
             : null;
 
     return (
         <Screen scrollable>
-            <HomeHeader
-                nickname={mockUser.nickname}
-                streakDays={mockUser.streakDays}
-                weeklyLabel={weeklyLabel}
-            />
+            <HomeHeader nickname={state.nickname} streakDays={state.streakDays} weeklyLabel={weeklyLabel} />
             <View style={styles.statRow}>
                 <StatCard
                     label="오늘 출석"
                     value={checkedIn ? '완료' : '미완료'}
                     hint={checkedIn ? undefined : '탭해서 체크'}
-                    onPress={() => setCheckedIn(true)}
+                    onPress={() => {
+                        if (!checkedIn) {
+                            void checkInToday();
+                        }
+                    }}
                 />
-                <StatCard
-                    label="내 팀"
-                    value={`${mockUser.teamName} 팀`}
-                    hint="팀 보기"
-                    onPress={onPressTeam}
-                />
+                <StatCard label="내 팀" value={`${teamName} 팀`} hint="팀 보기" onPress={onPressTeam} />
             </View>
-            <WeekProgressSection done={mockUser.weeklyMissionDone} total={mockUser.weeklyMissionTotal} />
+            <WeekProgressSection done={state.weeklyMissionDone} total={state.weeklyMissionTotal} />
             <SectionHeader title="오늘의 미션" actionLabel="전체" onPressAction={onPressMissions} />
             <FlatList
                 horizontal
-                data={mockMissions}
+                data={DAILY_MISSIONS}
                 keyExtractor={(item) => item.id}
                 showsHorizontalScrollIndicator={false}
                 renderItem={({ item }) => (
-                    <MissionCard mission={item} onPress={() => onPressMission(item.id)} />
+                    <MissionCard
+                        mission={item}
+                        status={missionStatusFor(state, item.id)}
+                        onPress={() => onPressMission(item.id)}
+                    />
                 )}
                 style={styles.missionList}
             />

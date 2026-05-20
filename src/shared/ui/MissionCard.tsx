@@ -1,14 +1,20 @@
 import { Badge, Txt } from '@toss/tds-react-native';
 import type { Mission } from '@api/mock';
+import { missionStatusLabel } from '@api/mock/missions';
+import type { MissionProgressStatus } from '../../features/user/types';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
 
 type MissionCardProps = {
     mission: Mission;
+    status: MissionProgressStatus;
     onPress: () => void;
 };
 
-export function MissionCard({ mission, onPress }: MissionCardProps) {
+export function MissionCard({ mission, status, onPress }: MissionCardProps) {
+    const isCompleted = status === 'completed';
+    const isPending = status === 'pending_review';
+
     return (
         <Pressable onPress={onPress} style={styles.card}>
             <Txt typography="t1">{mission.emoji}</Txt>
@@ -19,8 +25,12 @@ export function MissionCard({ mission, onPress }: MissionCardProps) {
                 {mission.description}
             </Txt>
             <View style={styles.footer}>
-                <Badge size="tiny" badgeStyle="weak" type={mission.completed ? 'green' : 'blue'}>
-                    {mission.completed ? '완료' : `+${mission.points}P`}
+                <Badge
+                    size="tiny"
+                    badgeStyle="weak"
+                    type={isCompleted ? 'green' : isPending ? 'yellow' : 'blue'}
+                >
+                    {isCompleted || isPending ? missionStatusLabel(status) : `+${mission.points}P`}
                 </Badge>
             </View>
         </Pressable>

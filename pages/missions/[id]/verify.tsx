@@ -1,14 +1,13 @@
 import { getMissionById } from '@api/mock';
 import { createRoute } from '@granite-js/react-native';
-import { MissionDetailScreen } from '../../src/features/missions/MissionDetailScreen';
-import { useUser } from '../../src/features/user/UserProvider';
-import { missionStatusFor } from '../../src/features/user/selectors';
-import { navigateMissionVerify } from '../../src/shared/constants/routes';
+import { MissionVerifyScreen } from '../../../src/features/missions/MissionVerifyScreen';
+import { useUser } from '../../../src/features/user/UserProvider';
+import { navigateMissionResult } from '../../../src/shared/constants/routes';
 import { Txt } from '@toss/tds-react-native';
 import { View } from 'react-native';
-import { Screen } from '../../src/shared/ui/Screen';
+import { Screen } from '../../../src/shared/ui/Screen';
 
-export const Route = createRoute('/missions/:id', {
+export const Route = createRoute('/missions/:id/verify', {
     component: Page,
     validateParams: (params: Readonly<object | undefined>): { id: string } => ({
         id: String((params as { id?: string } | undefined)?.id ?? ''),
@@ -18,7 +17,7 @@ export const Route = createRoute('/missions/:id', {
 function Page() {
     const { id } = Route.useParams();
     const navigation = Route.useNavigation();
-    const { state } = useUser();
+    const { submitMission } = useUser();
     const mission = getMissionById(id);
 
     if (mission == null) {
@@ -32,10 +31,12 @@ function Page() {
     }
 
     return (
-        <MissionDetailScreen
+        <MissionVerifyScreen
             mission={mission}
-            status={missionStatusFor(state, mission.id)}
-            onPressVerify={() => navigateMissionVerify(navigation, mission.id)}
+            onSubmit={async () => {
+                await submitMission(mission.id);
+                navigateMissionResult(navigation, mission.id);
+            }}
         />
     );
 }

@@ -1,6 +1,10 @@
 import { createRoute } from '@granite-js/react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { HomeScreen } from '../src/features/home/HomeScreen';
+import { useUser } from '../src/features/user/UserProvider';
 import { navigateMissionDetail, ROUTES } from '../src/shared/constants/routes';
+import { Screen } from '../src/shared/ui/Screen';
 
 export const Route = createRoute('/', {
     component: Page,
@@ -8,6 +12,27 @@ export const Route = createRoute('/', {
 
 function Page() {
     const navigation = Route.useNavigation();
+    const { isReady, state, resetOnboarding } = useUser();
+
+    useEffect(() => {
+        if (isReady && !state.onboardingCompleted) {
+            navigation.replace(ROUTES.onboarding);
+        }
+    }, [isReady, navigation, state.onboardingCompleted]);
+
+    if (!isReady) {
+        return (
+            <Screen>
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator />
+                </View>
+            </Screen>
+        );
+    }
+
+    if (!state.onboardingCompleted) {
+        return null;
+    }
 
     return (
         <HomeScreen
@@ -16,7 +41,10 @@ function Page() {
             onPressTeam={() => navigation.navigate(ROUTES.team)}
             onPressRanking={() => navigation.navigate(ROUTES.ranking)}
             onPressProfile={() => navigation.navigate(ROUTES.profile)}
-            onPressOnboarding={() => navigation.navigate(ROUTES.onboarding)}
+            onPressOnboarding={async () => {
+                await resetOnboarding();
+                navigation.navigate(ROUTES.onboarding);
+            }}
         />
     );
 }

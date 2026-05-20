@@ -1,19 +1,20 @@
-import { mockUser } from '@api/mock';
-import { getOnboardingResult } from '@api/mock/onboardingState';
 import { ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { segmentLabel } from '../onboarding/surveyOptions';
+import { useUser } from '../user/UserProvider';
+import { resolveTeamName } from '../user/selectors';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
 export function ProfileScreen() {
-    const onboarding = getOnboardingResult();
+    const { state } = useUser();
+    const teamName = resolveTeamName(state.teamId);
     const segmentSummary =
-        onboarding != null
+        state.onboarding != null
             ? segmentLabel({
-                  practitioner: onboarding.practitioner,
-                  practitionerSegment: onboarding.practitionerSegment,
-                  interestSegment: onboarding.interestSegment,
+                  practitioner: state.onboarding.practitioner,
+                  practitionerSegment: state.onboarding.practitionerSegment,
+                  interestSegment: state.onboarding.interestSegment,
               })
             : '설문 전';
 
@@ -25,14 +26,14 @@ export function ProfileScreen() {
             />
             <View style={styles.card}>
                 <Txt typography="t4" fontWeight="bold" style={styles.nickname}>
-                    {mockUser.nickname}
+                    {state.nickname}
                 </Txt>
                 <Txt typography="t6" color="grey600">
-                    {`${mockUser.teamName} 팀`}
+                    {`${teamName} 팀`}
                 </Txt>
                 <View style={styles.stats}>
-                    <Txt typography="t6">연속 {mockUser.streakDays}일</Txt>
-                    <Txt typography="t6">누적 {mockUser.totalPoints}P</Txt>
+                    <Txt typography="t6">연속 {state.streakDays}일</Txt>
+                    <Txt typography="t6">누적 {state.totalPoints}P</Txt>
                 </View>
             </View>
             <ListRow

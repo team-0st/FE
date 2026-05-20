@@ -3,15 +3,19 @@ import { Button, ListRow, Top } from '@toss/tds-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import type { AnimalTeamId } from '../../shared/constants/animalTeams';
+import { useUser } from '../user/UserProvider';
 import { Screen } from '../../shared/ui/Screen';
 import { TeamAvatar } from '../../shared/ui/TeamAvatar';
 
 type TeamSelectScreenProps = {
-    onPressComplete: () => void;
+    initialTeamId: AnimalTeamId | null;
+    onPressComplete: (teamId: AnimalTeamId) => void;
 };
 
-export function TeamSelectScreen({ onPressComplete }: TeamSelectScreenProps) {
-    const [selectedId, setSelectedId] = useState(mockTeams[0]?.id ?? '');
+export function TeamSelectScreen({ initialTeamId, onPressComplete }: TeamSelectScreenProps) {
+    const { state } = useUser();
+    const defaultId = initialTeamId ?? state.teamId ?? (mockTeams[0]?.id as AnimalTeamId);
+    const [selectedId, setSelectedId] = useState<AnimalTeamId>(defaultId);
 
     return (
         <Screen>
@@ -29,7 +33,7 @@ export function TeamSelectScreen({ onPressComplete }: TeamSelectScreenProps) {
                     {mockTeams.map((team) => (
                         <ListRow
                             key={team.id}
-                            onPress={() => setSelectedId(team.id)}
+                            onPress={() => setSelectedId(team.id as AnimalTeamId)}
                             left={
                                 <TeamAvatar
                                     animalId={team.id as AnimalTeamId}
@@ -59,7 +63,7 @@ export function TeamSelectScreen({ onPressComplete }: TeamSelectScreenProps) {
                 </ScrollView>
             </View>
             <View style={styles.cta}>
-                <Button size="large" type="primary" display="block" onPress={onPressComplete}>
+                <Button size="large" type="primary" display="block" onPress={() => onPressComplete(selectedId)}>
                     선택 완료
                 </Button>
             </View>

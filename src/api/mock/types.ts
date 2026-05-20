@@ -1,10 +1,13 @@
+export type MissionKind = 'daily' | 'weekly';
+
 export type Mission = {
     id: string;
+    kind: MissionKind;
     title: string;
     description: string;
     points: number;
     emoji: string;
-    completed: boolean;
+    authHint: string;
 };
 
 export type Team = {

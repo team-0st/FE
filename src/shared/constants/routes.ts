@@ -12,9 +12,18 @@ export const ROUTES = {
     profile: '/profile',
 } as const;
 
-export function navigateMissionDetail(
-    navigation: { navigate: (name: '/missions/:id', params: { id: string }) => void },
-    id: string,
-): void {
+type MissionNavigation = {
+    navigate: (name: string, params?: { id: string }) => void;
+};
+
+export function navigateMissionDetail(navigation: MissionNavigation, id: string): void {
     navigation.navigate('/missions/:id', { id });
+}
+
+export function navigateMissionVerify(navigation: MissionNavigation, id: string): void {
+    navigation.navigate('/missions/:id/verify', { id });
+}
+
+export function navigateMissionResult(navigation: MissionNavigation, id: string): void {
+    navigation.navigate('/missions/:id/result', { id });
 }

@@ -1,15 +1,21 @@
 import type { Mission } from '@api/mock';
+import { missionStatusLabel } from '@api/mock/missions';
 import { Button, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
+import type { MissionProgressStatus } from '../user/types';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
 type MissionDetailScreenProps = {
     mission: Mission;
-    onPressComplete: () => void;
+    status: MissionProgressStatus;
+    onPressVerify: () => void;
 };
 
-export function MissionDetailScreen({ mission, onPressComplete }: MissionDetailScreenProps) {
+export function MissionDetailScreen({ mission, status, onPressVerify }: MissionDetailScreenProps) {
+    const isCompleted = status === 'completed';
+    const isPending = status === 'pending_review';
+
     return (
         <Screen>
             <View style={styles.body}>
@@ -19,14 +25,22 @@ export function MissionDetailScreen({ mission, onPressComplete }: MissionDetailS
                 />
                 <View style={styles.card}>
                     <Txt typography="t5" fontWeight="semibold">
-                        인증 방법 (MVP)
+                        인증 안내
                     </Txt>
                     <Txt typography="t6" color="grey600" style={styles.cardText}>
-                        사진 업로드·위치 인증은 BE 연동 후 연결됩니다. 지금은 완료 버튼으로 플로우만 확인해요.
+                        {mission.authHint}
                     </Txt>
-                    <Txt typography="t4" fontWeight="bold" color="blue500">
+                    <Txt typography="t7" color="grey500">
+                        사진 업로드·위치 인증은 BE 연동 후 연결됩니다. 지금은 인증 화면에서 데모로 제출해요.
+                    </Txt>
+                    <Txt typography="t4" fontWeight="bold" color="blue500" style={styles.points}>
                         +{mission.points}P
                     </Txt>
+                    {isPending ? (
+                        <Txt typography="t6" color="grey600" style={styles.status}>
+                            {missionStatusLabel(status)}
+                        </Txt>
+                    ) : null}
                 </View>
             </View>
             <View style={styles.cta}>
@@ -34,10 +48,10 @@ export function MissionDetailScreen({ mission, onPressComplete }: MissionDetailS
                     size="large"
                     type="primary"
                     display="block"
-                    disabled={mission.completed}
-                    onPress={onPressComplete}
+                    disabled={isCompleted || isPending}
+                    onPress={onPressVerify}
                 >
-                    {mission.completed ? '이미 완료한 미션' : '미션 완료하기'}
+                    {isCompleted ? '이미 완료한 미션' : isPending ? '검수 중' : '인증하기'}
                 </Button>
             </View>
         </Screen>
@@ -59,6 +73,12 @@ const styles = StyleSheet.create({
     },
     cardText: {
         marginVertical: 12,
+    },
+    points: {
+        marginTop: 12,
+    },
+    status: {
+        marginTop: 8,
     },
     cta: {
         padding: 20,

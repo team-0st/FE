@@ -1,7 +1,8 @@
-import { mockTeams, mockUser } from '@api/mock';
+import { mockTeams } from '@api/mock';
 import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import type { AnimalTeamId } from '../../shared/constants/animalTeams';
+import { useUser } from '../user/UserProvider';
 import { Screen } from '../../shared/ui/Screen';
 import { TeamAvatar } from '../../shared/ui/TeamAvatar';
 import { colors } from '../../shared/theme/colors';
@@ -11,23 +12,32 @@ type TeamScreenProps = {
 };
 
 export function TeamScreen({ onPressSelectTeam }: TeamScreenProps) {
-    const myTeam = mockTeams.find((team) => team.name === mockUser.teamName) ?? mockTeams[0];
+    const { state } = useUser();
+    const myTeam =
+        state.teamId != null
+            ? mockTeams.find((team) => team.id === state.teamId)
+            : undefined;
+    const displayTeam = myTeam ?? mockTeams[0];
 
     return (
         <Screen scrollable>
             <Top
                 title={
                     <Top.TitleParagraph size={22}>
-                        {myTeam != null ? `${myTeam.name} 팀` : mockUser.teamName}
+                        {displayTeam != null ? `${displayTeam.name} 팀` : '팀 미선택'}
                     </Top.TitleParagraph>
                 }
                 subtitle2={
                     <Top.SubtitleParagraph>동물 팀 · 주간 포인트를 함께 모아요</Top.SubtitleParagraph>
                 }
             />
-            {myTeam != null ? (
+            {displayTeam != null ? (
                 <View style={styles.avatarRow}>
-                    <TeamAvatar animalId={myTeam.id as AnimalTeamId} emoji={myTeam.emoji} size="medium" />
+                    <TeamAvatar
+                        animalId={displayTeam.id as AnimalTeamId}
+                        emoji={displayTeam.emoji}
+                        size="medium"
+                    />
                 </View>
             ) : null}
             <View style={styles.summary}>
@@ -35,10 +45,10 @@ export function TeamScreen({ onPressSelectTeam }: TeamScreenProps) {
                     이번 주 팀 포인트
                 </Txt>
                 <Txt typography="t2" fontWeight="bold">
-                    {myTeam?.weeklyPoints ?? 0}P
+                    {displayTeam?.weeklyPoints ?? 0}P
                 </Txt>
                 <Txt typography="t6" color="blue500">
-                    현재 {myTeam?.rank ?? '-'}위
+                    현재 {displayTeam?.rank ?? '-'}위
                 </Txt>
             </View>
             <Button size="medium" type="dark" style="weak" onPress={onPressSelectTeam}>
