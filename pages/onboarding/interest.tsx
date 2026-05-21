@@ -2,6 +2,7 @@ import { createRoute } from '@granite-js/react-native';
 import { OnboardingSurveyListScreen } from '../../src/features/onboarding/OnboardingSurveyListScreen';
 import { INTEREST_OPTIONS } from '../../src/features/onboarding/surveyOptions';
 import { useUser } from '../../src/features/user/UserProvider';
+import { ONBOARDING_GUIDE } from '../../src/shared/constants/guideCopy';
 import { ROUTES } from '../../src/shared/constants/routes';
 
 export const Route = createRoute('/onboarding/interest', {
@@ -14,15 +15,14 @@ function Page() {
 
     return (
         <OnboardingSurveyListScreen
-            title="지금 상황에 가장 가까운 것은?"
-            subtitle="관심이 생긴 시점·실천 어려움 등을 구분해요."
+            guideMessage={ONBOARDING_GUIDE.interest}
             options={INTEREST_OPTIONS}
             onSubmit={async (segment) => {
                 await saveOnboarding({
                     practitioner: 'no',
                     interestSegment: segment,
                 });
-                navigation.navigate(ROUTES.home);
+                navigation.replace(ROUTES.home);
             }}
         />
     );

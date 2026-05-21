@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import type { AnimalTeamId } from '../../shared/constants/animalTeams';
 import { useUser } from '../user/UserProvider';
 import { resolveTeamName } from '../user/selectors';
+import { GuideDialogue } from '../../shared/ui/GuideDialogue';
 import { Screen } from '../../shared/ui/Screen';
 import { TeamAvatar } from '../../shared/ui/TeamAvatar';
 import { colors } from '../../shared/theme/colors';
@@ -37,6 +38,10 @@ export function RankingScreen() {
     );
 
     const myPersonalRank = personalRanking.find((entry) => entry.isMe)?.rank;
+    const guideMessage =
+        tab === 'team'
+            ? '동물 팀별로 이번 주 포인트 순위를 볼 수 있어요.'
+            : '개인별로 이번 주 누적 포인트 순위를 볼 수 있어요.';
 
     return (
         <Screen scrollable>
@@ -50,6 +55,7 @@ export function RankingScreen() {
                     </Top.SubtitleParagraph>
                 }
             />
+            <GuideDialogue message={guideMessage} compact />
             <View style={styles.tabs}>
                 <Pressable
                     onPress={() => setTab('team')}

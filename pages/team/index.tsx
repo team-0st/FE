@@ -1,5 +1,7 @@
 import { createRoute } from '@granite-js/react-native';
 import { TeamScreen } from '../../src/features/team/TeamScreen';
+import { useMainTabPress } from '../../src/shared/hooks/useMainTabNavigation';
+import { MainTabShell } from '../../src/shared/layout/MainTabShell';
 import { ROUTES } from '../../src/shared/constants/routes';
 
 export const Route = createRoute('/team', {
@@ -8,8 +10,11 @@ export const Route = createRoute('/team', {
 
 function Page() {
     const navigation = Route.useNavigation();
+    const onPressTab = useMainTabPress(navigation);
 
     return (
-        <TeamScreen onPressSelectTeam={() => navigation.navigate(ROUTES.teamSelect)} />
+        <MainTabShell activeTab="team" onPressTab={onPressTab}>
+            <TeamScreen onPressSelectTeam={() => navigation.navigate(ROUTES.teamSelect)} />
+        </MainTabShell>
     );
 }

@@ -1,7 +1,9 @@
 import type { Mission } from '@api/mock';
-import { Button, Top, Txt } from '@toss/tds-react-native';
+import { Button, Txt } from '@toss/tds-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
+import { GuideDialogue } from '../../shared/ui/GuideDialogue';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
@@ -16,14 +18,11 @@ export function MissionVerifyScreen({ mission, onSubmit }: MissionVerifyScreenPr
     return (
         <Screen>
             <View style={styles.body}>
-                <Top
-                    title={<Top.TitleParagraph size={22}>미션 인증</Top.TitleParagraph>}
-                    subtitle2={<Top.SubtitleParagraph>{mission.authHint}</Top.SubtitleParagraph>}
-                />
+                <GuideDialogue message={getMissionVerifyMessage(mission.authHint)} compact />
                 <View style={styles.placeholder}>
                     <Txt typography="t1">{picked ? '📷' : '🖼️'}</Txt>
                     <Txt typography="t6" color="grey600" style={styles.hint}>
-                        {picked ? '인증 사진이 선택됐어요 (데모)' : '인증에 사용할 사진을 선택해 주세요'}
+                        {picked ? '인증 사진을 선택했어요 (데모)' : '인증에 사용할 사진을 선택해 주세요'}
                     </Txt>
                     {!picked ? (
                         <Button size="medium" type="dark" style="weak" onPress={() => setPicked(true)}>
@@ -45,10 +44,12 @@ const styles = StyleSheet.create({
     body: {
         flex: 1,
         paddingHorizontal: 20,
+        paddingTop: 12,
     },
     placeholder: {
-        marginTop: 24,
-        minHeight: 220,
+        marginTop: 16,
+        flex: 1,
+        maxHeight: 280,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,

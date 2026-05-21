@@ -1,7 +1,10 @@
 import type { Mission } from '@api/mock';
-import { Button, Top, Txt } from '@toss/tds-react-native';
+import { Button, Txt } from '@toss/tds-react-native';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { getMissionCompleteMessage } from '../../shared/constants/guideCopy';
+import { GuideDialogue } from '../../shared/ui/GuideDialogue';
+import { RewardPointsBadge } from '../../shared/ui/RewardPointsBadge';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
@@ -22,22 +25,17 @@ export function MissionResultScreen({ mission, onApproved, onPressHome }: Missio
     }, [onApproved]);
 
     return (
-        <Screen>
+        <Screen scrollable>
             <View style={styles.body}>
-                <Top
-                    title={<Top.TitleParagraph size={22}>미션 완료</Top.TitleParagraph>}
-                    subtitle2={<Top.SubtitleParagraph>MVP에서는 제출 즉시 포인트가 반영돼요.</Top.SubtitleParagraph>}
-                />
+                <GuideDialogue message={getMissionCompleteMessage(mission.points)} mood="happy" />
                 <View style={styles.card}>
                     <Txt typography="t1">{mission.emoji}</Txt>
                     <Txt typography="t5" fontWeight="bold" style={styles.title}>
                         {mission.title}
                     </Txt>
-                    <Txt typography="t4" fontWeight="bold" color="blue500">
-                        +{mission.points}P
-                    </Txt>
+                    <RewardPointsBadge points={mission.points} />
                     <Txt typography="t7" color="grey600" style={styles.note}>
-                        실제 서비스에서는 검수 후 포인트가 지급됩니다.
+                        실제 서비스에서는 검수 후 포인트가 지급돼요.
                     </Txt>
                 </View>
             </View>
@@ -53,10 +51,9 @@ export function MissionResultScreen({ mission, onApproved, onPressHome }: Missio
 const styles = StyleSheet.create({
     body: {
         flex: 1,
-        paddingHorizontal: 20,
     },
     card: {
-        marginTop: 24,
+        marginTop: 8,
         backgroundColor: colors.surface,
         borderRadius: 16,
         padding: 24,
@@ -66,13 +63,13 @@ const styles = StyleSheet.create({
     },
     title: {
         marginTop: 12,
-        marginBottom: 8,
+        marginBottom: 16,
     },
     note: {
         marginTop: 16,
         textAlign: 'center',
     },
     cta: {
-        padding: 20,
+        marginTop: 24,
     },
 });

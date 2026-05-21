@@ -1,6 +1,7 @@
-import { Button, ListRow, Top } from '@toss/tds-react-native';
+import { Button, ListRow } from '@toss/tds-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { GuideDialogue } from '../../shared/ui/GuideDialogue';
 import { Screen } from '../../shared/ui/Screen';
 
 type SurveyOption<T extends string> = {
@@ -10,15 +11,13 @@ type SurveyOption<T extends string> = {
 };
 
 type OnboardingSurveyListScreenProps<T extends string> = {
-    title: string;
-    subtitle: string;
+    guideMessage: string;
     options: SurveyOption<T>[];
     onSubmit: (value: T) => void;
 };
 
 export function OnboardingSurveyListScreen<T extends string>({
-    title,
-    subtitle,
+    guideMessage,
     options,
     onSubmit,
 }: OnboardingSurveyListScreenProps<T>) {
@@ -27,10 +26,7 @@ export function OnboardingSurveyListScreen<T extends string>({
     return (
         <Screen>
             <View style={styles.body}>
-                <Top
-                    title={<Top.TitleParagraph size={22}>{title}</Top.TitleParagraph>}
-                    subtitle2={<Top.SubtitleParagraph>{subtitle}</Top.SubtitleParagraph>}
-                />
+                <GuideDialogue message={guideMessage} mood="think" />
                 <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
                     {options.map((option) => (
                         <ListRow
@@ -79,6 +75,7 @@ export function OnboardingSurveyListScreen<T extends string>({
 const styles = StyleSheet.create({
     body: {
         flex: 1,
+        paddingTop: 12,
     },
     list: {
         flex: 1,

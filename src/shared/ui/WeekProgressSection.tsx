@@ -29,7 +29,7 @@ export function WeekProgressSection({ done, total }: WeekProgressSectionProps) {
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: colors.surface,
+        backgroundColor: colors.sproutTint,
         borderRadius: 16,
         padding: 16,
         borderWidth: 1,

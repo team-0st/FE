@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
 import { missionStatusFor } from '../user/selectors';
 import type { MissionProgressStatus } from '../user/types';
+import { GuideDialogue } from '../../shared/ui/GuideDialogue';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
@@ -63,15 +64,20 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
     const { state } = useUser();
     const [tab, setTab] = useState<MissionTab>('daily');
     const missions = tab === 'daily' ? DAILY_MISSIONS : WEEKLY_MISSIONS;
+    const guideMessage =
+        tab === 'daily'
+            ? '오늘 할 수 있는 실천 미션이에요. 완료하면 포인트가 쌓여요.'
+            : '이번 주 팀과 함께하는 미션이에요. 완료하면 팀 기여도도 올라가요.';
 
     return (
-        <Screen>
+        <Screen scrollable>
             <Top
                 title={<Top.TitleParagraph size={22}>미션</Top.TitleParagraph>}
                 subtitle2={
-                    <Top.SubtitleParagraph>완료하면 포인트와 팀 기여도가 쌓여요.</Top.SubtitleParagraph>
+                    <Top.SubtitleParagraph>실천하고 포인트를 모아보세요.</Top.SubtitleParagraph>
                 }
             />
+            <GuideDialogue message={guideMessage} compact />
             <View style={styles.tabs}>
                 <Pressable
                     onPress={() => setTab('daily')}
@@ -106,7 +112,6 @@ const styles = StyleSheet.create({
     tabs: {
         flexDirection: 'row',
         gap: 8,
-        paddingHorizontal: 20,
         marginBottom: 8,
     },
     tab: {

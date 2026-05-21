@@ -2,9 +2,11 @@ import type { Mission } from '@api/mock';
 import { missionStatusLabel } from '@api/mock/missions';
 import { Button, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
+import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
 import type { MissionProgressStatus } from '../user/types';
+import { GuideDialogue } from '../../shared/ui/GuideDialogue';
+import { RewardPointsBadge } from '../../shared/ui/RewardPointsBadge';
 import { Screen } from '../../shared/ui/Screen';
-import { colors } from '../../shared/theme/colors';
 
 type MissionDetailScreenProps = {
     mission: Mission;
@@ -17,31 +19,25 @@ export function MissionDetailScreen({ mission, status, onPressVerify }: MissionD
     const isPending = status === 'pending_review';
 
     return (
-        <Screen>
-            <View style={styles.body}>
+        <Screen scrollable>
+            <View style={styles.hero}>
+                <Txt typography="t1">{mission.emoji}</Txt>
                 <Top
-                    title={<Top.TitleParagraph size={22}>{`${mission.emoji} ${mission.title}`}</Top.TitleParagraph>}
+                    title={<Top.TitleParagraph size={22}>{mission.title}</Top.TitleParagraph>}
                     subtitle2={<Top.SubtitleParagraph>{mission.description}</Top.SubtitleParagraph>}
                 />
-                <View style={styles.card}>
-                    <Txt typography="t5" fontWeight="semibold">
-                        인증 안내
+            </View>
+            <GuideDialogue message={getMissionVerifyMessage(mission.authHint)} mood="think" compact />
+            <RewardPointsBadge points={mission.points} />
+            <View style={styles.note}>
+                <Txt typography="t7" color="grey500">
+                    사진 업로드·위치 인증은 BE 연동 후 연결할 예정이에요. 지금은 인증 화면에서 데모로 제출해요.
+                </Txt>
+                {isPending ? (
+                    <Txt typography="t6" color="grey600" style={styles.status}>
+                        {missionStatusLabel(status)}
                     </Txt>
-                    <Txt typography="t6" color="grey600" style={styles.cardText}>
-                        {mission.authHint}
-                    </Txt>
-                    <Txt typography="t7" color="grey500">
-                        사진 업로드·위치 인증은 BE 연동 후 연결됩니다. 지금은 인증 화면에서 데모로 제출해요.
-                    </Txt>
-                    <Txt typography="t4" fontWeight="bold" color="blue500" style={styles.points}>
-                        +{mission.points}P
-                    </Txt>
-                    {isPending ? (
-                        <Txt typography="t6" color="grey600" style={styles.status}>
-                            {missionStatusLabel(status)}
-                        </Txt>
-                    ) : null}
-                </View>
+                ) : null}
             </View>
             <View style={styles.cta}>
                 <Button
@@ -59,28 +55,18 @@ export function MissionDetailScreen({ mission, status, onPressVerify }: MissionD
 }
 
 const styles = StyleSheet.create({
-    body: {
-        flex: 1,
-        paddingHorizontal: 20,
+    hero: {
+        alignItems: 'center',
+        paddingTop: 8,
     },
-    card: {
+    note: {
         marginTop: 16,
-        backgroundColor: colors.surface,
-        borderRadius: 16,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    cardText: {
-        marginVertical: 12,
-    },
-    points: {
-        marginTop: 12,
+        gap: 8,
     },
     status: {
-        marginTop: 8,
+        marginTop: 4,
     },
     cta: {
-        padding: 20,
+        marginTop: 24,
     },
 });

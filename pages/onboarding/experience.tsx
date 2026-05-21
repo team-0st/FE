@@ -2,6 +2,7 @@ import { createRoute } from '@granite-js/react-native';
 import { OnboardingSurveyListScreen } from '../../src/features/onboarding/OnboardingSurveyListScreen';
 import { EXPERIENCE_OPTIONS } from '../../src/features/onboarding/surveyOptions';
 import { useUser } from '../../src/features/user/UserProvider';
+import { ONBOARDING_GUIDE } from '../../src/shared/constants/guideCopy';
 import { ROUTES } from '../../src/shared/constants/routes';
 
 export const Route = createRoute('/onboarding/experience', {
@@ -14,15 +15,14 @@ function Page() {
 
     return (
         <OnboardingSurveyListScreen
-            title="실천 상황을 알려주세요"
-            subtitle="기존 실천자분을 위한 질문이에요."
+            guideMessage={ONBOARDING_GUIDE.experience}
             options={EXPERIENCE_OPTIONS}
             onSubmit={async (segment) => {
                 await saveOnboarding({
                     practitioner: 'yes',
                     practitionerSegment: segment,
                 });
-                navigation.navigate(ROUTES.home);
+                navigation.replace(ROUTES.home);
             }}
         />
     );

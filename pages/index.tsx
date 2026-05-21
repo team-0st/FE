@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { HomeScreen } from '../src/features/home/HomeScreen';
 import { useUser } from '../src/features/user/UserProvider';
+import { useMainTabPress } from '../src/shared/hooks/useMainTabNavigation';
+import { MainTabShell } from '../src/shared/layout/MainTabShell';
 import { navigateMissionDetail, ROUTES } from '../src/shared/constants/routes';
 import { Screen } from '../src/shared/ui/Screen';
 
@@ -12,6 +14,7 @@ export const Route = createRoute('/', {
 
 function Page() {
     const navigation = Route.useNavigation();
+    const onPressTab = useMainTabPress(navigation);
     const { isReady, state, resetOnboarding } = useUser();
 
     useEffect(() => {
@@ -35,16 +38,16 @@ function Page() {
     }
 
     return (
-        <HomeScreen
-            onPressMissions={() => navigation.navigate(ROUTES.missions)}
-            onPressMission={(id) => navigateMissionDetail(navigation, id)}
-            onPressTeam={() => navigation.navigate(ROUTES.team)}
-            onPressRanking={() => navigation.navigate(ROUTES.ranking)}
-            onPressProfile={() => navigation.navigate(ROUTES.profile)}
-            onPressOnboarding={async () => {
-                await resetOnboarding();
-                navigation.navigate(ROUTES.onboarding);
-            }}
-        />
+        <MainTabShell activeTab="home" onPressTab={onPressTab}>
+            <HomeScreen
+                onPressMissions={() => navigation.navigate(ROUTES.missions)}
+                onPressMission={(id) => navigateMissionDetail(navigation, id)}
+                onPressTeam={() => navigation.replace(ROUTES.team)}
+                onPressOnboarding={async () => {
+                    await resetOnboarding();
+                    navigation.replace(ROUTES.onboarding);
+                }}
+            />
+        </MainTabShell>
     );
 }
