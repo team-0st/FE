@@ -1,16 +1,11 @@
-import { DAILY_MISSIONS, missionStatusLabel, WEEKLY_MISSIONS } from '@api/mock';
+import { DAILY_MISSIONS, missionStatusLabel } from '@api/mock/missions';
 import type { Mission } from '@api/mock';
-import { ListRow, Top, Txt } from '@toss/tds-react-native';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ListRow, Top } from '@toss/tds-react-native';
 import { useUser } from '../user/UserProvider';
 import { missionStatusFor } from '../user/selectors';
 import type { MissionProgressStatus } from '../user/types';
 import { GuideDialogue } from '../../shared/ui/GuideDialogue';
 import { Screen } from '../../shared/ui/Screen';
-import { colors } from '../../shared/theme/colors';
-
-type MissionTab = 'daily' | 'weekly';
 
 type MissionsListScreenProps = {
     onPressMission: (id: string) => void;
@@ -62,41 +57,20 @@ function MissionRow({
 
 export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) {
     const { state } = useUser();
-    const [tab, setTab] = useState<MissionTab>('daily');
-    const missions = tab === 'daily' ? DAILY_MISSIONS : WEEKLY_MISSIONS;
-    const guideMessage =
-        tab === 'daily'
-            ? '오늘 할 수 있는 실천 미션이에요. 완료하면 포인트가 쌓여요.'
-            : '이번 주 팀과 함께하는 미션이에요. 완료하면 팀 기여도도 올라가요.';
 
     return (
         <Screen scrollable>
             <Top
-                title={<Top.TitleParagraph size={22}>미션</Top.TitleParagraph>}
+                title={<Top.TitleParagraph size={22}>일상 실천</Top.TitleParagraph>}
                 subtitle2={
-                    <Top.SubtitleParagraph>실천하고 포인트를 모아보세요.</Top.SubtitleParagraph>
+                    <Top.SubtitleParagraph>샵 방문뿐 아니라 일상 습관을 기록해요.</Top.SubtitleParagraph>
                 }
             />
-            <GuideDialogue message={guideMessage} compact />
-            <View style={styles.tabs}>
-                <Pressable
-                    onPress={() => setTab('daily')}
-                    style={[styles.tab, tab === 'daily' && styles.tabActive]}
-                >
-                    <Txt typography="t6" fontWeight={tab === 'daily' ? 'bold' : 'regular'}>
-                        데일리
-                    </Txt>
-                </Pressable>
-                <Pressable
-                    onPress={() => setTab('weekly')}
-                    style={[styles.tab, tab === 'weekly' && styles.tabActive]}
-                >
-                    <Txt typography="t6" fontWeight={tab === 'weekly' ? 'bold' : 'regular'}>
-                        위클리
-                    </Txt>
-                </Pressable>
-            </View>
-            {missions.map((mission) => (
+            <GuideDialogue
+                message="텀블러, 장바구니, 대중교통처럼 일상에서 할 수 있는 미션이에요."
+                compact
+            />
+            {DAILY_MISSIONS.map((mission) => (
                 <MissionRow
                     key={mission.id}
                     mission={mission}
@@ -107,23 +81,3 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
         </Screen>
     );
 }
-
-const styles = StyleSheet.create({
-    tabs: {
-        flexDirection: 'row',
-        gap: 8,
-        marginBottom: 8,
-    },
-    tab: {
-        paddingVertical: 8,
-        paddingHorizontal: 14,
-        borderRadius: 20,
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    tabActive: {
-        borderColor: colors.primary,
-        backgroundColor: '#E8F3FF',
-    },
-});

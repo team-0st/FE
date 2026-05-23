@@ -13,7 +13,7 @@ export function WeekProgressSection({ done, total }: WeekProgressSectionProps) {
         <View style={styles.container}>
             <View style={styles.row}>
                 <Txt typography="t5" fontWeight="semibold">
-                    이번 주 실천률
+                    이번 주 실천
                 </Txt>
                 <Txt typography="t6" fontWeight="bold" color="blue500">
                     {done}/{total}
@@ -21,7 +21,7 @@ export function WeekProgressSection({ done, total }: WeekProgressSectionProps) {
             </View>
             <ProgressBar progress={progress} size="normal" color={colors.success} style={styles.bar} />
             <Txt typography="t7" color="grey600">
-                미션을 완료할수록 팀 순위에 반영돼요.
+                미션을 완료할수록 실천 기록이 쌓여요.
             </Txt>
         </View>
     );

@@ -2,14 +2,14 @@ import { ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { segmentLabel } from '../onboarding/surveyOptions';
 import { useUser } from '../user/UserProvider';
-import { resolveTeamName } from '../user/selectors';
+import { resolveShopName } from '../user/selectors';
 import { GuideDialogue } from '../../shared/ui/GuideDialogue';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
 export function ProfileScreen() {
     const { state } = useUser();
-    const teamName = resolveTeamName(state.teamId);
+    const shopName = resolveShopName(state.shopId);
     const segmentSummary =
         state.onboarding != null
             ? segmentLabel({
@@ -23,20 +23,20 @@ export function ProfileScreen() {
     return (
         <Screen scrollable>
             <Top
-                title={<Top.TitleParagraph size={22}>프로필</Top.TitleParagraph>}
-                subtitle2={<Top.SubtitleParagraph>제로스트 활동 정보</Top.SubtitleParagraph>}
+                title={<Top.TitleParagraph size={22}>기록</Top.TitleParagraph>}
+                subtitle2={<Top.SubtitleParagraph>내 실천과 설문 상태</Top.SubtitleParagraph>}
             />
             <GuideDialogue
-                message={`지금까지 ${stampCount}개의 미션을 완료했어요. 계속 실천하면 스탬프가 더 쌓여요.`}
+                message={`${stampCount}개의 미션을 완료했어요. 시작·종료 설문으로 변화를 확인해요.`}
                 mood="happy"
                 compact
             />
             <View style={styles.card}>
-                <Txt typography="t4" fontWeight="bold" style={styles.nickname}>
+                <Txt typography="t4" fontWeight="bold">
                     {state.nickname}
                 </Txt>
                 <Txt typography="t6" color="grey600">
-                    {`${teamName} 팀`}
+                    {shopName}
                 </Txt>
                 <View style={styles.stats}>
                     <Txt typography="t6">연속 {state.streakDays}일</Txt>
@@ -47,19 +47,19 @@ export function ProfileScreen() {
                 <View style={styles.stamp}>
                     <Txt typography="t3">🌱</Txt>
                     <Txt typography="t7" color="grey600">
-                        실천 스탬프
+                        완료 미션
                     </Txt>
                     <Txt typography="t5" fontWeight="bold">
                         {stampCount}개
                     </Txt>
                 </View>
                 <View style={styles.stamp}>
-                    <Txt typography="t3">🔥</Txt>
+                    <Txt typography="t3">📋</Txt>
                     <Txt typography="t7" color="grey600">
-                        연속 출석
+                        설문
                     </Txt>
                     <Txt typography="t5" fontWeight="bold">
-                        {state.streakDays}일
+                        {state.preSurveyDone ? '사전 완료' : '사전 미완료'}
                     </Txt>
                 </View>
             </View>
@@ -70,16 +70,10 @@ export function ProfileScreen() {
             />
             <ListRow
                 contents={
-                    <ListRow.Texts type="2RowTypeA" top="알림 설정" bottom="하루 1회 요약" />
-                }
-                right={<ListRow.RightTexts type="1RowTypeA" top="ON" />}
-            />
-            <ListRow
-                contents={
                     <ListRow.Texts
                         type="2RowTypeA"
-                        top="계정"
-                        bottom="토스 로그인 없이 앱인토스 식별·저장소로 이용해요 (MVP)"
+                        top="사후 설문"
+                        bottom={state.postSurveyDone ? '완료' : '기간 종료 후 진행'}
                     />
                 }
             />
@@ -96,9 +90,6 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         borderWidth: 1,
         borderColor: colors.border,
-    },
-    nickname: {
-        marginTop: 4,
     },
     stats: {
         marginTop: 16,

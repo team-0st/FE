@@ -1,5 +1,4 @@
 import type { OnboardingResult } from '../../api/mock/onboardingTypes';
-import type { AnimalTeamId } from '../../shared/constants/animalTeams';
 import {
     createContext,
     useCallback,
@@ -17,7 +16,7 @@ import {
     approveMission,
     checkIn,
     completeOnboarding,
-    setTeamId,
+    setShopId,
     submitMissionReview,
 } from './userStateLogic';
 
@@ -27,7 +26,7 @@ type UserContextValue = {
     checkInToday: () => Promise<void>;
     saveOnboarding: (result: OnboardingResult) => Promise<void>;
     resetOnboarding: () => Promise<void>;
-    selectTeam: (teamId: AnimalTeamId) => Promise<void>;
+    selectShop: (shopId: string) => Promise<void>;
     submitMission: (missionId: string) => Promise<void>;
     approveMissionDemo: (missionId: string, points: number) => Promise<void>;
 };
@@ -77,8 +76,8 @@ export function UserProvider({ children }: PropsWithChildren) {
             resetOnboarding: async () => {
                 await persist((prev) => ({ ...prev, onboardingCompleted: false, onboarding: null }));
             },
-            selectTeam: async (teamId) => {
-                await persist((prev) => setTeamId(prev, teamId));
+            selectShop: async (shopId) => {
+                await persist((prev) => setShopId(prev, shopId));
             },
             submitMission: async (missionId) => {
                 await persist((prev) => submitMissionReview(prev, missionId));

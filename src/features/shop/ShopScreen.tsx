@@ -1,0 +1,95 @@
+import { getShopById, MOCK_SHOPS } from '@api/mock';
+import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
+import { StyleSheet, View } from 'react-native';
+import { useUser } from '../user/UserProvider';
+import { GuideDialogue } from '../../shared/ui/GuideDialogue';
+import { Screen } from '../../shared/ui/Screen';
+import { colors } from '../../shared/theme/colors';
+
+type ShopScreenProps = {
+    onPressSelectShop: () => void;
+};
+
+export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
+    const { state } = useUser();
+    const shop = state.shopId != null ? getShopById(state.shopId) : undefined;
+
+    return (
+        <Screen scrollable>
+            <Top
+                title={<Top.TitleParagraph size={22}>내 샵</Top.TitleParagraph>}
+                subtitle2={
+                    <Top.SubtitleParagraph>함께 실천하는 제로웨이스트 샵이에요.</Top.SubtitleParagraph>
+                }
+            />
+            {shop != null ? (
+                <>
+                    <GuideDialogue message={`${shop.name}과 함께 일상 실천을 이어가요.`} compact />
+                    <View style={styles.card}>
+                        <Txt typography="t1">{shop.emoji}</Txt>
+                        <Txt typography="t4" fontWeight="bold" style={styles.name}>
+                            {shop.name}
+                        </Txt>
+                        <Txt typography="t6" color="grey600">
+                            {shop.area}
+                        </Txt>
+                        <Txt typography="t6" color="grey700" style={styles.philosophy}>
+                            {shop.philosophy}
+                        </Txt>
+                    </View>
+                </>
+            ) : (
+                <GuideDialogue message="아직 선택한 샵이 없어요. 파일럿 샵을 선택해 주세요." mood="think" />
+            )}
+            <Button size="medium" type="dark" style="weak" onPress={onPressSelectShop}>
+                {shop != null ? '샵 바꾸기' : '샵 선택하기'}
+            </Button>
+            <Txt typography="t5" fontWeight="semibold" style={styles.section}>
+                파일럿 샵
+            </Txt>
+            {MOCK_SHOPS.map((item) => (
+                <ListRow
+                    key={item.id}
+                    contents={
+                        <ListRow.Texts
+                            type="2RowTypeA"
+                            top={`${item.emoji} ${item.name}`}
+                            topProps={{ fontWeight: 'bold' }}
+                            bottom={item.area}
+                        />
+                    }
+                    right={
+                        state.shopId === item.id ? (
+                            <ListRow.RightTexts type="1RowTypeA" top="내 샵" topProps={{ color: 'blue500' }} />
+                        ) : undefined
+                    }
+                />
+            ))}
+        </Screen>
+    );
+}
+
+const styles = StyleSheet.create({
+    card: {
+        backgroundColor: colors.surface,
+        borderRadius: 16,
+        padding: 24,
+        alignItems: 'center',
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    name: {
+        marginTop: 12,
+        marginBottom: 4,
+    },
+    philosophy: {
+        marginTop: 12,
+        textAlign: 'center',
+        lineHeight: 22,
+    },
+    section: {
+        marginTop: 24,
+        marginBottom: 8,
+    },
+});

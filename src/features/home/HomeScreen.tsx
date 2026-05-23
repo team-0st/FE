@@ -1,10 +1,11 @@
-import { DAILY_MISSIONS, getTeamById } from '@api/mock';
+import { getShopById } from '@api/mock';
 import { Button, Txt } from '@toss/tds-react-native';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { getHomeGuideMessage } from '../../shared/constants/guideCopy';
 import { segmentLabel } from '../onboarding/surveyOptions';
 import { useUser } from '../user/UserProvider';
-import { isUserCheckedInToday, missionStatusFor, resolveTeamName } from '../user/selectors';
+import { isUserCheckedInToday, missionStatusFor, resolveShopName } from '../user/selectors';
+import { DAILY_MISSIONS } from '@api/mock/missions';
+import { getHomeGuideMessage } from '../../shared/constants/guideCopy';
 import { GuideDialogue } from '../../shared/ui/GuideDialogue';
 import { HomeHero } from '../../shared/ui/HomeHero';
 import { MissionCard } from '../../shared/ui/MissionCard';
@@ -16,20 +17,20 @@ import { WeekProgressSection } from '../../shared/ui/WeekProgressSection';
 type HomeScreenProps = {
     onPressMissions: () => void;
     onPressMission: (id: string) => void;
-    onPressTeam: () => void;
+    onPressShop: () => void;
     onPressOnboarding: () => void;
 };
 
 export function HomeScreen({
     onPressMissions,
     onPressMission,
-    onPressTeam,
+    onPressShop,
     onPressOnboarding,
 }: HomeScreenProps) {
     const { state, checkInToday } = useUser();
     const checkedIn = isUserCheckedInToday(state);
-    const teamName = resolveTeamName(state.teamId);
-    const team = state.teamId != null ? getTeamById(state.teamId) : undefined;
+    const shop = state.shopId != null ? getShopById(state.shopId) : undefined;
+    const shopName = resolveShopName(state.shopId);
     const guideMessage = getHomeGuideMessage(state);
     const segmentSummary =
         state.onboarding != null
@@ -46,9 +47,9 @@ export function HomeScreen({
                 nickname={state.nickname}
                 totalPoints={state.totalPoints}
                 streakDays={state.streakDays}
-                teamId={state.teamId}
-                teamEmoji={team?.emoji ?? '🌿'}
-                teamName={teamName}
+                shopEmoji={shop?.emoji ?? '🏪'}
+                shopName={shopName}
+                shopArea={shop?.area ?? '샵 선택 필요'}
             />
             <GuideDialogue message={guideMessage} mood={checkedIn ? 'happy' : 'cheer'} compact />
             <View style={styles.statRow}>
@@ -62,10 +63,10 @@ export function HomeScreen({
                         }
                     }}
                 />
-                <StatCard label="내 팀" value={`${teamName} 팀`} hint="팀 보기" onPress={onPressTeam} />
+                <StatCard label="내 샵" value={shopName} hint="샵 보기" onPress={onPressShop} />
             </View>
             <WeekProgressSection done={state.weeklyMissionDone} total={state.weeklyMissionTotal} />
-            <SectionHeader title="오늘의 미션" actionLabel="전체" onPressAction={onPressMissions} />
+            <SectionHeader title="오늘의 실천" actionLabel="전체" onPressAction={onPressMissions} />
             <FlatList
                 horizontal
                 data={DAILY_MISSIONS}
@@ -81,7 +82,7 @@ export function HomeScreen({
                 style={styles.missionList}
             />
             <Button size="large" type="primary" display="block" onPress={onPressMissions}>
-                미션 하러 가기
+                실천 미션 하러 가기
             </Button>
             {segmentSummary != null ? (
                 <Txt typography="t7" color="grey600" style={styles.segmentHint}>

@@ -42,7 +42,7 @@ function Page() {
             <HomeScreen
                 onPressMissions={() => navigation.navigate(ROUTES.missions)}
                 onPressMission={(id) => navigateMissionDetail(navigation, id)}
-                onPressTeam={() => navigation.replace(ROUTES.team)}
+                onPressShop={() => navigation.replace(ROUTES.shop)}
                 onPressOnboarding={async () => {
                     await resetOnboarding();
                     navigation.replace(ROUTES.onboarding);

@@ -1,13 +1,12 @@
-import { getTeamById } from '@api/mock';
-import type { AnimalTeamId } from '../../shared/constants/animalTeams';
+import { getShopById } from '@api/mock';
 import type { AppUserState, MissionProgressStatus } from './types';
 import { getMissionStatus, isCheckedInToday } from './userStateLogic';
 
-export function resolveTeamName(teamId: AnimalTeamId | null): string {
-    if (teamId == null) {
+export function resolveShopName(shopId: string | null): string {
+    if (shopId == null) {
         return '미선택';
     }
-    return getTeamById(teamId)?.name ?? teamId;
+    return getShopById(shopId)?.name ?? shopId;
 }
 
 export function missionStatusFor(state: AppUserState, missionId: string): MissionProgressStatus {

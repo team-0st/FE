@@ -6,9 +6,8 @@ export const ROUTES = {
     onboardingExperience: '/onboarding/experience',
     onboardingInterest: '/onboarding/interest',
     missions: '/missions',
-    team: '/team',
-    teamSelect: '/team/select',
-    ranking: '/ranking',
+    shop: '/shop',
+    shopSelect: '/shop/select',
     profile: '/profile',
 } as const;
 

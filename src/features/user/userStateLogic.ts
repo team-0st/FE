@@ -1,5 +1,4 @@
 import type { OnboardingResult } from '../../api/mock/onboardingTypes';
-import type { AnimalTeamId } from '../../shared/constants/animalTeams';
 import type { AppUserState, MissionProgressStatus } from './types';
 
 export function formatDateKey(date: Date): string {
@@ -36,8 +35,8 @@ export function completeOnboarding(state: AppUserState, onboarding: OnboardingRe
     };
 }
 
-export function setTeamId(state: AppUserState, teamId: AnimalTeamId): AppUserState {
-    return { ...state, teamId };
+export function setShopId(state: AppUserState, shopId: string): AppUserState {
+    return { ...state, shopId };
 }
 
 export function getMissionStatus(state: AppUserState, missionId: string): MissionProgressStatus {
@@ -74,8 +73,4 @@ export function approveMission(state: AppUserState, missionId: string, points: n
         weeklyMissionDone,
         totalPoints: next.totalPoints + points,
     };
-}
-
-export function countCompletedMissions(state: AppUserState, missionIds: string[]): number {
-    return missionIds.filter((id) => state.missionProgress[id]?.status === 'completed').length;
 }

@@ -2,7 +2,7 @@ import { ROUTES } from '../constants/routes';
 import type { MainTabId } from '../layout/MainTabBar';
 
 type TabNavigation = {
-    replace: (screen: '/' | '/missions' | '/ranking' | '/team' | '/profile') => void;
+    replace: (screen: '/' | '/missions' | '/shop' | '/profile') => void;
 };
 
 export function useMainTabPress(navigation: TabNavigation) {
@@ -15,12 +15,8 @@ export function useMainTabPress(navigation: TabNavigation) {
             navigation.replace('/missions');
             return;
         }
-        if (route === ROUTES.ranking) {
-            navigation.replace('/ranking');
-            return;
-        }
-        if (route === ROUTES.team) {
-            navigation.replace('/team');
+        if (route === ROUTES.shop) {
+            navigation.replace('/shop');
             return;
         }
         if (route === ROUTES.profile) {
@@ -33,11 +29,8 @@ export function tabIdFromRoute(pathname: string): MainTabId {
     if (pathname.startsWith('/missions')) {
         return 'missions';
     }
-    if (pathname === ROUTES.ranking) {
-        return 'ranking';
-    }
-    if (pathname.startsWith('/team')) {
-        return 'team';
+    if (pathname.startsWith('/shop')) {
+        return 'shop';
     }
     if (pathname === ROUTES.profile) {
         return 'profile';

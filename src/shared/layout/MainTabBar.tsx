@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ROUTES } from '../constants/routes';
 import { colors } from '../theme/colors';
 
-export type MainTabId = 'home' | 'missions' | 'ranking' | 'team' | 'profile';
+export type MainTabId = 'home' | 'missions' | 'shop' | 'profile';
 
 type TabItem = {
     id: MainTabId;
@@ -13,10 +13,9 @@ type TabItem = {
 
 export const MAIN_TABS: TabItem[] = [
     { id: 'home', label: '홈', route: ROUTES.home },
-    { id: 'missions', label: '미션', route: ROUTES.missions },
-    { id: 'ranking', label: '랭킹', route: ROUTES.ranking },
-    { id: 'team', label: '팀', route: ROUTES.team },
-    { id: 'profile', label: '프로필', route: ROUTES.profile },
+    { id: 'missions', label: '실천', route: ROUTES.missions },
+    { id: 'shop', label: '내 샵', route: ROUTES.shop },
+    { id: 'profile', label: '기록', route: ROUTES.profile },
 ];
 
 type MainTabBarProps = {

@@ -1,27 +1,18 @@
+import { APP_DISPLAY_NAME } from '../constants/app';
 import { Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
-import type { AnimalTeamId } from '../constants/animalTeams';
-import { APP_DISPLAY_NAME } from '../constants/app';
 import { colors } from '../theme/colors';
-import { TeamAvatar } from './TeamAvatar';
 
 type HomeHeroProps = {
     nickname: string;
     totalPoints: number;
     streakDays: number;
-    teamId: AnimalTeamId | null;
-    teamEmoji: string;
-    teamName: string;
+    shopEmoji: string;
+    shopName: string;
+    shopArea: string;
 };
 
-export function HomeHero({
-    nickname,
-    totalPoints,
-    streakDays,
-    teamId,
-    teamEmoji,
-    teamName,
-}: HomeHeroProps) {
+export function HomeHero({ nickname, totalPoints, streakDays, shopEmoji, shopName, shopArea }: HomeHeroProps) {
     return (
         <View style={styles.hero}>
             <View style={styles.textBlock}>
@@ -35,14 +26,15 @@ export function HomeHero({
                     {`누적 ${totalPoints}P · 연속 ${streakDays}일`}
                 </Txt>
             </View>
-            {teamId != null ? (
-                <View style={styles.teamBadge}>
-                    <TeamAvatar animalId={teamId} emoji={teamEmoji} size="medium" />
-                    <Txt typography="t7" color="grey600" style={styles.teamLabel}>
-                        {`${teamName} 팀`}
-                    </Txt>
-                </View>
-            ) : null}
+            <View style={styles.shopBadge}>
+                <Txt typography="t1">{shopEmoji}</Txt>
+                <Txt typography="t7" fontWeight="semibold" style={styles.shopLabel}>
+                    {shopName}
+                </Txt>
+                <Txt typography="t7" color="grey500">
+                    {shopArea}
+                </Txt>
+            </View>
         </View>
     );
 }
@@ -66,11 +58,13 @@ const styles = StyleSheet.create({
         marginTop: 4,
         marginBottom: 4,
     },
-    teamBadge: {
+    shopBadge: {
         alignItems: 'center',
-        gap: 4,
+        gap: 2,
+        maxWidth: 120,
     },
-    teamLabel: {
+    shopLabel: {
         marginTop: 4,
+        textAlign: 'center',
     },
 });
