@@ -9,7 +9,6 @@ module.exports = {
           '@app': './src/app',
           '@api': './src/api',
           '@features': './src/features',
-          '@platform': './src/platform',
           '@shared': './src/shared',
         },
       },

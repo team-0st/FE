@@ -1,4 +1,3 @@
-/** TDS light-mode friendly palette */
 export const colors = {
     background: '#F9FAFB',
     surface: '#FFFFFF',
@@ -6,7 +5,6 @@ export const colors = {
     success: '#00A870',
     sprout: '#2DB87A',
     sproutTint: '#E8F8F0',
-    reward: '#FFB800',
     textPrimary: '#191F28',
     textSecondary: '#6B7684',
     border: '#E5E8EB',

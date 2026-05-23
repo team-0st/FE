@@ -1,4 +1,3 @@
-import type { OnboardingResult } from '../../api/mock/onboardingTypes';
 import type { AppUserState, MissionProgressStatus } from './types';
 
 export function formatDateKey(date: Date): string {
@@ -27,11 +26,11 @@ export function checkIn(state: AppUserState, today = formatDateKey(new Date())):
     };
 }
 
-export function completeOnboarding(state: AppUserState, onboarding: OnboardingResult): AppUserState {
+export function finishOnboarding(state: AppUserState, shopId: string): AppUserState {
     return {
         ...state,
+        shopId,
         onboardingCompleted: true,
-        onboarding,
     };
 }
 

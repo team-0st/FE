@@ -5,9 +5,7 @@ declare module '@granite-js/react-native' {
         '/': Record<string, never> | undefined;
         '/login': Record<string, never> | undefined;
         '/onboarding': Record<string, never> | undefined;
-        '/onboarding/practitioner': Record<string, never> | undefined;
-        '/onboarding/experience': Record<string, never> | undefined;
-        '/onboarding/interest': Record<string, never> | undefined;
+        '/onboarding/shop': Record<string, never> | undefined;
         '/missions': Record<string, never> | undefined;
         '/missions/:id': { id: string };
         '/missions/:id/verify': { id: string };
@@ -21,9 +19,7 @@ declare module '@granite-js/react-native' {
         '/': Record<string, never> | undefined;
         '/login': Record<string, never> | undefined;
         '/onboarding': Record<string, never> | undefined;
-        '/onboarding/practitioner': Record<string, never> | undefined;
-        '/onboarding/experience': Record<string, never> | undefined;
-        '/onboarding/interest': Record<string, never> | undefined;
+        '/onboarding/shop': Record<string, never> | undefined;
         '/missions': Record<string, never> | undefined;
         '/missions/:id': { id: string };
         '/missions/:id/verify': { id: string };

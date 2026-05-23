@@ -1,4 +1,3 @@
-/** 가이드 캐릭터 (12동물 팀과 별도) */
 export const GUIDE_CHARACTER = {
     name: '새싹',
     emoji: '🌱',

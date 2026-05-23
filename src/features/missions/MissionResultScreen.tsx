@@ -3,7 +3,7 @@ import { Button, Txt } from '@toss/tds-react-native';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { getMissionCompleteMessage } from '../../shared/constants/guideCopy';
-import { GuideDialogue } from '../../shared/ui/GuideDialogue';
+import { GuideHero } from '../../shared/ui/GuideHero';
 import { RewardPointsBadge } from '../../shared/ui/RewardPointsBadge';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
@@ -27,7 +27,7 @@ export function MissionResultScreen({ mission, onApproved, onPressHome }: Missio
     return (
         <Screen scrollable>
             <View style={styles.body}>
-                <GuideDialogue message={getMissionCompleteMessage(mission.points)} mood="happy" />
+                <GuideHero message={getMissionCompleteMessage(mission.points)} mood="happy" align="start" />
                 <View style={styles.card}>
                     <Txt typography="t1">{mission.emoji}</Txt>
                     <Txt typography="t5" fontWeight="bold" style={styles.title}>

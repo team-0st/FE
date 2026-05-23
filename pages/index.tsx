@@ -15,7 +15,7 @@ export const Route = createRoute('/', {
 function Page() {
     const navigation = Route.useNavigation();
     const onPressTab = useMainTabPress(navigation);
-    const { isReady, state, resetOnboarding } = useUser();
+    const { isReady, state } = useUser();
 
     useEffect(() => {
         if (isReady && !state.onboardingCompleted) {
@@ -43,10 +43,6 @@ function Page() {
                 onPressMissions={() => navigation.navigate(ROUTES.missions)}
                 onPressMission={(id) => navigateMissionDetail(navigation, id)}
                 onPressShop={() => navigation.replace(ROUTES.shop)}
-                onPressOnboarding={async () => {
-                    await resetOnboarding();
-                    navigation.replace(ROUTES.onboarding);
-                }}
             />
         </MainTabShell>
     );

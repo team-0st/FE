@@ -4,9 +4,7 @@
 import { Route as _IndexRoute } from '../pages/';
 import { Route as _LoginRoute } from '../pages/login';
 import { Route as _OnboardingRoute } from '../pages/onboarding/';
-import { Route as _OnboardingPractitionerRoute } from '../pages/onboarding/practitioner';
-import { Route as _OnboardingExperienceRoute } from '../pages/onboarding/experience';
-import { Route as _OnboardingInterestRoute } from '../pages/onboarding/interest';
+import { Route as _OnboardingShopRoute } from '../pages/onboarding/shop';
 import { Route as _MissionsRoute } from '../pages/missions/';
 import { Route as _MissionDetailRoute } from '../pages/missions/[id]';
 import { Route as _MissionVerifyRoute } from '../pages/missions/[id]/verify';
@@ -22,9 +20,7 @@ declare module '@granite-js/react-native' {
     '/': (typeof _IndexRoute)['_inputType'];
     '/login': (typeof _LoginRoute)['_inputType'];
     '/onboarding': (typeof _OnboardingRoute)['_inputType'];
-    '/onboarding/practitioner': (typeof _OnboardingPractitionerRoute)['_inputType'];
-    '/onboarding/experience': (typeof _OnboardingExperienceRoute)['_inputType'];
-    '/onboarding/interest': (typeof _OnboardingInterestRoute)['_inputType'];
+    '/onboarding/shop': (typeof _OnboardingShopRoute)['_inputType'];
     '/missions': (typeof _MissionsRoute)['_inputType'];
     '/missions/:id': MissionDetailParams;
     '/missions/:id/verify': MissionDetailParams;
@@ -38,9 +34,7 @@ declare module '@granite-js/react-native' {
     '/': (typeof _IndexRoute)['_outputType'];
     '/login': (typeof _LoginRoute)['_outputType'];
     '/onboarding': (typeof _OnboardingRoute)['_outputType'];
-    '/onboarding/practitioner': (typeof _OnboardingPractitionerRoute)['_outputType'];
-    '/onboarding/experience': (typeof _OnboardingExperienceRoute)['_outputType'];
-    '/onboarding/interest': (typeof _OnboardingInterestRoute)['_outputType'];
+    '/onboarding/shop': (typeof _OnboardingShopRoute)['_outputType'];
     '/missions': (typeof _MissionsRoute)['_outputType'];
     '/missions/:id': MissionDetailParams;
     '/missions/:id/verify': MissionDetailParams;

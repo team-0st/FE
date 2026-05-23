@@ -1,7 +1,7 @@
 import { Button } from '@toss/tds-react-native';
-import { StyleSheet, View } from 'react-native';
 import { ONBOARDING_GUIDE } from '../../shared/constants/guideCopy';
-import { GuideDialogue } from '../../shared/ui/GuideDialogue';
+import { CenterStage } from '../../shared/ui/CenterStage';
+import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
 
 type OnboardingScreenProps = {
@@ -11,26 +11,15 @@ type OnboardingScreenProps = {
 export function OnboardingScreen({ onPressStart }: OnboardingScreenProps) {
     return (
         <Screen>
-            <View style={styles.body}>
-                <GuideDialogue message={ONBOARDING_GUIDE.intro} mood="cheer" />
-            </View>
-            <View style={styles.cta}>
-                <Button size="large" type="primary" display="block" onPress={onPressStart}>
-                    시작하기
-                </Button>
-            </View>
+            <CenterStage
+                footer={
+                    <Button size="large" type="primary" display="block" onPress={onPressStart}>
+                        시작하기
+                    </Button>
+                }
+            >
+                <GuideHero message={ONBOARDING_GUIDE.intro} mood="cheer" size="hero" animate />
+            </CenterStage>
         </Screen>
     );
 }
-
-const styles = StyleSheet.create({
-    body: {
-        flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 24,
-        justifyContent: 'center',
-    },
-    cta: {
-        padding: 20,
-    },
-});

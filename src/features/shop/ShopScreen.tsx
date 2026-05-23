@@ -2,7 +2,7 @@ import { getShopById, MOCK_SHOPS } from '@api/mock';
 import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
-import { GuideDialogue } from '../../shared/ui/GuideDialogue';
+import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
@@ -24,7 +24,11 @@ export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
             />
             {shop != null ? (
                 <>
-                    <GuideDialogue message={`${shop.name}과 함께 일상 실천을 이어가요.`} compact />
+                    <GuideHero
+                        message={`${shop.name}과 함께 일상 실천을 이어가요.`}
+                        align="start"
+                        compact
+                    />
                     <View style={styles.card}>
                         <Txt typography="t1">{shop.emoji}</Txt>
                         <Txt typography="t4" fontWeight="bold" style={styles.name}>
@@ -39,7 +43,12 @@ export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
                     </View>
                 </>
             ) : (
-                <GuideDialogue message="아직 선택한 샵이 없어요. 파일럿 샵을 선택해 주세요." mood="think" />
+                <GuideHero
+                    message="아직 선택한 샵이 없어요. 파일럿 샵을 선택해 주세요."
+                    mood="think"
+                    align="start"
+                    compact
+                />
             )}
             <Button size="medium" type="dark" style="weak" onPress={onPressSelectShop}>
                 {shop != null ? '샵 바꾸기' : '샵 선택하기'}

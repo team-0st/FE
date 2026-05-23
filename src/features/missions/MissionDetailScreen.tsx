@@ -4,7 +4,7 @@ import { Button, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
 import type { MissionProgressStatus } from '../user/types';
-import { GuideDialogue } from '../../shared/ui/GuideDialogue';
+import { GuideHero } from '../../shared/ui/GuideHero';
 import { RewardPointsBadge } from '../../shared/ui/RewardPointsBadge';
 import { Screen } from '../../shared/ui/Screen';
 
@@ -27,7 +27,12 @@ export function MissionDetailScreen({ mission, status, onPressVerify }: MissionD
                     subtitle2={<Top.SubtitleParagraph>{mission.description}</Top.SubtitleParagraph>}
                 />
             </View>
-            <GuideDialogue message={getMissionVerifyMessage(mission.authHint)} mood="think" compact />
+            <GuideHero
+                message={getMissionVerifyMessage(mission.authHint)}
+                mood="think"
+                align="start"
+                compact
+            />
             <RewardPointsBadge points={mission.points} />
             <View style={styles.note}>
                 <Txt typography="t7" color="grey500">

@@ -3,7 +3,7 @@ import { Button, Txt } from '@toss/tds-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
-import { GuideDialogue } from '../../shared/ui/GuideDialogue';
+import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
@@ -18,7 +18,7 @@ export function MissionVerifyScreen({ mission, onSubmit }: MissionVerifyScreenPr
     return (
         <Screen>
             <View style={styles.body}>
-                <GuideDialogue message={getMissionVerifyMessage(mission.authHint)} compact />
+                <GuideHero message={getMissionVerifyMessage(mission.authHint)} align="start" compact />
                 <View style={styles.placeholder}>
                     <Txt typography="t1">{picked ? '📷' : '🖼️'}</Txt>
                     <Txt typography="t6" color="grey600" style={styles.hint}>

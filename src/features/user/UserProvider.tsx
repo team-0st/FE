@@ -1,4 +1,3 @@
-import type { OnboardingResult } from '../../api/mock/onboardingTypes';
 import {
     createContext,
     useCallback,
@@ -15,7 +14,7 @@ import type { AppUserState } from './types';
 import {
     approveMission,
     checkIn,
-    completeOnboarding,
+    finishOnboarding as finishOnboardingState,
     setShopId,
     submitMissionReview,
 } from './userStateLogic';
@@ -24,8 +23,7 @@ type UserContextValue = {
     isReady: boolean;
     state: AppUserState;
     checkInToday: () => Promise<void>;
-    saveOnboarding: (result: OnboardingResult) => Promise<void>;
-    resetOnboarding: () => Promise<void>;
+    finishOnboarding: (shopId: string) => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
     submitMission: (missionId: string) => Promise<void>;
     approveMissionDemo: (missionId: string, points: number) => Promise<void>;
@@ -70,11 +68,8 @@ export function UserProvider({ children }: PropsWithChildren) {
             checkInToday: async () => {
                 await persist((prev) => checkIn(prev));
             },
-            saveOnboarding: async (result) => {
-                await persist((prev) => completeOnboarding(prev, result));
-            },
-            resetOnboarding: async () => {
-                await persist((prev) => ({ ...prev, onboardingCompleted: false, onboarding: null }));
+            finishOnboarding: async (shopId) => {
+                await persist((prev) => finishOnboardingState(prev, shopId));
             },
             selectShop: async (shopId) => {
                 await persist((prev) => setShopId(prev, shopId));
