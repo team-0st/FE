@@ -1,6 +1,7 @@
 import { DAILY_MISSIONS, missionStatusLabel } from '@api/mock/missions';
 import type { Mission } from '@api/mock';
-import { ListRow, Top } from '@toss/tds-react-native';
+import { ListRow, Top, Txt } from '@toss/tds-react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { useUser } from '../user/UserProvider';
 import { missionStatusFor } from '../user/selectors';
 import type { MissionProgressStatus } from '../user/types';
@@ -9,6 +10,7 @@ import { Screen } from '../../shared/ui/Screen';
 
 type MissionsListScreenProps = {
     onPressMission: (id: string) => void;
+    onPressBack?: () => void;
 };
 
 function statusColor(status: MissionProgressStatus): 'green500' | 'blue500' | 'grey500' {
@@ -55,15 +57,22 @@ function MissionRow({
     );
 }
 
-export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) {
+export function MissionsListScreen({ onPressMission, onPressBack }: MissionsListScreenProps) {
     const { state } = useUser();
 
     return (
         <Screen scrollable>
+            {onPressBack != null ? (
+                <Pressable onPress={onPressBack} style={styles.back} accessibilityRole="button">
+                    <Txt typography="t6" color="blue500">
+                        ← 홈
+                    </Txt>
+                </Pressable>
+            ) : null}
             <Top
-                title={<Top.TitleParagraph size={22}>일상 실천</Top.TitleParagraph>}
+                title={<Top.TitleParagraph size={22}>오늘의 미션</Top.TitleParagraph>}
                 subtitle2={
-                    <Top.SubtitleParagraph>샵 방문뿐 아니라 일상 습관을 기록해요.</Top.SubtitleParagraph>
+                    <Top.SubtitleParagraph>미션을 완료하면 재료가 쌓여요.</Top.SubtitleParagraph>
                 }
             />
             <GuideHero
@@ -82,3 +91,11 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
         </Screen>
     );
 }
+
+const styles = StyleSheet.create({
+    back: {
+        alignSelf: 'flex-start',
+        paddingVertical: 8,
+        marginBottom: 4,
+    },
+});

@@ -16,7 +16,7 @@ function Page() {
             initialShopId={state.shopId}
             onPressComplete={async (shopId) => {
                 await selectShop(shopId);
-                navigation.navigate(ROUTES.shop);
+                navigation.replace(ROUTES.profile);
             }}
         />
     );

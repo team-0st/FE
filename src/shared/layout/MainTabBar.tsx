@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ROUTES } from '../constants/routes';
 import { colors } from '../theme/colors';
 
-export type MainTabId = 'home' | 'missions' | 'shop' | 'profile';
+export type MainTabId = 'ingredients' | 'home' | 'recipes' | 'profile';
 
 type TabItem = {
     id: MainTabId;
@@ -12,10 +12,10 @@ type TabItem = {
 };
 
 export const MAIN_TABS: TabItem[] = [
+    { id: 'ingredients', label: '재료', route: ROUTES.ingredients },
     { id: 'home', label: '홈', route: ROUTES.home },
-    { id: 'missions', label: '실천', route: ROUTES.missions },
-    { id: 'shop', label: '내 샵', route: ROUTES.shop },
-    { id: 'profile', label: '기록', route: ROUTES.profile },
+    { id: 'recipes', label: '레시피', route: ROUTES.recipes },
+    { id: 'profile', label: '마이', route: ROUTES.profile },
 ];
 
 type MainTabBarProps = {
@@ -39,7 +39,7 @@ export function MainTabBar({ activeTab, onPressTab }: MainTabBarProps) {
                         <Txt
                             typography="t7"
                             fontWeight={active ? 'bold' : 'regular'}
-                            color={active ? 'blue500' : 'grey500'}
+                            style={{ color: active ? colors.primary : colors.textSecondary }}
                         >
                             {tab.label}
                         </Txt>

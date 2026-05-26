@@ -11,9 +11,13 @@ import {
 import { DEFAULT_USER_STATE } from './defaultState';
 import { loadUserState, saveUserState } from './userRepository';
 import type { AppUserState } from './types';
+import type { Recipe } from '@api/mock/recipes';
+import { findMatchingRecipe, findRecipeBySlots } from '@api/mock/recipes';
 import {
     approveMission,
     checkIn,
+    completeRecipe,
+    consumeIngredientsForSlots,
     finishOnboarding as finishOnboardingState,
     setShopId,
     submitMissionReview,
@@ -27,6 +31,9 @@ type UserContextValue = {
     selectShop: (shopId: string) => Promise<void>;
     submitMission: (missionId: string) => Promise<void>;
     approveMissionDemo: (missionId: string, points: number) => Promise<void>;
+    brewSoup: (slots: (string | null)[]) => Promise<
+        { ok: true; recipe: Recipe } | { ok: false; reason: 'incomplete' | 'no_match' | 'already_done' | 'no_stock' }
+    >;
 };
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -79,6 +86,30 @@ export function UserProvider({ children }: PropsWithChildren) {
             },
             approveMissionDemo: async (missionId, points) => {
                 await persist((prev) => approveMission(prev, missionId, points));
+            },
+            brewSoup: async (slots) => {
+                if (slots.some((s) => s == null)) {
+                    return { ok: false, reason: 'incomplete' };
+                }
+                const filled = slots as string[];
+                const current = stateRef.current;
+                const recipe = findMatchingRecipe(slots, current.completedRecipeIds);
+                if (recipe == null) {
+                    const any = findRecipeBySlots(slots);
+                    if (any != null && current.completedRecipeIds.includes(any.id)) {
+                        return { ok: false, reason: 'already_done' };
+                    }
+                    return { ok: false, reason: 'no_match' };
+                }
+                const consumed = consumeIngredientsForSlots(current, filled);
+                if (consumed == null) {
+                    return { ok: false, reason: 'no_stock' };
+                }
+                const next = completeRecipe(consumed, recipe);
+                stateRef.current = next;
+                setState(next);
+                await saveUserState(next);
+                return { ok: true, recipe };
             },
         }),
         [isReady, state, persist],

@@ -15,5 +15,8 @@ export type AppUserState = {
     weeklyMissionDone: number;
     weeklyMissionTotal: number;
     totalPoints: number;
+    ecoJam: number;
+    ingredientInventory: Record<string, number>;
+    completedRecipeIds: string[];
     missionProgress: Record<string, MissionProgress>;
 };

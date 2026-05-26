@@ -2,7 +2,7 @@ import { ROUTES } from '../constants/routes';
 import type { MainTabId } from '../layout/MainTabBar';
 
 type TabNavigation = {
-    replace: (screen: '/' | '/missions' | '/shop' | '/profile') => void;
+    replace: (screen: '/' | '/ingredients' | '/recipes' | '/profile') => void;
 };
 
 export function useMainTabPress(navigation: TabNavigation) {
@@ -11,12 +11,12 @@ export function useMainTabPress(navigation: TabNavigation) {
             navigation.replace('/');
             return;
         }
-        if (route === ROUTES.missions) {
-            navigation.replace('/missions');
+        if (route === ROUTES.ingredients) {
+            navigation.replace('/ingredients');
             return;
         }
-        if (route === ROUTES.shop) {
-            navigation.replace('/shop');
+        if (route === ROUTES.recipes) {
+            navigation.replace('/recipes');
             return;
         }
         if (route === ROUTES.profile) {
@@ -26,11 +26,11 @@ export function useMainTabPress(navigation: TabNavigation) {
 }
 
 export function tabIdFromRoute(pathname: string): MainTabId {
-    if (pathname.startsWith('/missions')) {
-        return 'missions';
+    if (pathname.startsWith('/ingredients')) {
+        return 'ingredients';
     }
-    if (pathname.startsWith('/shop')) {
-        return 'shop';
+    if (pathname.startsWith('/recipes')) {
+        return 'recipes';
     }
     if (pathname === ROUTES.profile) {
         return 'profile';

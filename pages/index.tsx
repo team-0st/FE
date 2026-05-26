@@ -1,11 +1,11 @@
 import { createRoute } from '@granite-js/react-native';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { HomeScreen } from '../src/features/home/HomeScreen';
+import { WitchSoupHomeScreen } from '../src/features/home/WitchSoupHomeScreen';
 import { useUser } from '../src/features/user/UserProvider';
 import { useMainTabPress } from '../src/shared/hooks/useMainTabNavigation';
 import { MainTabShell } from '../src/shared/layout/MainTabShell';
-import { navigateMissionDetail, ROUTES } from '../src/shared/constants/routes';
+import { ROUTES } from '../src/shared/constants/routes';
 import { Screen } from '../src/shared/ui/Screen';
 
 export const Route = createRoute('/', {
@@ -39,11 +39,7 @@ function Page() {
 
     return (
         <MainTabShell activeTab="home" onPressTab={onPressTab}>
-            <HomeScreen
-                onPressMissions={() => navigation.navigate(ROUTES.missions)}
-                onPressMission={(id) => navigateMissionDetail(navigation, id)}
-                onPressShop={() => navigation.replace(ROUTES.shop)}
-            />
+            <WitchSoupHomeScreen onPressMissions={() => navigation.navigate(ROUTES.missions)} />
         </MainTabShell>
     );
 }

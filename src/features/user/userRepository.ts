@@ -27,6 +27,9 @@ export async function loadUserState(): Promise<AppUserState> {
     return {
         ...DEFAULT_USER_STATE,
         ...rest,
+        ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
+        ingredientInventory: rest.ingredientInventory ?? DEFAULT_USER_STATE.ingredientInventory,
+        completedRecipeIds: rest.completedRecipeIds ?? [],
         missionProgress: missionProgress ?? {},
     };
 }

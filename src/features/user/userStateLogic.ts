@@ -1,3 +1,5 @@
+import { MISSION_INGREDIENT_REWARD } from '@api/mock/ingredients';
+import type { Recipe } from '@api/mock/recipes';
 import type { AppUserState, MissionProgressStatus } from './types';
 
 export function formatDateKey(date: Date): string {
@@ -53,10 +55,21 @@ export function submitMissionReview(state: AppUserState, missionId: string): App
     };
 }
 
+function addIngredient(state: AppUserState, ingredientId: string, amount = 1): AppUserState {
+    const current = state.ingredientInventory[ingredientId] ?? 0;
+    return {
+        ...state,
+        ingredientInventory: {
+            ...state.ingredientInventory,
+            [ingredientId]: current + amount,
+        },
+    };
+}
+
 export function approveMission(state: AppUserState, missionId: string, points: number): AppUserState {
     const now = new Date().toISOString();
     const wasCompleted = state.missionProgress[missionId]?.status === 'completed';
-    const next: AppUserState = {
+    let next: AppUserState = {
         ...state,
         missionProgress: {
             ...state.missionProgress,
@@ -67,9 +80,44 @@ export function approveMission(state: AppUserState, missionId: string, points: n
         return next;
     }
     const weeklyMissionDone = Math.min(next.weeklyMissionTotal, next.weeklyMissionDone + 1);
-    return {
+    next = {
         ...next,
         weeklyMissionDone,
         totalPoints: next.totalPoints + points,
+    };
+    const ingredientId = MISSION_INGREDIENT_REWARD[missionId];
+    if (ingredientId != null) {
+        next = addIngredient(next, ingredientId, 1);
+    }
+    return next;
+}
+
+export function consumeIngredientsForSlots(
+    state: AppUserState,
+    slots: string[],
+): AppUserState | null {
+    const inventory = { ...state.ingredientInventory };
+    for (const id of slots) {
+        const count = inventory[id] ?? 0;
+        if (count < 1) {
+            return null;
+        }
+        inventory[id] = count - 1;
+        if (inventory[id] === 0) {
+            delete inventory[id];
+        }
+    }
+    return { ...state, ingredientInventory: inventory };
+}
+
+export function completeRecipe(state: AppUserState, recipe: Recipe): AppUserState {
+    if (state.completedRecipeIds.includes(recipe.id)) {
+        return state;
+    }
+    const ecoGain = recipe.ecoJamReward ?? 0;
+    return {
+        ...state,
+        completedRecipeIds: [...state.completedRecipeIds, recipe.id],
+        ecoJam: state.ecoJam + ecoGain,
     };
 }
