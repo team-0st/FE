@@ -23,7 +23,7 @@
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| 하단 탭 | ✅ | 4탭, `accessibilityRole="tab"` |
+| 하단 탭 | ✅ | 5탭 (제작·가챠·홈·레시피·마이), `accessibilityRole="tab"` |
 | 로딩 | ✅ | `CenterLoader` (TDS Loader), 제작 `loading` 버튼 |
 | 홈 넛지 | ✅ | `HomeNudgeBanner` (출석·주간 미션) |
 | 네트워크 | ✅ | 출석 API `NETWORK_ERROR` → 토스트 |
