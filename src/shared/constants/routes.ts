@@ -4,6 +4,7 @@ export const ROUTES = {
     onboarding: '/onboarding',
     onboardingShop: '/onboarding/shop',
     ingredients: '/ingredients',
+    gacha: '/gacha',
     recipes: '/recipes',
     soupResult: '/soup/result',
     missions: '/missions',

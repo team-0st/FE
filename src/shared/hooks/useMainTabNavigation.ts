@@ -2,7 +2,7 @@ import { ROUTES } from '../constants/routes';
 import type { MainTabId } from '../layout/MainTabBar';
 
 type TabNavigation = {
-    replace: (screen: '/' | '/ingredients' | '/recipes' | '/profile') => void;
+    replace: (screen: '/' | '/ingredients' | '/gacha' | '/recipes' | '/profile') => void;
 };
 
 export function useMainTabPress(navigation: TabNavigation) {
@@ -13,6 +13,10 @@ export function useMainTabPress(navigation: TabNavigation) {
         }
         if (route === ROUTES.ingredients) {
             navigation.replace('/ingredients');
+            return;
+        }
+        if (route === ROUTES.gacha) {
+            navigation.replace('/gacha');
             return;
         }
         if (route === ROUTES.recipes) {
@@ -28,6 +32,9 @@ export function useMainTabPress(navigation: TabNavigation) {
 export function tabIdFromRoute(pathname: string): MainTabId {
     if (pathname.startsWith('/ingredients')) {
         return 'ingredients';
+    }
+    if (pathname.startsWith('/gacha')) {
+        return 'gacha';
     }
     if (pathname.startsWith('/recipes')) {
         return 'recipes';

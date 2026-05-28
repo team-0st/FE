@@ -20,7 +20,11 @@ import {
     getFilledIngredientIds,
     isValidBrewFillCount,
 } from '@api/mock/recipes';
+import { GACHA_PULL_COST_ECO_JAM } from '../gacha/gachaConfig';
+import { applyGachaPull, rollGachaReward } from '../gacha/gachaLogic';
+import type { GachaPullResult } from '../gacha/gachaTypes';
 import {
+    addEcoJam,
     approveMission,
     applyCheckInFromServer,
     completeRecipe,
@@ -43,6 +47,8 @@ type UserContextValue = {
     brewSoup: (slots: (string | null)[]) => Promise<
         { ok: true; recipe: Recipe } | { ok: false; reason: 'incomplete' | 'no_match' | 'already_done' | 'no_stock' }
     >;
+    pullGacha: () => Promise<GachaPullResult>;
+    grantTestEcoJam: (amount: number) => Promise<void>;
 };
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -117,6 +123,24 @@ export function UserProvider({ children }: PropsWithChildren) {
             },
             approveMissionDemo: async (missionId) => {
                 await persist((prev) => approveMission(prev, missionId));
+            },
+            grantTestEcoJam: async (amount) => {
+                await persist((prev) => addEcoJam(prev, amount));
+            },
+            pullGacha: async (): Promise<GachaPullResult> => {
+                const current = stateRef.current;
+                if (current.ecoJam < GACHA_PULL_COST_ECO_JAM) {
+                    return { ok: false, reason: 'insufficient_eco_jam' };
+                }
+                const reward = rollGachaReward();
+                const next = applyGachaPull(current, reward);
+                if (next == null) {
+                    return { ok: false, reason: 'insufficient_eco_jam' };
+                }
+                stateRef.current = next;
+                setState(next);
+                await saveUserState(next);
+                return { ok: true, reward, costEcoJam: GACHA_PULL_COST_ECO_JAM };
             },
             brewSoup: async (slots) => {
                 const filled = getFilledIngredientIds(slots);

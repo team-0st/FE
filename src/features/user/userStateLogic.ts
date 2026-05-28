@@ -123,3 +123,10 @@ export function completeRecipe(state: AppUserState, recipe: Recipe): AppUserStat
         ecoJam: state.ecoJam + ecoGain,
     };
 }
+
+export function addEcoJam(state: AppUserState, amount: number): AppUserState {
+    if (amount <= 0) {
+        return state;
+    }
+    return { ...state, ecoJam: state.ecoJam + amount };
+}

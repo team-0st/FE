@@ -9,7 +9,7 @@ export const DEFAULT_USER_STATE: AppUserState = {
     weeklyMissionDone: 0,
     weeklyMissionTotal: 5,
     totalPoints: 0,
-    ecoJam: 0,
+    ecoJam: 50,
     ingredientInventory: {
         herb: 1,
         carrot: 1,

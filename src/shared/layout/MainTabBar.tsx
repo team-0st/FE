@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ROUTES } from '../constants/routes';
 import { colors } from '../theme/colors';
 
-export type MainTabId = 'ingredients' | 'home' | 'recipes' | 'profile';
+export type MainTabId = 'ingredients' | 'gacha' | 'home' | 'recipes' | 'profile';
 
 type TabItem = {
     id: MainTabId;
@@ -13,6 +13,7 @@ type TabItem = {
 
 export const MAIN_TABS: TabItem[] = [
     { id: 'ingredients', label: '제작', route: ROUTES.ingredients },
+    { id: 'gacha', label: '가챠', route: ROUTES.gacha },
     { id: 'home', label: '홈', route: ROUTES.home },
     { id: 'recipes', label: '레시피', route: ROUTES.recipes },
     { id: 'profile', label: '마이', route: ROUTES.profile },
