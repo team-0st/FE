@@ -12,9 +12,10 @@ import { useAppToast } from '../../shared/feedback/useAppToast';
 import { useUser } from '../user/UserProvider';
 import { IngredientSlotBar } from '../../shared/ui/IngredientSlotBar';
 import { Screen } from '../../shared/ui/Screen';
+import type { SoupBrewOutcome } from '../soup/soupRewardLogic';
 
 type IngredientsScreenProps = {
-    onSoupMade: (recipeId: string) => void;
+    onSoupMade: (recipeId: string, outcome: SoupBrewOutcome) => void;
 };
 
 function emptySlots(): (string | null)[] {
@@ -70,7 +71,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                 return;
             }
             setSlots(emptySlots());
-            onSoupMade(result.recipe.id);
+            onSoupMade(result.recipe.id, result.outcome);
         } finally {
             setBrewing(false);
         }

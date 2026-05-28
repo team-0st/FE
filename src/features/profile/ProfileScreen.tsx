@@ -42,6 +42,15 @@ export function ProfileScreen({ onPressRestartOnboarding }: ProfileScreenProps) 
                     </Txt>
                 </View>
                 <View style={styles.card}>
+                    <Txt typography="t3">🌰</Txt>
+                    <Txt typography="t7" color="grey600">
+                        알맹 포인트
+                    </Txt>
+                    <Txt typography="t4" fontWeight="bold">
+                        {state.totalPoints}P
+                    </Txt>
+                </View>
+                <View style={styles.card}>
                     <Txt typography="t3">🍲</Txt>
                     <Txt typography="t7" color="grey600">
                         완성 스프

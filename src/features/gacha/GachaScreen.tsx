@@ -98,23 +98,25 @@ export function GachaScreen() {
             <Txt typography="t7" color="grey500" style={styles.costNote}>
                 1회당 에코잼 {GACHA_PULL_COST_ECO_JAM}개가 소모됩니다.
             </Txt>
-            <View style={styles.testGrantButton}>
-                <Button
-                    size="medium"
-                    type="dark"
-                    display="block"
-                    onPress={() => {
-                        void (async () => {
-                            await grantTestEcoJam(GACHA_TEST_ECO_JAM_GRANT);
-                            toast.showSuccess(
-                                `테스트용 에코잼 ${GACHA_TEST_ECO_JAM_GRANT}개를 받았어요.`,
-                            );
-                        })();
-                    }}
-                >
-                    테스트용 에코잼 +{GACHA_TEST_ECO_JAM_GRANT}
-                </Button>
-            </View>
+            {__DEV__ ? (
+                <View style={styles.testGrantButton}>
+                    <Button
+                        size="medium"
+                        type="dark"
+                        display="block"
+                        onPress={() => {
+                            void (async () => {
+                                await grantTestEcoJam(GACHA_TEST_ECO_JAM_GRANT);
+                                toast.showSuccess(
+                                    `테스트용 에코잼 ${GACHA_TEST_ECO_JAM_GRANT}개를 받았어요.`,
+                                );
+                            })();
+                        }}
+                    >
+                        테스트용 에코잼 +{GACHA_TEST_ECO_JAM_GRANT}
+                    </Button>
+                </View>
+            ) : null}
             <Txt typography="t5" fontWeight="semibold" style={styles.section}>
                 보상 안내
             </Txt>

@@ -17,12 +17,16 @@ function Page() {
     return (
         <MainTabShell activeTab="profile" onPressTab={onPressTab}>
             <ProfileScreen
-                onPressRestartOnboarding={() => {
-                    void (async () => {
-                        await resetOnboarding();
-                        navigation.replace(ROUTES.onboarding);
-                    })();
-                }}
+                onPressRestartOnboarding={
+                    __DEV__
+                        ? () => {
+                              void (async () => {
+                                  await resetOnboarding();
+                                  navigation.replace(ROUTES.onboarding);
+                              })();
+                          }
+                        : undefined
+                }
             />
         </MainTabShell>
     );

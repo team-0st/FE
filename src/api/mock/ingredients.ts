@@ -13,28 +13,53 @@ export const INGREDIENTS: Ingredient[] = [
     { id: 'drop', name: '이슬', emoji: '💧' },
 ];
 
-export const MISSION_INGREDIENT_REWARD: Record<string, string> = {
-    tumbler: 'herb',
-    bag: 'leaf',
-    transit: 'drop',
-    'visit-not-delivery': 'carrot',
-    recycle: 'mushroom',
+/** 미션 완료 시 랜덤 지급 풀 (4차 회의: 미션별 1:1 고정 X) */
+export const MISSION_REWARD_POOLS: Record<string, string[]> = {
+    tumbler: ['herb', 'leaf', 'drop'],
+    bag: ['leaf', 'carrot', 'herb'],
+    transit: ['drop', 'leaf', 'mushroom'],
+    'visit-not-delivery': ['carrot', 'herb', 'drop'],
+    recycle: ['mushroom', 'leaf', 'star'],
 };
+
+export const MISSION_RANDOM_REWARD_LABEL = '랜덤 재료 1종';
 
 export function getIngredientById(id: string): Ingredient | undefined {
     return INGREDIENTS.find((item) => item.id === id);
 }
 
-export function getMissionRewardIngredient(missionId: string): Ingredient | undefined {
-    const ingredientId = MISSION_INGREDIENT_REWARD[missionId];
-    if (ingredientId == null) {
-        return undefined;
-    }
-    return getIngredientById(ingredientId);
+export function getMissionRewardPool(missionId: string): string[] {
+    return MISSION_REWARD_POOLS[missionId] ?? INGREDIENTS.map((i) => i.id);
 }
 
-export function formatMissionIngredientReward(missionId: string): string {
-    const ingredient = getMissionRewardIngredient(missionId);
+export function pickMissionRewardIngredient(
+    missionId: string,
+    random: () => number = Math.random,
+): string | undefined {
+    const pool = getMissionRewardPool(missionId);
+    if (pool.length === 0) {
+        return undefined;
+    }
+    const index = Math.floor(random() * pool.length);
+    return pool[index];
+}
+
+export function getMissionRewardIngredient(
+    missionId: string,
+    rewardIngredientId?: string | null,
+): Ingredient | undefined {
+    if (rewardIngredientId != null) {
+        return getIngredientById(rewardIngredientId);
+    }
+    return undefined;
+}
+
+export function formatMissionIngredientReward(_missionId: string): string {
+    return MISSION_RANDOM_REWARD_LABEL;
+}
+
+export function formatIngredientReward(ingredientId: string): string {
+    const ingredient = getIngredientById(ingredientId);
     if (ingredient == null) {
         return '재료';
     }

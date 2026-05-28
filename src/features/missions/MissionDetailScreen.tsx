@@ -1,12 +1,11 @@
 import type { Mission } from '@api/mock';
-import { getMissionRewardIngredient } from '@api/mock/ingredients';
 import { missionStatusLabel } from '@api/mock/missions';
 import { Button, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
 import type { MissionProgressStatus } from '../user/types';
 import { GuideHero } from '../../shared/ui/GuideHero';
-import { RewardIngredientBadge } from '../../shared/ui/RewardIngredientBadge';
+import { RandomMissionRewardBadge } from '../../shared/ui/RandomMissionRewardBadge';
 import { Screen } from '../../shared/ui/Screen';
 
 type MissionDetailScreenProps = {
@@ -18,7 +17,6 @@ type MissionDetailScreenProps = {
 export function MissionDetailScreen({ mission, status, onPressVerify }: MissionDetailScreenProps) {
     const isCompleted = status === 'completed';
     const isPending = status === 'pending_review';
-    const rewardIngredient = getMissionRewardIngredient(mission.id);
 
     return (
         <Screen scrollable>
@@ -35,7 +33,7 @@ export function MissionDetailScreen({ mission, status, onPressVerify }: MissionD
                 align="start"
                 compact
             />
-            {rewardIngredient != null ? <RewardIngredientBadge ingredient={rewardIngredient} /> : null}
+            <RandomMissionRewardBadge />
             <View style={styles.note}>
                 <Txt typography="t7" color="grey500">
                     사진을 올리면 검수 후 재료가 지급돼요.

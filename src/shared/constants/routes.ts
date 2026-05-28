@@ -1,3 +1,6 @@
+import type { SoupBrewOutcome } from '../../features/soup/soupRewardLogic';
+import { encodeSoupOutcome } from '../../features/soup/soupRewardLogic';
+
 export const ROUTES = {
     home: '/',
     login: '/login',
@@ -14,7 +17,15 @@ export const ROUTES = {
 } as const;
 
 type AppNavigation = {
-    navigate: (name: string, params?: { id?: string; recipeId?: string }) => void;
+    navigate: (
+        name: string,
+        params?: {
+            id?: string;
+            recipeId?: string;
+            rewardKind?: string;
+            rewardValue?: string;
+        },
+    ) => void;
 };
 
 export function navigateMissionDetail(navigation: AppNavigation, id: string): void {
@@ -29,6 +40,11 @@ export function navigateMissionResult(navigation: AppNavigation, id: string): vo
     navigation.navigate('/missions/:id/result', { id });
 }
 
-export function navigateSoupResult(navigation: AppNavigation, recipeId: string): void {
-    navigation.navigate('/soup/result', { recipeId });
+export function navigateSoupResult(
+    navigation: AppNavigation,
+    recipeId: string,
+    outcome: SoupBrewOutcome,
+): void {
+    const encoded = encodeSoupOutcome(outcome);
+    navigation.navigate('/soup/result', { recipeId, ...encoded });
 }

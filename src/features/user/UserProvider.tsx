@@ -23,6 +23,7 @@ import {
 import { GACHA_PULL_COST_ECO_JAM } from '../gacha/gachaConfig';
 import { applyGachaPull, rollGachaReward } from '../gacha/gachaLogic';
 import type { GachaPullResult } from '../gacha/gachaTypes';
+import { rollSoupReward, type SoupBrewOutcome } from '../soup/soupRewardLogic';
 import {
     addEcoJam,
     approveMission,
@@ -45,7 +46,8 @@ type UserContextValue = {
     submitMission: (missionId: string) => Promise<void>;
     approveMissionDemo: (missionId: string) => Promise<void>;
     brewSoup: (slots: (string | null)[]) => Promise<
-        { ok: true; recipe: Recipe } | { ok: false; reason: 'incomplete' | 'no_match' | 'already_done' | 'no_stock' }
+        | { ok: true; recipe: Recipe; outcome: SoupBrewOutcome }
+        | { ok: false; reason: 'incomplete' | 'no_match' | 'already_done' | 'no_stock' }
     >;
     pullGacha: () => Promise<GachaPullResult>;
     grantTestEcoJam: (amount: number) => Promise<void>;
@@ -160,11 +162,12 @@ export function UserProvider({ children }: PropsWithChildren) {
                 if (consumed == null) {
                     return { ok: false, reason: 'no_stock' };
                 }
-                const next = completeRecipe(consumed, recipe);
+                const outcome = rollSoupReward(recipe);
+                const next = completeRecipe(consumed, recipe, outcome);
                 stateRef.current = next;
                 setState(next);
                 await saveUserState(next);
-                return { ok: true, recipe };
+                return { ok: true, recipe, outcome };
             },
         }),
         [isReady, state, persist],

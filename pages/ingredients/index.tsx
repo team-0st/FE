@@ -14,7 +14,9 @@ function Page() {
 
     return (
         <MainTabShell activeTab="ingredients" onPressTab={onPressTab}>
-            <IngredientsScreen onSoupMade={(recipeId) => navigateSoupResult(navigation, recipeId)} />
+            <IngredientsScreen
+                onSoupMade={(recipeId, outcome) => navigateSoupResult(navigation, recipeId, outcome)}
+            />
         </MainTabShell>
     );
 }

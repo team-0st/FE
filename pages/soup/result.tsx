@@ -1,21 +1,37 @@
 import { createRoute } from '@granite-js/react-native';
 import { SoupResultScreen } from '../../src/features/soup/SoupResultScreen';
 import { ROUTES } from '../../src/shared/constants/routes';
+import {
+    decodeSoupOutcome,
+    type SoupRewardKind,
+} from '../../src/features/soup/soupRewardLogic';
 
 export const Route = createRoute('/soup/result', {
     component: Page,
-    validateParams: (params: Readonly<object | undefined>): { recipeId: string } => ({
-        recipeId: String((params as { recipeId?: string } | undefined)?.recipeId ?? ''),
-    }),
+    validateParams: (params: Readonly<object | undefined>): {
+        recipeId: string;
+        rewardKind: SoupRewardKind;
+        rewardValue: string;
+    } => {
+        const p = params as { recipeId?: string; rewardKind?: string; rewardValue?: string } | undefined;
+        const rewardKind = (p?.rewardKind ?? 'miss') as SoupRewardKind;
+        return {
+            recipeId: String(p?.recipeId ?? ''),
+            rewardKind,
+            rewardValue: String(p?.rewardValue ?? ''),
+        };
+    },
 });
 
 function Page() {
-    const { recipeId } = Route.useParams();
+    const { recipeId, rewardKind, rewardValue } = Route.useParams();
     const navigation = Route.useNavigation();
+    const outcome = decodeSoupOutcome(rewardKind, rewardValue);
 
     return (
         <SoupResultScreen
             recipeId={recipeId}
+            outcome={outcome}
             onPressDone={() => navigation.replace(ROUTES.ingredients)}
         />
     );

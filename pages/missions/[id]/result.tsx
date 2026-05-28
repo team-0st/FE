@@ -41,6 +41,7 @@ function Page() {
         <MissionResultScreen
             mission={mission}
             onApproved={onApproved}
+            autoApproveDemo={__DEV__}
             onPressHome={() => navigation.navigate(ROUTES.home)}
         />
     );

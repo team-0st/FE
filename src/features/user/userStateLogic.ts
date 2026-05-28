@@ -1,6 +1,7 @@
 import type { CheckInSuccessDto } from '@api/checkIn';
-import { MISSION_INGREDIENT_REWARD } from '@api/mock/ingredients';
+import { pickMissionRewardIngredient } from '@api/mock/ingredients';
 import type { Recipe } from '@api/mock/recipes';
+import type { SoupBrewOutcome } from '../soup/soupRewardLogic';
 import { DEFAULT_USER_STATE } from './defaultState';
 import type { AppUserState, MissionProgressStatus } from './types';
 
@@ -72,14 +73,23 @@ function addIngredient(state: AppUserState, ingredientId: string, amount = 1): A
     };
 }
 
-export function approveMission(state: AppUserState, missionId: string): AppUserState {
+export function approveMission(
+    state: AppUserState,
+    missionId: string,
+    random: () => number = Math.random,
+): AppUserState {
     const now = new Date().toISOString();
     const wasCompleted = state.missionProgress[missionId]?.status === 'completed';
+    const rewardIngredientId = pickMissionRewardIngredient(missionId, random);
     let next: AppUserState = {
         ...state,
         missionProgress: {
             ...state.missionProgress,
-            [missionId]: { status: 'completed', completedAt: now },
+            [missionId]: {
+                status: 'completed',
+                completedAt: now,
+                rewardIngredientId,
+            },
         },
     };
     if (wasCompleted) {
@@ -87,9 +97,8 @@ export function approveMission(state: AppUserState, missionId: string): AppUserS
     }
     const weeklyMissionDone = Math.min(next.weeklyMissionTotal, next.weeklyMissionDone + 1);
     next = { ...next, weeklyMissionDone };
-    const ingredientId = MISSION_INGREDIENT_REWARD[missionId];
-    if (ingredientId != null) {
-        next = addIngredient(next, ingredientId, 1);
+    if (rewardIngredientId != null) {
+        next = addIngredient(next, rewardIngredientId, 1);
     }
     return next;
 }
@@ -112,16 +121,22 @@ export function consumeIngredientsForSlots(
     return { ...state, ingredientInventory: inventory };
 }
 
-export function completeRecipe(state: AppUserState, recipe: Recipe): AppUserState {
+export function completeRecipe(
+    state: AppUserState,
+    recipe: Recipe,
+    outcome: SoupBrewOutcome,
+): AppUserState {
     if (state.completedRecipeIds.includes(recipe.id)) {
         return state;
     }
-    const ecoGain = recipe.ecoJamReward ?? 0;
-    return {
+    let next: AppUserState = {
         ...state,
         completedRecipeIds: [...state.completedRecipeIds, recipe.id],
-        ecoJam: state.ecoJam + ecoGain,
     };
+    if (outcome.kind === 'ecoJam' && (outcome.ecoJamAmount ?? 0) > 0) {
+        next = { ...next, ecoJam: next.ecoJam + (outcome.ecoJamAmount ?? 0) };
+    }
+    return next;
 }
 
 export function addEcoJam(state: AppUserState, amount: number): AppUserState {

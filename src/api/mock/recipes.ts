@@ -5,6 +5,8 @@ export type Recipe = {
     kind: RecipeKind;
     name: string;
     hint: string;
+    /** 홈 힌트용 드립·암시 (정답 재료 노출 X) */
+    hintDrip?: string;
     /** 일반(weekly) 3개, 히든 4개 — BE 검증 시에도 동일 규칙 */
     ingredientIds: string[];
     ecoJamReward?: number;
@@ -43,6 +45,7 @@ export const ALL_RECIPES: Recipe[] = [
         kind: 'weekly',
         name: '차분한 허브 스프',
         hint: '허브와 이슬이 어울려요.',
+        hintDrip: '냄비가 속삭이기를, 향긋한 게 좋대요.',
         ingredientIds: ['herb', 'drop', 'leaf'],
         ecoJamReward: 30,
         weekKey: getIsoWeekKey(),
@@ -52,6 +55,7 @@ export const ALL_RECIPES: Recipe[] = [
         kind: 'weekly',
         name: '숲속 버섯 스프',
         hint: '버섯과 잎이 포인트예요.',
+        hintDrip: '숲 냄새가 나면 반은 맞은 거예요.',
         ingredientIds: ['mushroom', 'leaf', 'herb'],
         ecoJamReward: 40,
         weekKey: getIsoWeekKey(),
@@ -127,7 +131,11 @@ export function findMatchingRecipe(
 
 export function getTodayRecipeHint(weekKey = getIsoWeekKey()): string {
     const weekly = getWeeklyRecipes(weekKey);
-    return weekly[0]?.hint ?? '미션으로 재료를 모아 스프를 끓여 보세요.';
+    const recipe = weekly[0];
+    if (recipe == null) {
+        return '미션으로 재료를 모아 스프를 끓여 보세요.';
+    }
+    return recipe.hintDrip ?? recipe.hint;
 }
 
 export function isValidBrewFillCount(count: number): boolean {

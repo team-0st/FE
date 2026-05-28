@@ -1,5 +1,5 @@
 import { DEFAULT_USER_STATE } from './defaultState';
-import { finishOnboarding, resetOnboarding } from './userStateLogic';
+import { approveMission, finishOnboarding, resetOnboarding } from './userStateLogic';
 import type { AppUserState } from './types';
 
 function stateWithProgress(): AppUserState {
@@ -26,6 +26,16 @@ describe('resetOnboarding', () => {
         expect(next.shopId).toBeNull();
         expect(next.completedRecipeIds).toEqual([]);
         expect(next.missionProgress).toEqual({});
+    });
+});
+
+describe('approveMission', () => {
+    it('grants a random ingredient from the mission pool', () => {
+        const base = { ...DEFAULT_USER_STATE, ingredientInventory: {} };
+        const next = approveMission(base, 'tumbler', () => 0);
+        expect(next.missionProgress.tumbler?.status).toBe('completed');
+        expect(next.missionProgress.tumbler?.rewardIngredientId).toBe('herb');
+        expect(next.ingredientInventory.herb).toBe(1);
     });
 });
 
