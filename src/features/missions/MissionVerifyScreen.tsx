@@ -22,11 +22,11 @@ export function MissionVerifyScreen({ mission, onSubmit }: MissionVerifyScreenPr
                 <View style={styles.placeholder}>
                     <Txt typography="t1">{picked ? '📷' : '🖼️'}</Txt>
                     <Txt typography="t6" color="grey600" style={styles.hint}>
-                        {picked ? '인증 사진을 선택했어요 (데모)' : '인증에 사용할 사진을 선택해 주세요'}
+                        {picked ? '인증 사진을 선택했어요' : '인증에 사용할 사진을 선택해 주세요'}
                     </Txt>
                     {!picked ? (
                         <Button size="medium" type="dark" style="weak" onPress={() => setPicked(true)}>
-                            사진 선택 (데모)
+                            사진 선택
                         </Button>
                     ) : null}
                 </View>

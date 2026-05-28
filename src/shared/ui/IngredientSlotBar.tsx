@@ -1,5 +1,5 @@
 import { getIngredientById } from '@api/mock';
-import { BREW_SLOT_COUNT } from '@api/mock/recipes';
+import { BREW_SLOT_MAX, WEEKLY_INGREDIENT_COUNT } from '@api/mock/recipes';
 import { Txt } from '@toss/tds-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
@@ -11,43 +11,71 @@ type IngredientSlotBarProps = {
 
 export function IngredientSlotBar({ slots, onPressSlot }: IngredientSlotBarProps) {
     return (
-        <View style={styles.row}>
-            {Array.from({ length: BREW_SLOT_COUNT }, (_, index) => {
-                const id = slots[index] ?? null;
-                const ingredient = id != null ? getIngredientById(id) : undefined;
-                const filled = ingredient != null;
-                return (
-                    <Pressable
-                        key={index}
-                        onPress={() => onPressSlot(index)}
-                        style={[styles.slot, filled ? styles.slotFilled : styles.slotEmpty]}
-                        accessibilityRole="button"
-                        accessibilityLabel={filled ? `${ingredient.name} 제거` : `재료 칸 ${index + 1}`}
-                    >
-                        {filled ? (
-                            <Txt typography="t2">{ingredient.emoji}</Txt>
-                        ) : (
-                            <Txt typography="t4" color="grey400">
-                                □
-                            </Txt>
-                        )}
-                    </Pressable>
-                );
-            })}
+        <View style={styles.wrap}>
+            <View style={styles.row}>
+                {Array.from({ length: BREW_SLOT_MAX }, (_, index) => {
+                    const id = slots[index] ?? null;
+                    const ingredient = id != null ? getIngredientById(id) : undefined;
+                    const filled = ingredient != null;
+                    const isHiddenSlot = index === WEEKLY_INGREDIENT_COUNT;
+                    return (
+                        <View key={index} style={styles.slotCol}>
+                            <Pressable
+                                onPress={() => onPressSlot(index)}
+                                style={[
+                                    styles.slot,
+                                    filled ? styles.slotFilled : styles.slotEmpty,
+                                    isHiddenSlot ? styles.slotHiddenLane : undefined,
+                                ]}
+                                accessibilityRole="button"
+                                accessibilityLabel={
+                                    filled
+                                        ? `${ingredient.name} 제거`
+                                        : isHiddenSlot
+                                          ? '히든 레시피 재료 칸'
+                                          : `일반 레시피 재료 칸 ${index + 1}`
+                                }
+                            >
+                                {filled ? (
+                                    <Txt typography="t2">{ingredient.emoji}</Txt>
+                                ) : (
+                                    <Txt typography="t4" color="grey400">
+                                        □
+                                    </Txt>
+                                )}
+                            </Pressable>
+                            {index === 0 || isHiddenSlot ? (
+                                <Txt typography="t7" color="grey500" style={styles.slotLabel}>
+                                    {isHiddenSlot ? '히든' : '일반·3'}
+                                </Txt>
+                            ) : (
+                                <View style={styles.slotLabelSpacer} />
+                            )}
+                        </View>
+                    );
+                })}
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    wrap: {
+        width: '100%',
+        marginBottom: 8,
+    },
     row: {
         flexDirection: 'row',
         justifyContent: 'center',
-        gap: 12,
-        marginBottom: 20,
+        gap: 10,
+    },
+    slotCol: {
+        alignItems: 'center',
+        gap: 4,
     },
     slot: {
-        width: 64,
-        height: 64,
+        width: 60,
+        height: 60,
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
@@ -61,5 +89,14 @@ const styles = StyleSheet.create({
     slotFilled: {
         backgroundColor: colors.slotFilled,
         borderColor: colors.primary,
+    },
+    slotHiddenLane: {
+        marginLeft: 4,
+    },
+    slotLabel: {
+        fontSize: 11,
+    },
+    slotLabelSpacer: {
+        height: 14,
     },
 });

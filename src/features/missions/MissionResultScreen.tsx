@@ -1,10 +1,11 @@
 import type { Mission } from '@api/mock';
+import { formatMissionIngredientReward, getMissionRewardIngredient } from '@api/mock/ingredients';
 import { Button, Txt } from '@toss/tds-react-native';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { getMissionCompleteMessage } from '../../shared/constants/guideCopy';
 import { GuideHero } from '../../shared/ui/GuideHero';
-import { RewardPointsBadge } from '../../shared/ui/RewardPointsBadge';
+import { RewardIngredientBadge } from '../../shared/ui/RewardIngredientBadge';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
@@ -16,6 +17,7 @@ type MissionResultScreenProps = {
 
 export function MissionResultScreen({ mission, onApproved, onPressHome }: MissionResultScreenProps) {
     const approvedRef = useRef(false);
+    const rewardIngredient = getMissionRewardIngredient(mission.id);
 
     useEffect(() => {
         if (!approvedRef.current) {
@@ -27,15 +29,21 @@ export function MissionResultScreen({ mission, onApproved, onPressHome }: Missio
     return (
         <Screen scrollable>
             <View style={styles.body}>
-                <GuideHero message={getMissionCompleteMessage(mission.points)} mood="happy" align="start" />
+                <GuideHero
+                    message={getMissionCompleteMessage(formatMissionIngredientReward(mission.id))}
+                    mood="happy"
+                    align="start"
+                />
                 <View style={styles.card}>
                     <Txt typography="t1">{mission.emoji}</Txt>
                     <Txt typography="t5" fontWeight="bold" style={styles.title}>
                         {mission.title}
                     </Txt>
-                    <RewardPointsBadge points={mission.points} />
+                    {rewardIngredient != null ? (
+                        <RewardIngredientBadge ingredient={rewardIngredient} />
+                    ) : null}
                     <Txt typography="t7" color="grey600" style={styles.note}>
-                        실제 서비스에서는 검수 후 포인트가 지급돼요.
+                        재료는 제작 탭에서 스프를 끓일 때 사용해요.
                     </Txt>
                 </View>
             </View>

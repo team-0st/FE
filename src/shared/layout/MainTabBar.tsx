@@ -12,7 +12,7 @@ type TabItem = {
 };
 
 export const MAIN_TABS: TabItem[] = [
-    { id: 'ingredients', label: '재료', route: ROUTES.ingredients },
+    { id: 'ingredients', label: '제작', route: ROUTES.ingredients },
     { id: 'home', label: '홈', route: ROUTES.home },
     { id: 'recipes', label: '레시피', route: ROUTES.recipes },
     { id: 'profile', label: '마이', route: ROUTES.profile },
@@ -25,7 +25,7 @@ type MainTabBarProps = {
 
 export function MainTabBar({ activeTab, onPressTab }: MainTabBarProps) {
     return (
-        <View style={styles.bar}>
+        <View style={styles.bar} accessibilityRole="tablist">
             {MAIN_TABS.map((tab) => {
                 const active = tab.id === activeTab;
                 return (
@@ -33,8 +33,9 @@ export function MainTabBar({ activeTab, onPressTab }: MainTabBarProps) {
                         key={tab.id}
                         onPress={() => onPressTab(tab.route)}
                         style={styles.item}
-                        accessibilityRole="button"
+                        accessibilityRole="tab"
                         accessibilityState={{ selected: active }}
+                        accessibilityLabel={`${tab.label} 탭`}
                     >
                         <Txt
                             typography="t7"
@@ -62,6 +63,8 @@ const styles = StyleSheet.create({
     item: {
         flex: 1,
         alignItems: 'center',
-        paddingVertical: 6,
+        paddingVertical: 10,
+        minHeight: 44,
+        justifyContent: 'center',
     },
 });

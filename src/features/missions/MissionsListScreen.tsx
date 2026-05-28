@@ -1,3 +1,4 @@
+import { formatMissionIngredientReward } from '@api/mock/ingredients';
 import { DAILY_MISSIONS, missionStatusLabel } from '@api/mock/missions';
 import type { Mission } from '@api/mock';
 import { ListRow, Top, Txt } from '@toss/tds-react-native';
@@ -32,7 +33,8 @@ function MissionRow({
     status: MissionProgressStatus;
     onPress: () => void;
 }) {
-    const rightLabel = status === 'available' ? `+${mission.points}P` : missionStatusLabel(status);
+    const rightLabel =
+        status === 'available' ? formatMissionIngredientReward(mission.id) : missionStatusLabel(status);
 
     return (
         <ListRow

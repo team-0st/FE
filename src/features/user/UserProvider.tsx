@@ -10,15 +10,23 @@ import {
 } from 'react';
 import { DEFAULT_USER_STATE } from './defaultState';
 import { loadUserState, saveUserState } from './userRepository';
+import { postCheckIn, type CheckInResult } from '@api/checkIn';
 import type { AppUserState } from './types';
+import { formatDateKey } from './userStateLogic';
 import type { Recipe } from '@api/mock/recipes';
-import { findMatchingRecipe, findRecipeBySlots } from '@api/mock/recipes';
+import {
+    findMatchingRecipe,
+    findRecipeBySlots,
+    getFilledIngredientIds,
+    isValidBrewFillCount,
+} from '@api/mock/recipes';
 import {
     approveMission,
-    checkIn,
+    applyCheckInFromServer,
     completeRecipe,
     consumeIngredientsForSlots,
     finishOnboarding as finishOnboardingState,
+    resetOnboarding as resetOnboardingState,
     setShopId,
     submitMissionReview,
 } from './userStateLogic';
@@ -26,11 +34,12 @@ import {
 type UserContextValue = {
     isReady: boolean;
     state: AppUserState;
-    checkInToday: () => Promise<void>;
+    checkInToday: () => Promise<CheckInResult>;
     finishOnboarding: (shopId: string) => Promise<void>;
+    resetOnboarding: () => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
     submitMission: (missionId: string) => Promise<void>;
-    approveMissionDemo: (missionId: string, points: number) => Promise<void>;
+    approveMissionDemo: (missionId: string) => Promise<void>;
     brewSoup: (slots: (string | null)[]) => Promise<
         { ok: true; recipe: Recipe } | { ok: false; reason: 'incomplete' | 'no_match' | 'already_done' | 'no_stock' }
     >;
@@ -72,11 +81,33 @@ export function UserProvider({ children }: PropsWithChildren) {
         () => ({
             isReady,
             state,
-            checkInToday: async () => {
-                await persist((prev) => checkIn(prev));
+            checkInToday: async (): Promise<CheckInResult> => {
+                try {
+                    const today = formatDateKey(new Date());
+                    const current = stateRef.current;
+                    const apiResult = await postCheckIn({
+                        lastCheckInDate: current.lastCheckInDate,
+                        streakDays: current.streakDays,
+                        ingredientInventory: current.ingredientInventory,
+                        today,
+                    });
+                    if (!apiResult.ok) {
+                        return apiResult;
+                    }
+                    const next = applyCheckInFromServer(stateRef.current, apiResult.data);
+                    stateRef.current = next;
+                    setState(next);
+                    await saveUserState(next);
+                    return apiResult;
+                } catch {
+                    return { ok: false, code: 'NETWORK_ERROR' };
+                }
             },
             finishOnboarding: async (shopId) => {
                 await persist((prev) => finishOnboardingState(prev, shopId));
+            },
+            resetOnboarding: async () => {
+                await persist((prev) => resetOnboardingState(prev));
             },
             selectShop: async (shopId) => {
                 await persist((prev) => setShopId(prev, shopId));
@@ -84,14 +115,14 @@ export function UserProvider({ children }: PropsWithChildren) {
             submitMission: async (missionId) => {
                 await persist((prev) => submitMissionReview(prev, missionId));
             },
-            approveMissionDemo: async (missionId, points) => {
-                await persist((prev) => approveMission(prev, missionId, points));
+            approveMissionDemo: async (missionId) => {
+                await persist((prev) => approveMission(prev, missionId));
             },
             brewSoup: async (slots) => {
-                if (slots.some((s) => s == null)) {
+                const filled = getFilledIngredientIds(slots);
+                if (!isValidBrewFillCount(filled.length)) {
                     return { ok: false, reason: 'incomplete' };
                 }
-                const filled = slots as string[];
                 const current = stateRef.current;
                 const recipe = findMatchingRecipe(slots, current.completedRecipeIds);
                 if (recipe == null) {

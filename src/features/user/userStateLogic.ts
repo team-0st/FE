@@ -1,5 +1,7 @@
+import type { CheckInSuccessDto } from '@api/checkIn';
 import { MISSION_INGREDIENT_REWARD } from '@api/mock/ingredients';
 import type { Recipe } from '@api/mock/recipes';
+import { DEFAULT_USER_STATE } from './defaultState';
 import type { AppUserState, MissionProgressStatus } from './types';
 
 export function formatDateKey(date: Date): string {
@@ -13,18 +15,17 @@ export function isCheckedInToday(state: AppUserState, today = formatDateKey(new 
     return state.lastCheckInDate === today;
 }
 
-export function checkIn(state: AppUserState, today = formatDateKey(new Date())): AppUserState {
-    if (state.lastCheckInDate === today) {
-        return state;
-    }
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayKey = formatDateKey(yesterday);
-    const streakDays = state.lastCheckInDate === yesterdayKey ? state.streakDays + 1 : 1;
+/** BE 출석 API 응답을 로컬 상태에 반영 (FE는 계산하지 않음) */
+export function applyCheckInFromServer(
+    state: AppUserState,
+    payload: CheckInSuccessDto,
+    today = formatDateKey(new Date()),
+): AppUserState {
     return {
         ...state,
         lastCheckInDate: today,
-        streakDays,
+        streakDays: payload.streakDays,
+        ingredientInventory: payload.ingredientInventory,
     };
 }
 
@@ -34,6 +35,11 @@ export function finishOnboarding(state: AppUserState, shopId: string): AppUserSt
         shopId,
         onboardingCompleted: true,
     };
+}
+
+/** 샌드박스·QA: 온보딩·재료·미션·출석 등 진행을 초기 상태로 되돌림 */
+export function resetOnboarding(_state: AppUserState): AppUserState {
+    return { ...DEFAULT_USER_STATE };
 }
 
 export function setShopId(state: AppUserState, shopId: string): AppUserState {
@@ -66,7 +72,7 @@ function addIngredient(state: AppUserState, ingredientId: string, amount = 1): A
     };
 }
 
-export function approveMission(state: AppUserState, missionId: string, points: number): AppUserState {
+export function approveMission(state: AppUserState, missionId: string): AppUserState {
     const now = new Date().toISOString();
     const wasCompleted = state.missionProgress[missionId]?.status === 'completed';
     let next: AppUserState = {
@@ -80,11 +86,7 @@ export function approveMission(state: AppUserState, missionId: string, points: n
         return next;
     }
     const weeklyMissionDone = Math.min(next.weeklyMissionTotal, next.weeklyMissionDone + 1);
-    next = {
-        ...next,
-        weeklyMissionDone,
-        totalPoints: next.totalPoints + points,
-    };
+    next = { ...next, weeklyMissionDone };
     const ingredientId = MISSION_INGREDIENT_REWARD[missionId];
     if (ingredientId != null) {
         next = addIngredient(next, ingredientId, 1);

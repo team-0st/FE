@@ -1,6 +1,8 @@
+import { getIngredientById } from '@api/mock/ingredients';
 import { getShopById } from '@api/mock';
 import { DAILY_MISSIONS } from '@api/mock/missions';
 import { Button } from '@toss/tds-react-native';
+import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
 import { isUserCheckedInToday, missionStatusFor, resolveShopName } from '../user/selectors';
@@ -22,6 +24,19 @@ type HomeScreenProps = {
 export function HomeScreen({ onPressMissions, onPressMission, onPressShop }: HomeScreenProps) {
     const { state, checkInToday } = useUser();
     const checkedIn = isUserCheckedInToday(state);
+    const [todayRewardLabel, setTodayRewardLabel] = useState<string | null>(null);
+    const handleCheckIn = useCallback(async () => {
+        if (checkedIn) {
+            return;
+        }
+        const result = await checkInToday();
+        if (result.ok) {
+            const ingredient = getIngredientById(result.data.reward.ingredientId);
+            if (ingredient != null) {
+                setTodayRewardLabel(`${ingredient.emoji} ${ingredient.name}`);
+            }
+        }
+    }, [checkInToday, checkedIn]);
     const shop = state.shopId != null ? getShopById(state.shopId) : undefined;
     const shopName = resolveShopName(state.shopId);
     const guideMessage = getHomeGuideMessage(state);
@@ -50,12 +65,12 @@ export function HomeScreen({ onPressMissions, onPressMission, onPressShop }: Hom
                     <StatCard
                         label="오늘 출석"
                         value={checkedIn ? '완료' : '미완료'}
-                        hint={checkedIn ? undefined : '탭해서 체크'}
+                        hint={checkedIn ? (todayRewardLabel ?? '오늘의 재료를 받았어요') : '탭하면 재료 1개'}
+                        hintTone="action"
                         onPress={() => {
-                            if (!checkedIn) {
-                                void checkInToday();
-                            }
+                            void handleCheckIn();
                         }}
+                        accessibilityLabel="오늘 출석하기"
                     />
                     <StatCard label="내 샵" value={shopName} hint="샵 보기" onPress={onPressShop} />
                 </View>

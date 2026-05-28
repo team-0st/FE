@@ -1,6 +1,7 @@
 import { readJson, writeJson } from '../../shared/storage/jsonStorage';
 import { STORAGE_KEYS } from '../../shared/storage/keys';
 import { DEFAULT_USER_STATE } from './defaultState';
+import { normalizeIngredientInventory } from './ingredientInventory';
 import type { AppUserState } from './types';
 
 type LegacyUserState = Partial<AppUserState> & {
@@ -28,7 +29,7 @@ export async function loadUserState(): Promise<AppUserState> {
         ...DEFAULT_USER_STATE,
         ...rest,
         ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
-        ingredientInventory: rest.ingredientInventory ?? DEFAULT_USER_STATE.ingredientInventory,
+        ingredientInventory: normalizeIngredientInventory(rest.ingredientInventory),
         completedRecipeIds: rest.completedRecipeIds ?? [],
         missionProgress: missionProgress ?? {},
     };

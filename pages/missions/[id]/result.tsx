@@ -23,7 +23,7 @@ function Page() {
 
     const onApproved = useCallback(() => {
         if (mission != null) {
-            void approveMissionDemo(mission.id, mission.points);
+            void approveMissionDemo(mission.id);
         }
     }, [approveMissionDemo, mission]);
 

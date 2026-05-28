@@ -1,6 +1,6 @@
 import { createRoute } from '@granite-js/react-native';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { CenterLoader } from '../src/shared/ui/CenterLoader';
 import { WitchSoupHomeScreen } from '../src/features/home/WitchSoupHomeScreen';
 import { useUser } from '../src/features/user/UserProvider';
 import { useMainTabPress } from '../src/shared/hooks/useMainTabNavigation';
@@ -26,9 +26,7 @@ function Page() {
     if (!isReady) {
         return (
             <Screen>
-                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                    <ActivityIndicator />
-                </View>
+                <CenterLoader />
             </Screen>
         );
     }

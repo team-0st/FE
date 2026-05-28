@@ -9,7 +9,7 @@ export type Shop = {
 export const MOCK_SHOPS: Shop[] = [
     {
         id: 'demo',
-        name: '제로스트 데모샵',
+        name: '알맹상점',
         area: '파일럿',
         philosophy: '일상에서 작은 실천을 함께 기록해요.',
         emoji: '🌿',

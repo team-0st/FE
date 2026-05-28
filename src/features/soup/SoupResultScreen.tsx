@@ -37,7 +37,7 @@ export function SoupResultScreen({ recipeId, onPressDone }: SoupResultScreenProp
                 </Txt>
                 {isHidden ? (
                     <Txt typography="t7" color="grey600" style={styles.sub}>
-                        팀에서 확인 후 연락드릴게요. (MVP mock)
+                        팀에서 확인 후 연락드릴게요.
                     </Txt>
                 ) : null}
             </View>

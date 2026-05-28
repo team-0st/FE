@@ -5,13 +5,28 @@ export type Recipe = {
     kind: RecipeKind;
     name: string;
     hint: string;
-    ingredientIds: [string, string, string, string];
+    /** 일반(weekly) 3개, 히든 4개 — BE 검증 시에도 동일 규칙 */
+    ingredientIds: string[];
     ecoJamReward?: number;
     realRewardLabel?: string;
     weekKey?: string;
 };
 
-export const BREW_SLOT_COUNT = 4;
+/** 제작 화면 슬롯 UI 최대 칸 수 (히든 기준) */
+export const BREW_SLOT_MAX = 4;
+export const WEEKLY_INGREDIENT_COUNT = 3;
+export const HIDDEN_INGREDIENT_COUNT = 4;
+
+/** @deprecated BREW_SLOT_MAX 사용 */
+export const BREW_SLOT_COUNT = BREW_SLOT_MAX;
+
+export function recipeIngredientCount(recipe: Recipe): number {
+    return recipe.kind === 'weekly' ? WEEKLY_INGREDIENT_COUNT : HIDDEN_INGREDIENT_COUNT;
+}
+
+export function getFilledIngredientIds(slots: (string | null)[]): string[] {
+    return slots.filter((s): s is string => s != null);
+}
 
 export function getIsoWeekKey(date = new Date()): string {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -28,7 +43,7 @@ export const ALL_RECIPES: Recipe[] = [
         kind: 'weekly',
         name: '차분한 허브 스프',
         hint: '허브와 이슬이 어울려요.',
-        ingredientIds: ['herb', 'drop', 'leaf', 'carrot'],
+        ingredientIds: ['herb', 'drop', 'leaf'],
         ecoJamReward: 30,
         weekKey: getIsoWeekKey(),
     },
@@ -37,7 +52,7 @@ export const ALL_RECIPES: Recipe[] = [
         kind: 'weekly',
         name: '숲속 버섯 스프',
         hint: '버섯과 잎이 포인트예요.',
-        ingredientIds: ['mushroom', 'leaf', 'herb', 'star'],
+        ingredientIds: ['mushroom', 'leaf', 'herb'],
         ecoJamReward: 40,
         weekKey: getIsoWeekKey(),
     },
@@ -71,20 +86,19 @@ export function getRecipeById(id: string): Recipe | undefined {
     return ALL_RECIPES.find((r) => r.id === id);
 }
 
-export function slotsMatchRecipe(
-    slots: (string | null)[],
-    recipe: Recipe,
-): boolean {
-    if (slots.length !== BREW_SLOT_COUNT || slots.some((s) => s == null)) {
+export function slotsMatchRecipe(slots: (string | null)[], recipe: Recipe): boolean {
+    const filled = getFilledIngredientIds(slots);
+    if (filled.length !== recipe.ingredientIds.length) {
         return false;
     }
-    const a = [...slots].sort().join(',');
+    const a = [...filled].sort().join(',');
     const b = [...recipe.ingredientIds].sort().join(',');
     return a === b;
 }
 
 export function findRecipeBySlots(slots: (string | null)[]): Recipe | undefined {
-    if (slots.some((s) => s == null)) {
+    const filled = getFilledIngredientIds(slots);
+    if (filled.length !== WEEKLY_INGREDIENT_COUNT && filled.length !== HIDDEN_INGREDIENT_COUNT) {
         return undefined;
     }
     return ALL_RECIPES.find((r) => slotsMatchRecipe(slots, r));
@@ -94,8 +108,8 @@ export function findMatchingRecipe(
     slots: (string | null)[],
     completedIds: string[],
 ): Recipe | undefined {
-    const filled = slots.every((s) => s != null);
-    if (!filled) {
+    const filled = getFilledIngredientIds(slots);
+    if (filled.length !== WEEKLY_INGREDIENT_COUNT && filled.length !== HIDDEN_INGREDIENT_COUNT) {
         return undefined;
     }
     const weekKey = getIsoWeekKey();
@@ -114,4 +128,8 @@ export function findMatchingRecipe(
 export function getTodayRecipeHint(weekKey = getIsoWeekKey()): string {
     const weekly = getWeeklyRecipes(weekKey);
     return weekly[0]?.hint ?? '미션으로 재료를 모아 스프를 끓여 보세요.';
+}
+
+export function isValidBrewFillCount(count: number): boolean {
+    return count === WEEKLY_INGREDIENT_COUNT || count === HIDDEN_INGREDIENT_COUNT;
 }

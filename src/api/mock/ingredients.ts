@@ -24,3 +24,19 @@ export const MISSION_INGREDIENT_REWARD: Record<string, string> = {
 export function getIngredientById(id: string): Ingredient | undefined {
     return INGREDIENTS.find((item) => item.id === id);
 }
+
+export function getMissionRewardIngredient(missionId: string): Ingredient | undefined {
+    const ingredientId = MISSION_INGREDIENT_REWARD[missionId];
+    if (ingredientId == null) {
+        return undefined;
+    }
+    return getIngredientById(ingredientId);
+}
+
+export function formatMissionIngredientReward(missionId: string): string {
+    const ingredient = getMissionRewardIngredient(missionId);
+    if (ingredient == null) {
+        return '재료';
+    }
+    return `${ingredient.emoji} ${ingredient.name}`;
+}

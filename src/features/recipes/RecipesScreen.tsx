@@ -1,4 +1,5 @@
-import { getHiddenRecipes, getWeeklyRecipes } from '@api/mock/recipes';
+import { getHiddenRecipes, getWeeklyRecipes, recipeIngredientCount } from '@api/mock/recipes';
+import { getIngredientById } from '@api/mock/ingredients';
 import { ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
@@ -19,10 +20,13 @@ export function RecipesScreen() {
                 }
             />
             <Txt typography="t5" fontWeight="semibold" style={styles.section}>
-                이번 주 (에코잼)
+                이번주 레시피
             </Txt>
             {weekly.map((recipe) => {
                 const done = state.completedRecipeIds.includes(recipe.id);
+                const ingredientLine = recipe.ingredientIds
+                    .map((id) => getIngredientById(id)?.emoji ?? id)
+                    .join(' ');
                 return (
                     <ListRow
                         key={recipe.id}
@@ -34,7 +38,7 @@ export function RecipesScreen() {
                                 bottom={
                                     done
                                         ? `완료 · 에코잼 +${recipe.ecoJamReward ?? 0}`
-                                        : `${recipe.ingredientIds.join(' · ')} · 에코잼 +${recipe.ecoJamReward ?? 0}`
+                                        : `재료 ${recipeIngredientCount(recipe)}개 ${ingredientLine} · 에코잼 +${recipe.ecoJamReward ?? 0}`
                                 }
                             />
                         }
@@ -47,7 +51,7 @@ export function RecipesScreen() {
                 );
             })}
             <Txt typography="t5" fontWeight="semibold" style={styles.section}>
-                히든 (실물 리워드)
+                히든 레시피
             </Txt>
             {hidden.map((recipe) => {
                 const done = state.completedRecipeIds.includes(recipe.id);
@@ -63,7 +67,7 @@ export function RecipesScreen() {
                                 bottom={
                                     unlocked
                                         ? `${recipe.realRewardLabel ?? '실물 리워드'} · 완료`
-                                        : '조합을 맞추면 공개돼요. 한 번만 만들 수 있어요.'
+                                        : '재료 4개 · 조합을 맞추면 공개돼요. 한 번만 만들 수 있어요.'
                                 }
                             />
                         }

@@ -16,8 +16,8 @@ export const ONBOARDING_GUIDE = {
     intro: '안녕하세요.\n저는 새싹이에요.\n함께 제로웨이스트 실천,\n천천히 시작해 볼까요?',
 } as const;
 
-export function getMissionCompleteMessage(points: number): string {
-    return `미션을 완료했어요. +${points}P를 받았어요.`;
+export function getMissionCompleteMessage(ingredientLabel: string): string {
+    return `미션을 완료했어요.\n${ingredientLabel} 재료를 받았어요.`;
 }
 
 export function getMissionVerifyMessage(authHint: string): string {

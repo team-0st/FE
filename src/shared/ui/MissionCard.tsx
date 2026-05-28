@@ -1,5 +1,6 @@
 import { Badge, Txt } from '@toss/tds-react-native';
 import type { Mission } from '@api/mock';
+import { formatMissionIngredientReward } from '@api/mock/ingredients';
 import { missionStatusLabel } from '@api/mock/missions';
 import type { MissionProgressStatus } from '../../features/user/types';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -30,7 +31,7 @@ export function MissionCard({ mission, status, onPress }: MissionCardProps) {
                     badgeStyle="weak"
                     type={isCompleted ? 'green' : isPending ? 'yellow' : 'blue'}
                 >
-                    {isCompleted || isPending ? missionStatusLabel(status) : `+${mission.points}P`}
+                    {isCompleted || isPending ? missionStatusLabel(status) : formatMissionIngredientReward(mission.id)}
                 </Badge>
             </View>
         </Pressable>

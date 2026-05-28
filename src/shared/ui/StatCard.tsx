@@ -6,10 +6,23 @@ type StatCardProps = {
     label: string;
     value: string;
     hint?: string;
+    /** action: 탭 유도(blue), info: 안내만(grey) */
+    hintTone?: 'action' | 'info';
     onPress?: () => void;
+    accessibilityLabel?: string;
 };
 
-export function StatCard({ label, value, hint, onPress }: StatCardProps) {
+export function StatCard({
+    label,
+    value,
+    hint,
+    hintTone = 'info',
+    onPress,
+    accessibilityLabel,
+}: StatCardProps) {
+    const resolvedHintTone = onPress != null && hint != null ? hintTone : 'info';
+    const hintColor = resolvedHintTone === 'action' ? 'blue500' : 'grey600';
+
     const content = (
         <View style={styles.card}>
             <Txt typography="t7" color="grey600">
@@ -19,19 +32,34 @@ export function StatCard({ label, value, hint, onPress }: StatCardProps) {
                 {value}
             </Txt>
             {hint != null ? (
-                <Txt typography="t7" color="blue500">
+                <Txt typography="t7" color={hintColor}>
                     {hint}
                 </Txt>
             ) : null}
         </View>
     );
+
     if (onPress == null) {
         return content;
     }
-    return <Pressable onPress={onPress}>{content}</Pressable>;
+
+    return (
+        <Pressable
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={accessibilityLabel ?? `${label}, ${value}, ${hint ?? ''}`}
+            style={styles.pressable}
+        >
+            {content}
+        </Pressable>
+    );
 }
 
 const styles = StyleSheet.create({
+    pressable: {
+        flex: 1,
+        minHeight: 44,
+    },
     card: {
         flex: 1,
         backgroundColor: colors.surface,
