@@ -37,7 +37,7 @@ export function ProbabilityInfoButton({
                 onRequestClose={() => setOpen(false)}
             >
                 <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
-                    <View style={styles.sheet}>
+                    <View style={styles.sheet} onStartShouldSetResponder={() => true}>
                         <Txt typography="t5" fontWeight="bold" style={styles.sheetTitle}>
                             {title}
                         </Txt>

@@ -117,5 +117,5 @@ export function canAffordGachaPull(
     state: AppUserState,
     costEcoJam = GACHA_PULL_COST_ECO_JAM,
 ): boolean {
-    return state.ecoJam >= costEcoJam;
+    return state.gachaTickets > 0 || state.ecoJam >= costEcoJam;
 }

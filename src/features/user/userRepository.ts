@@ -25,13 +25,21 @@ export async function loadUserState(): Promise<AppUserState> {
         missionProgress,
         ...rest
     } = saved;
+    const legacyRecipeIdMap: Record<string, string> = {
+        'weekly-calm': 'weekly-01',
+        'weekly-forest': 'weekly-02',
+    };
+    const completedRecipeIds = (rest.completedRecipeIds ?? []).map(
+        (id) => legacyRecipeIdMap[id] ?? id,
+    );
+
     return {
         ...DEFAULT_USER_STATE,
         ...rest,
         ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
         gachaTickets: rest.gachaTickets ?? 0,
         ingredientInventory: normalizeIngredientInventory(rest.ingredientInventory),
-        completedRecipeIds: rest.completedRecipeIds ?? [],
+        completedRecipeIds,
         missionProgress: missionProgress ?? {},
         ecoJamLedger: rest.ecoJamLedger ?? [],
         pendingRealRewards: rest.pendingRealRewards ?? [],

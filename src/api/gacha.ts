@@ -1,4 +1,5 @@
-import { rollGachaReward, type GachaReward } from '../features/gacha/gachaLogic';
+import { rollGachaReward } from '../features/gacha/gachaLogic';
+import type { GachaReward } from '../features/gacha/gachaTypes';
 
 export type { GachaReward };
 

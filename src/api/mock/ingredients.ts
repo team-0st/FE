@@ -58,7 +58,8 @@ export function getMissionRewardIngredient(
     return undefined;
 }
 
-export function formatMissionIngredientReward(_missionId: string): string {
+export function formatMissionIngredientReward(missionId: string): string {
+    void missionId;
     return MISSION_RANDOM_REWARD_LABEL;
 }
 
