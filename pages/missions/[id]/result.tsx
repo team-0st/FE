@@ -2,6 +2,7 @@ import { getMissionById } from '@api/mock';
 import { createRoute } from '@granite-js/react-native';
 import { MissionResultScreen } from '../../../src/features/missions/MissionResultScreen';
 import { useUser } from '../../../src/features/user/UserProvider';
+import { isDemoAutoApproveMission } from '../../../src/shared/constants/featureFlags';
 import { ROUTES } from '../../../src/shared/constants/routes';
 import { Txt } from '@toss/tds-react-native';
 import { useCallback } from 'react';
@@ -41,7 +42,7 @@ function Page() {
         <MissionResultScreen
             mission={mission}
             onApproved={onApproved}
-            autoApproveDemo={__DEV__}
+            autoApproveDemo={isDemoAutoApproveMission()}
             onPressHome={() => navigation.navigate(ROUTES.home)}
         />
     );

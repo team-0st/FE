@@ -1,9 +1,9 @@
 import type { CheckInSuccessDto } from '@api/checkIn';
-import { pickMissionRewardIngredient } from '@api/mock/ingredients';
 import type { Recipe } from '@api/mock/recipes';
-import type { SoupBrewOutcome } from '../soup/soupRewardLogic';
+import type { SoupBrewOutcome } from '@api/mock/soupRewardMock';
+import { appendEcoJamLedger } from './ecoJamLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
-import type { AppUserState, MissionProgressStatus } from './types';
+import type { AppUserState, MissionProgressStatus, PendingRealReward } from './types';
 
 export function formatDateKey(date: Date): string {
     const y = date.getFullYear();
@@ -16,17 +16,18 @@ export function isCheckedInToday(state: AppUserState, today = formatDateKey(new 
     return state.lastCheckInDate === today;
 }
 
-/** BE 출석 API 응답을 로컬 상태에 반영 (FE는 계산하지 않음) */
 export function applyCheckInFromServer(
     state: AppUserState,
     payload: CheckInSuccessDto,
     today = formatDateKey(new Date()),
 ): AppUserState {
+    const ticketGrant = payload.gachaTicketsGranted ?? 0;
     return {
         ...state,
         lastCheckInDate: today,
         streakDays: payload.streakDays,
         ingredientInventory: payload.ingredientInventory,
+        gachaTickets: state.gachaTickets + ticketGrant,
     };
 }
 
@@ -38,7 +39,6 @@ export function finishOnboarding(state: AppUserState, shopId: string): AppUserSt
     };
 }
 
-/** 샌드박스·QA: 온보딩·재료·미션·출석 등 진행을 초기 상태로 되돌림 */
 export function resetOnboarding(_state: AppUserState): AppUserState {
     return { ...DEFAULT_USER_STATE };
 }
@@ -76,11 +76,10 @@ function addIngredient(state: AppUserState, ingredientId: string, amount = 1): A
 export function approveMission(
     state: AppUserState,
     missionId: string,
-    random: () => number = Math.random,
+    rewardIngredientId: string,
 ): AppUserState {
     const now = new Date().toISOString();
     const wasCompleted = state.missionProgress[missionId]?.status === 'completed';
-    const rewardIngredientId = pickMissionRewardIngredient(missionId, random);
     let next: AppUserState = {
         ...state,
         missionProgress: {
@@ -97,9 +96,7 @@ export function approveMission(
     }
     const weeklyMissionDone = Math.min(next.weeklyMissionTotal, next.weeklyMissionDone + 1);
     next = { ...next, weeklyMissionDone };
-    if (rewardIngredientId != null) {
-        next = addIngredient(next, rewardIngredientId, 1);
-    }
+    next = addIngredient(next, rewardIngredientId, 1);
     return next;
 }
 
@@ -134,14 +131,47 @@ export function completeRecipe(
         completedRecipeIds: [...state.completedRecipeIds, recipe.id],
     };
     if (outcome.kind === 'ecoJam' && (outcome.ecoJamAmount ?? 0) > 0) {
-        next = { ...next, ecoJam: next.ecoJam + (outcome.ecoJamAmount ?? 0) };
+        const gain = outcome.ecoJamAmount ?? 0;
+        next = { ...next, ecoJam: next.ecoJam + gain };
+        next = appendEcoJamLedger(next, `${recipe.name} 보상`, gain);
+    }
+    if (outcome.kind === 'real') {
+        const pending: PendingRealReward = {
+            id: `reward-${recipe.id}-${Date.now()}`,
+            recipeId: recipe.id,
+            label: outcome.realRewardLabel ?? recipe.realRewardLabel ?? '실물 리워드',
+            createdAt: new Date().toISOString(),
+            status: 'pending_contact',
+        };
+        next = {
+            ...next,
+            pendingRealRewards: [pending, ...next.pendingRealRewards],
+        };
     }
     return next;
 }
 
-export function addEcoJam(state: AppUserState, amount: number): AppUserState {
+export function addEcoJam(state: AppUserState, amount: number, label = '에코잼 지급'): AppUserState {
     if (amount <= 0) {
         return state;
     }
-    return { ...state, ecoJam: state.ecoJam + amount };
+    let next = { ...state, ecoJam: state.ecoJam + amount };
+    next = appendEcoJamLedger(next, label, amount);
+    return next;
+}
+
+export function spendEcoJam(state: AppUserState, amount: number, label: string): AppUserState | null {
+    if (amount <= 0 || state.ecoJam < amount) {
+        return null;
+    }
+    let next = { ...state, ecoJam: state.ecoJam - amount };
+    next = appendEcoJamLedger(next, label, -amount);
+    return next;
+}
+
+export function consumeGachaTicket(state: AppUserState): AppUserState | null {
+    if (state.gachaTickets < 1) {
+        return null;
+    }
+    return { ...state, gachaTickets: state.gachaTickets - 1 };
 }

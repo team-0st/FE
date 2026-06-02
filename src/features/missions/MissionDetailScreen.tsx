@@ -5,6 +5,12 @@ import { StyleSheet, View } from 'react-native';
 import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
 import type { MissionProgressStatus } from '../user/types';
 import { GuideHero } from '../../shared/ui/GuideHero';
+import {
+    MISSION_REWARD_PROBABILITY_LINES,
+    MISSION_REWARD_PROBABILITY_TITLE,
+} from '../../shared/constants/probabilityInfo';
+import { formatMissionPoolHint } from '@api/mock/ingredients';
+import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { RandomMissionRewardBadge } from '../../shared/ui/RandomMissionRewardBadge';
 import { Screen } from '../../shared/ui/Screen';
 
@@ -34,6 +40,16 @@ export function MissionDetailScreen({ mission, status, onPressVerify }: MissionD
                 compact
             />
             <RandomMissionRewardBadge />
+            <View style={styles.poolHint}>
+                <Txt typography="t7" color="grey600">
+                    풀 후보: {formatMissionPoolHint(mission.id)}
+                </Txt>
+                <ProbabilityInfoRow
+                    label="지급 확률"
+                    title={MISSION_REWARD_PROBABILITY_TITLE}
+                    lines={MISSION_REWARD_PROBABILITY_LINES}
+                />
+            </View>
             <View style={styles.note}>
                 <Txt typography="t7" color="grey500">
                     사진을 올리면 검수 후 재료가 지급돼요.
@@ -63,6 +79,11 @@ const styles = StyleSheet.create({
     hero: {
         alignItems: 'center',
         paddingTop: 8,
+    },
+    poolHint: {
+        marginTop: 12,
+        gap: 8,
+        alignItems: 'flex-start',
     },
     note: {
         marginTop: 16,

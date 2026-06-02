@@ -8,6 +8,21 @@ export type MissionProgress = {
     rewardIngredientId?: string;
 };
 
+export type EcoJamLedgerEntry = {
+    id: string;
+    at: string;
+    label: string;
+    delta: number;
+};
+
+export type PendingRealReward = {
+    id: string;
+    recipeId: string;
+    label: string;
+    createdAt: string;
+    status: 'pending_contact';
+};
+
 export type AppUserState = {
     onboardingCompleted: boolean;
     nickname: string;
@@ -18,7 +33,11 @@ export type AppUserState = {
     weeklyMissionTotal: number;
     totalPoints: number;
     ecoJam: number;
+    /** 출석 등으로 받은 무료 가챠 횟수 */
+    gachaTickets: number;
     ingredientInventory: Record<string, number>;
     completedRecipeIds: string[];
     missionProgress: Record<string, MissionProgress>;
+    ecoJamLedger: EcoJamLedgerEntry[];
+    pendingRealRewards: PendingRealReward[];
 };

@@ -1,16 +1,16 @@
 import type { CheckInRequestContext, CheckInResult, CheckInSuccessDto } from '../checkIn';
 
-/**
- * DEV ONLY — BE `POST /check-in` 대체.
- * 랜덤 재료·중복 출석 검증은 서버에서 할 예정. UI 개발용 스텁입니다.
- */
 const MOCK_WEIGHTS: { id: string; weight: number }[] = [
     { id: 'herb', weight: 4 },
     { id: 'leaf', weight: 4 },
     { id: 'drop', weight: 3 },
     { id: 'carrot', weight: 3 },
     { id: 'mushroom', weight: 2 },
+    { id: 'seed', weight: 2 },
     { id: 'star', weight: 1 },
+    { id: 'crystal', weight: 1 },
+    { id: 'wind', weight: 1 },
+    { id: 'ember', weight: 1 },
 ];
 
 function pickMockRewardId(): string {
@@ -51,6 +51,7 @@ export async function mockPostCheckIn(ctx: CheckInRequestContext): Promise<Check
         streakDays,
         reward: { ingredientId, quantity: 1 },
         ingredientInventory,
+        gachaTicketsGranted: 1,
     };
     return { ok: true, data };
 }

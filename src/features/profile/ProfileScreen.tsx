@@ -1,5 +1,6 @@
 import { ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
+import { formatLedgerDelta } from '../user/ecoJamLedger';
 import { listIngredientStock } from '../user/ingredientInventory';
 import { useUser } from '../user/UserProvider';
 import { resolveShopName } from '../user/selectors';
@@ -7,10 +8,16 @@ import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
 type ProfileScreenProps = {
+    onPressChangeShop?: () => void;
     onPressRestartOnboarding?: () => void;
 };
 
-export function ProfileScreen({ onPressRestartOnboarding }: ProfileScreenProps) {
+function formatLedgerTime(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: ProfileScreenProps) {
     const { state } = useUser();
     const shopName = resolveShopName(state.shopId);
     const completed = state.completedRecipeIds.length;
@@ -30,6 +37,17 @@ export function ProfileScreen({ onPressRestartOnboarding }: ProfileScreenProps) 
                 <Txt typography="t6" color="grey600">
                     {shopName}
                 </Txt>
+                {onPressChangeShop != null ? (
+                    <Txt
+                        typography="t7"
+                        color="blue500"
+                        onPress={onPressChangeShop}
+                        accessibilityRole="button"
+                        accessibilityLabel="단골 샵 변경"
+                    >
+                        단골 샵 변경
+                    </Txt>
+                ) : null}
             </View>
             <View style={styles.row}>
                 <View style={styles.card}>
@@ -39,6 +57,15 @@ export function ProfileScreen({ onPressRestartOnboarding }: ProfileScreenProps) 
                     </Txt>
                     <Txt typography="t4" fontWeight="bold">
                         {state.ecoJam}
+                    </Txt>
+                </View>
+                <View style={styles.card}>
+                    <Txt typography="t3">🎁</Txt>
+                    <Txt typography="t7" color="grey600">
+                        가챠 무료
+                    </Txt>
+                    <Txt typography="t4" fontWeight="bold">
+                        {state.gachaTickets}회
                     </Txt>
                 </View>
                 <View style={styles.card}>
@@ -59,6 +86,57 @@ export function ProfileScreen({ onPressRestartOnboarding }: ProfileScreenProps) 
                         {completed}개
                     </Txt>
                 </View>
+            </View>
+            {state.pendingRealRewards.length > 0 ? (
+                <View style={styles.section}>
+                    <Txt typography="t5" fontWeight="semibold" style={styles.sectionTitle}>
+                        실물 리워드 안내
+                    </Txt>
+                    {state.pendingRealRewards.map((item) => (
+                        <View key={item.id} style={styles.pendingCard}>
+                            <Txt typography="t6" fontWeight="bold">
+                                {item.label}
+                            </Txt>
+                            <Txt typography="t7" color="grey600">
+                                팀에서 확인 후 연락드릴게요. (수령 대기)
+                            </Txt>
+                        </View>
+                    ))}
+                </View>
+            ) : null}
+            <View style={styles.section}>
+                <Txt typography="t5" fontWeight="semibold" style={styles.sectionTitle}>
+                    에코잼 내역
+                </Txt>
+                {state.ecoJamLedger.length === 0 ? (
+                    <Txt typography="t7" color="grey600">
+                        아직 내역이 없어요.
+                    </Txt>
+                ) : (
+                    state.ecoJamLedger.slice(0, 10).map((entry) => (
+                        <ListRow
+                            key={entry.id}
+                            contents={
+                                <ListRow.Texts
+                                    type="2RowTypeA"
+                                    top={entry.label}
+                                    topProps={{ fontWeight: 'bold' }}
+                                    bottom={formatLedgerTime(entry.at)}
+                                />
+                            }
+                            right={
+                                <ListRow.RightTexts
+                                    type="1RowTypeA"
+                                    top={formatLedgerDelta(entry.delta)}
+                                    topProps={{
+                                        fontWeight: 'bold',
+                                        color: entry.delta >= 0 ? 'blue500' : 'grey600',
+                                    }}
+                                />
+                            }
+                        />
+                    ))
+                )}
             </View>
             <View style={styles.ingredientSection}>
                 <Txt typography="t5" fontWeight="semibold" style={styles.sectionTitle}>
@@ -133,12 +211,14 @@ const styles = StyleSheet.create({
     },
     row: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: 12,
         width: '100%',
         marginBottom: 12,
     },
     card: {
         flex: 1,
+        minWidth: '45%',
         backgroundColor: colors.primaryLight,
         borderRadius: 16,
         padding: 16,
@@ -147,16 +227,29 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.border,
     },
+    section: {
+        width: '100%',
+        marginBottom: 16,
+    },
+    sectionTitle: {
+        marginBottom: 8,
+    },
+    sectionHint: {
+        marginBottom: 8,
+    },
+    pendingCard: {
+        padding: 12,
+        borderRadius: 12,
+        backgroundColor: '#FFF8E7',
+        borderWidth: 1,
+        borderColor: '#FFB800',
+        marginBottom: 8,
+        gap: 4,
+    },
     ingredientSection: {
         width: '100%',
         marginTop: 8,
         marginBottom: 12,
-    },
-    sectionTitle: {
-        marginBottom: 4,
-    },
-    sectionHint: {
-        marginBottom: 8,
     },
     ingredientList: {
         width: '100%',

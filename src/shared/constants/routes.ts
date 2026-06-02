@@ -1,5 +1,5 @@
-import type { SoupBrewOutcome } from '../../features/soup/soupRewardLogic';
-import { encodeSoupOutcome } from '../../features/soup/soupRewardLogic';
+import type { SoupBrewOutcome } from '@api/mock/soupRewardMock';
+import { encodeSoupOutcome } from '@api/mock/soupRewardMock';
 
 export const ROUTES = {
     home: '/',

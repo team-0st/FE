@@ -1,13 +1,17 @@
 import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import {
+    GACHA_PROBABILITY_LINES,
+    GACHA_PROBABILITY_TITLE,
+} from '../../shared/constants/probabilityInfo';
 import { useAppToast } from '../../shared/feedback/useAppToast';
+import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { colors } from '../../shared/theme/colors';
 import { Screen } from '../../shared/ui/Screen';
 import { StatCard } from '../../shared/ui/StatCard';
 import { useUser } from '../user/UserProvider';
 import {
-    GACHA_PROBABILITY_HINT,
     GACHA_PULL_COST_ECO_JAM,
     GACHA_REWARD_LABEL,
     GACHA_TEST_ECO_JAM_GRANT,
@@ -20,26 +24,28 @@ export function GachaScreen() {
     const toast = useAppToast();
     const [lastReward, setLastReward] = useState<GachaReward | null>(null);
     const [isPulling, setIsPulling] = useState(false);
-    const canPull = state.ecoJam >= GACHA_PULL_COST_ECO_JAM && !isPulling;
+    const canPull =
+        (state.gachaTickets > 0 || state.ecoJam >= GACHA_PULL_COST_ECO_JAM) && !isPulling;
+    const pullLabel =
+        state.gachaTickets > 0
+            ? `무료 뽑기 (${state.gachaTickets}회)`
+            : `에코잼 ${GACHA_PULL_COST_ECO_JAM}개로 뽑기`;
 
     const onPressPull = useCallback(async () => {
         if (!canPull) {
-            toast.showError(
-                `에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`,
-            );
+            toast.showError(`에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`);
             return;
         }
         setIsPulling(true);
         try {
             const result = await pullGacha();
             if (!result.ok) {
-                toast.showError(
-                    `에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`,
-                );
+                toast.showError(`에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`);
                 return;
             }
             setLastReward(result.reward);
-            toast.showSuccess(formatGachaRewardMessage(result.reward));
+            const prefix = result.usedTicket ? '무료 뽑기! ' : '';
+            toast.showSuccess(prefix + formatGachaRewardMessage(result.reward));
         } finally {
             setIsPulling(false);
         }
@@ -51,20 +57,28 @@ export function GachaScreen() {
                 title={<Top.TitleParagraph size={22}>가챠</Top.TitleParagraph>}
                 subtitle2={
                     <Top.SubtitleParagraph>
-                        에코잼으로 뽑기 — 꽝·에코잼·재료·희소 알맹 포인트
+                        에코잼 또는 출석 무료권으로 뽑기
                     </Top.SubtitleParagraph>
                 }
             />
             <View style={styles.stats}>
                 <StatCard label="보유 에코잼" value={`${state.ecoJam}개`} />
+                <StatCard label="무료 뽑기" value={`${state.gachaTickets}회`} />
                 <StatCard label="알맹 포인트" value={`${state.totalPoints}P`} />
+            </View>
+            <View style={styles.probRow}>
+                <ProbabilityInfoRow
+                    label="가챠 확률"
+                    title={GACHA_PROBABILITY_TITLE}
+                    lines={GACHA_PROBABILITY_LINES}
+                />
             </View>
             <View style={styles.pot}>
                 <Txt typography="t1" style={styles.potEmoji}>
                     🎁
                 </Txt>
                 <Txt typography="t6" color="grey600" style={styles.potHint}>
-                    {GACHA_PROBABILITY_HINT}
+                    출석하면 무료 뽑기권을 받을 수 있어요.
                 </Txt>
             </View>
             {lastReward != null ? (
@@ -72,11 +86,7 @@ export function GachaScreen() {
                     <Txt typography="t7" color="grey600">
                         직전 결과
                     </Txt>
-                    <Txt
-                        typography="t4"
-                        fontWeight="bold"
-                        style={styles.resultTitle}
-                    >
+                    <Txt typography="t4" fontWeight="bold" style={styles.resultTitle}>
                         {GACHA_REWARD_LABEL[lastReward.type]}
                     </Txt>
                     <Txt typography="t6" color="grey700">
@@ -92,11 +102,12 @@ export function GachaScreen() {
                     disabled={!canPull}
                     onPress={() => void onPressPull()}
                 >
-                    에코잼 {GACHA_PULL_COST_ECO_JAM}개로 뽑기
+                    {pullLabel}
                 </Button>
             </View>
             <Txt typography="t7" color="grey500" style={styles.costNote}>
-                1회당 에코잼 {GACHA_PULL_COST_ECO_JAM}개가 소모됩니다.
+                무료 뽑기권이 있으면 우선 사용돼요. 없으면 에코잼 {GACHA_PULL_COST_ECO_JAM}개가
+                소모됩니다.
             </Txt>
             {__DEV__ ? (
                 <View style={styles.testGrantButton}>
@@ -120,31 +131,29 @@ export function GachaScreen() {
             <Txt typography="t5" fontWeight="semibold" style={styles.section}>
                 보상 안내
             </Txt>
-            {(
-                Object.keys(GACHA_REWARD_LABEL) as Array<
-                    keyof typeof GACHA_REWARD_LABEL
-                >
-            ).map((key) => (
-                <ListRow
-                    key={key}
-                    contents={
-                        <ListRow.Texts
-                            type="2RowTypeA"
-                            top={GACHA_REWARD_LABEL[key]}
-                            topProps={{ fontWeight: 'bold' }}
-                            bottom={
-                                key === 'nothing'
-                                    ? '아무것도 받지 못해요'
-                                    : key === 'ecoJam'
-                                      ? '에코잼 1~3개'
-                                      : key === 'ingredient'
-                                        ? '재료 1종 랜덤'
-                                        : '알맹상점 포인트 10~30P (희소)'
-                            }
-                        />
-                    }
-                />
-            ))}
+            {(Object.keys(GACHA_REWARD_LABEL) as Array<keyof typeof GACHA_REWARD_LABEL>).map(
+                (key) => (
+                    <ListRow
+                        key={key}
+                        contents={
+                            <ListRow.Texts
+                                type="2RowTypeA"
+                                top={GACHA_REWARD_LABEL[key]}
+                                topProps={{ fontWeight: 'bold' }}
+                                bottom={
+                                    key === 'nothing'
+                                        ? '아무것도 받지 못해요'
+                                        : key === 'ecoJam'
+                                          ? '에코잼 1~3개'
+                                          : key === 'ingredient'
+                                            ? '재료 1종 랜덤'
+                                            : '알맹상점 포인트 10~30P (희소)'
+                                }
+                            />
+                        }
+                    />
+                ),
+            )}
         </Screen>
     );
 }
@@ -152,8 +161,13 @@ export function GachaScreen() {
 const styles = StyleSheet.create({
     stats: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: 12,
         marginTop: 8,
+    },
+    probRow: {
+        marginTop: 12,
+        marginBottom: 8,
     },
     pot: {
         alignItems: 'center',

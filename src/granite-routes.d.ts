@@ -1,37 +1,20 @@
 import '@granite-js/react-native';
 
+/** Granite 파일 라우트([id])와 createRoute(:id) 병행 시 타입 보조 */
 declare module '@granite-js/react-native' {
     interface RegisterScreenInput {
-        '/': Record<string, never> | undefined;
-        '/ingredients': Record<string, never> | undefined;
-        '/login': Record<string, never> | undefined;
-        '/onboarding': Record<string, never> | undefined;
-        '/onboarding/shop': Record<string, never> | undefined;
-        '/recipes': Record<string, never> | undefined;
-        '/soup/result': { recipeId: string; rewardKind: string; rewardValue: string };
-        '/missions': Record<string, never> | undefined;
+        '/gacha': Record<string, never> | undefined;
         '/missions/:id': { id: string };
         '/missions/:id/verify': { id: string };
         '/missions/:id/result': { id: string };
-        '/shop': Record<string, never> | undefined;
-        '/shop/select': Record<string, never> | undefined;
-        '/profile': Record<string, never> | undefined;
+        '/soup/result': { recipeId: string; rewardKind: string; rewardValue: string };
     }
 
     interface RegisterScreen {
-        '/': Record<string, never> | undefined;
-        '/ingredients': Record<string, never> | undefined;
-        '/login': Record<string, never> | undefined;
-        '/onboarding': Record<string, never> | undefined;
-        '/onboarding/shop': Record<string, never> | undefined;
-        '/recipes': Record<string, never> | undefined;
-        '/soup/result': { recipeId: string; rewardKind: string; rewardValue: string };
-        '/missions': Record<string, never> | undefined;
+        '/gacha': Record<string, never> | undefined;
         '/missions/:id': { id: string };
         '/missions/:id/verify': { id: string };
         '/missions/:id/result': { id: string };
-        '/shop': Record<string, never> | undefined;
-        '/shop/select': Record<string, never> | undefined;
-        '/profile': Record<string, never> | undefined;
+        '/soup/result': { recipeId: string; rewardKind: string; rewardValue: string };
     }
 }

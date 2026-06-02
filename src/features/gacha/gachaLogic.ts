@@ -83,15 +83,8 @@ function addIngredient(
     };
 }
 
-export function applyGachaPull(
-    state: AppUserState,
-    reward: GachaReward,
-    costEcoJam = GACHA_PULL_COST_ECO_JAM,
-): AppUserState | null {
-    if (state.ecoJam < costEcoJam) {
-        return null;
-    }
-    let next: AppUserState = { ...state, ecoJam: state.ecoJam - costEcoJam };
+export function applyGachaReward(state: AppUserState, reward: GachaReward): AppUserState {
+    let next = state;
     switch (reward.type) {
         case 'nothing':
             break;
@@ -108,9 +101,21 @@ export function applyGachaPull(
     return next;
 }
 
+export function applyGachaPull(
+    state: AppUserState,
+    reward: GachaReward,
+    costEcoJam = GACHA_PULL_COST_ECO_JAM,
+): AppUserState | null {
+    if (state.ecoJam < costEcoJam) {
+        return null;
+    }
+    let next: AppUserState = { ...state, ecoJam: state.ecoJam - costEcoJam };
+    return applyGachaReward(next, reward);
+}
+
 export function canAffordGachaPull(
     state: AppUserState,
     costEcoJam = GACHA_PULL_COST_ECO_JAM,
 ): boolean {
-    return state.ecoJam >= costEcoJam;
+    return state.gachaTickets > 0 || state.ecoJam >= costEcoJam;
 }

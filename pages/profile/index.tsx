@@ -17,6 +17,7 @@ function Page() {
     return (
         <MainTabShell activeTab="profile" onPressTab={onPressTab}>
             <ProfileScreen
+                onPressChangeShop={() => navigation.navigate(ROUTES.shopSelect)}
                 onPressRestartOnboarding={
                     __DEV__
                         ? () => {

@@ -10,6 +10,11 @@ import {
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { useUser } from '../user/UserProvider';
 import { isUserCheckedInToday } from '../user/selectors';
+import {
+    SOUP_WEEKLY_PROBABILITY_LINES,
+    SOUP_WEEKLY_PROBABILITY_TITLE,
+} from '../../shared/constants/probabilityInfo';
+import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import { HomeNudgeBanner } from '../../shared/ui/HomeNudgeBanner';
 import { Screen } from '../../shared/ui/Screen';
 import { StatCard } from '../../shared/ui/StatCard';
@@ -36,12 +41,21 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
             const result = await checkInToday();
             if (result.ok) {
                 const ingredient = getIngredientById(result.data.reward.ingredientId);
+                const tickets = result.data.gachaTicketsGranted ?? 0;
                 if (ingredient != null) {
                     const label = `${ingredient.emoji} ${ingredient.name}`;
                     setTodayRewardLabel(label);
-                    showSuccess(`${ingredient.name} 재료를 받았어요.`);
+                    showSuccess(
+                        tickets > 0
+                            ? `${ingredient.name} 재료와 가챠 무료 ${tickets}회를 받았어요.`
+                            : `${ingredient.name} 재료를 받았어요.`,
+                    );
                 } else {
-                    showSuccess('오늘의 재료를 받았어요.');
+                    showSuccess(
+                        tickets > 0
+                            ? `오늘의 재료와 가챠 무료 ${tickets}회를 받았어요.`
+                            : '오늘의 재료를 받았어요.',
+                    );
                 }
                 return;
             }
@@ -81,6 +95,7 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
                     accessibilityLabel="오늘 출석하기"
                 />
                 <StatCard label="에코잼" value={`${state.ecoJam}잼`} hintTone="info" />
+                <StatCard label="가챠 무료" value={`${state.gachaTickets}회`} hintTone="info" />
             </View>
             <View style={styles.stage}>
                 <Txt typography="t1" style={styles.witch}>
@@ -96,9 +111,15 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
                     </Txt>
                 </View>
                 <View style={styles.hintBox}>
-                    <Txt typography="t7" fontWeight="semibold" style={{ color: colors.primary }}>
-                        오늘의 레시피 힌트
-                    </Txt>
+                    <View style={styles.hintTitleRow}>
+                        <Txt typography="t7" fontWeight="semibold" style={{ color: colors.primary }}>
+                            오늘의 레시피 힌트
+                        </Txt>
+                        <ProbabilityInfoButton
+                            title={SOUP_WEEKLY_PROBABILITY_TITLE}
+                            lines={SOUP_WEEKLY_PROBABILITY_LINES}
+                        />
+                    </View>
                     <Txt typography="t6" color="grey700" style={styles.hintText}>
                         {hint}
                     </Txt>
@@ -120,9 +141,15 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
 const styles = StyleSheet.create({
     statRow: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: 12,
         width: '100%',
         marginBottom: 8,
+    },
+    hintTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     stage: {
         alignItems: 'center',
