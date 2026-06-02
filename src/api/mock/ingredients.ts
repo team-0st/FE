@@ -49,7 +49,7 @@ export function pickMissionRewardIngredient(
 }
 
 export function getMissionRewardIngredient(
-    missionId: string,
+    _missionId: string,
     rewardIngredientId?: string | null,
 ): Ingredient | undefined {
     if (rewardIngredientId != null) {
@@ -58,8 +58,7 @@ export function getMissionRewardIngredient(
     return undefined;
 }
 
-export function formatMissionIngredientReward(missionId: string): string {
-    void missionId;
+export function formatMissionIngredientReward(_missionId: string): string {
     return MISSION_RANDOM_REWARD_LABEL;
 }
 
