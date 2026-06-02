@@ -28,8 +28,15 @@
 | 홈 넛지 | ✅ | `HomeNudgeBanner` (출석·주간 미션) |
 | 네트워크 | ✅ | 출석 API `NETWORK_ERROR` → 토스트 |
 
-## 4. BE 연동 대기 (FE만 준비됨)
+## 4. 확률 안내 (2026-05)
 
-- [ ] `postCheckIn` → 실제 fetch
-- [ ] 미션 검수·스프 제작 API
+| 항목 | 상태 |
+|------|------|
+| 가챠·제작·레시피·미션 `i` 버튼 | ✅ |
+| mock footnote (BE 확정 전) | ✅ |
+
+## 5. BE 연동 대기 (FE만 준비됨)
+
+- [ ] `postCheckIn` → 실제 fetch ([#3](https://github.com/team-0st/FE/issues/3))
+- [ ] 미션 검수·스프·가챠 API ([#3](https://github.com/team-0st/FE/issues/3))
 - [ ] 토스 푸시 딥링크 (알림 탭 시 홈/미션)
