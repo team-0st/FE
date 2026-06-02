@@ -1,5 +1,5 @@
 import { getIngredientById } from '@api/mock';
-import { BREW_SLOT_MAX, WEEKLY_INGREDIENT_COUNT } from '@api/mock/recipes';
+import { BREW_SLOT_MAX, WEEKLY_SLOT_COUNT } from '@api/mock/recipes';
 import { Txt } from '@toss/tds-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
@@ -17,7 +17,7 @@ export function IngredientSlotBar({ slots, onPressSlot }: IngredientSlotBarProps
                     const id = slots[index] ?? null;
                     const ingredient = id != null ? getIngredientById(id) : undefined;
                     const filled = ingredient != null;
-                    const isHiddenSlot = index === WEEKLY_INGREDIENT_COUNT;
+                    const isHiddenSlot = index === WEEKLY_SLOT_COUNT;
                     return (
                         <View key={index} style={styles.slotCol}>
                             <Pressable

@@ -12,7 +12,16 @@ import { useAppToast } from '../../shared/feedback/useAppToast';
 import { useUser } from '../user/UserProvider';
 import { IngredientSlotBar } from '../../shared/ui/IngredientSlotBar';
 import { Screen } from '../../shared/ui/Screen';
-import type { SoupBrewOutcome } from '../soup/soupRewardLogic';
+import type { SoupBrewOutcome } from '@api/mock/soupRewardMock';
+import {
+    SOUP_BEGINNER_PROBABILITY_LINES,
+    SOUP_BEGINNER_PROBABILITY_TITLE,
+    SOUP_HIDDEN_PROBABILITY_LINES,
+    SOUP_HIDDEN_PROBABILITY_TITLE,
+    SOUP_WEEKLY_PROBABILITY_LINES,
+    SOUP_WEEKLY_PROBABILITY_TITLE,
+} from '../../shared/constants/probabilityInfo';
+import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 
 type IngredientsScreenProps = {
     onSoupMade: (recipeId: string, outcome: SoupBrewOutcome) => void;
@@ -87,8 +96,29 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
             />
             <IngredientSlotBar slots={slots} onPressSlot={handlePressSlot} />
             <Txt typography="t7" color="grey600" style={styles.hint}>
-                일반은 앞 3칸만, 히든은 네 칸을 채워요. 칸을 탭하면 재료를 빼요.
+                입문 2칸 · 일반 3칸 · 히든·전설 4칸. 칸을 탭하면 재료를 빼요.
             </Txt>
+            <View style={styles.probRow}>
+                <ProbabilityInfoRow
+                    label="일반 스프 보상"
+                    title={SOUP_WEEKLY_PROBABILITY_TITLE}
+                    lines={SOUP_WEEKLY_PROBABILITY_LINES}
+                />
+            </View>
+            <View style={styles.probRow}>
+                <ProbabilityInfoRow
+                    label="히든·전설 보상"
+                    title={SOUP_HIDDEN_PROBABILITY_TITLE}
+                    lines={SOUP_HIDDEN_PROBABILITY_LINES}
+                />
+            </View>
+            <View style={styles.probRow}>
+                <ProbabilityInfoRow
+                    label="입문 스프 보상"
+                    title={SOUP_BEGINNER_PROBABILITY_TITLE}
+                    lines={SOUP_BEGINNER_PROBABILITY_LINES}
+                />
+            </View>
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
                 {INGREDIENTS.map((item) => {
                     const owned = state.ingredientInventory[item.id] ?? 0;
@@ -140,7 +170,11 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
 const styles = StyleSheet.create({
     hint: {
         textAlign: 'center',
-        marginBottom: 12,
+        marginBottom: 8,
+    },
+    probRow: {
+        alignSelf: 'center',
+        marginBottom: 6,
     },
     list: {
         width: '100%',

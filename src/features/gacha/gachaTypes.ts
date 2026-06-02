@@ -11,5 +11,5 @@ export type GachaReward =
     | { type: 'shopPoints'; amount: number };
 
 export type GachaPullResult =
-    | { ok: true; reward: GachaReward; costEcoJam: number }
+    | { ok: true; reward: GachaReward; costEcoJam: number; usedTicket?: boolean }
     | { ok: false; reason: 'insufficient_eco_jam' };

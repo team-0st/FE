@@ -3,7 +3,7 @@ import { Button, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
-import type { SoupBrewOutcome } from './soupRewardLogic';
+import type { SoupBrewOutcome } from '@api/mock/soupRewardMock';
 
 type SoupResultScreenProps = {
     recipeId: string;

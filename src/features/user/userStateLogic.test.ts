@@ -32,7 +32,7 @@ describe('resetOnboarding', () => {
 describe('approveMission', () => {
     it('grants a random ingredient from the mission pool', () => {
         const base = { ...DEFAULT_USER_STATE, ingredientInventory: {} };
-        const next = approveMission(base, 'tumbler', () => 0);
+        const next = approveMission(base, 'tumbler', 'herb');
         expect(next.missionProgress.tumbler?.status).toBe('completed');
         expect(next.missionProgress.tumbler?.rewardIngredientId).toBe('herb');
         expect(next.ingredientInventory.herb).toBe(1);

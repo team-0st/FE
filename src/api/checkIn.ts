@@ -21,6 +21,8 @@ export type CheckInSuccessDto = {
     reward: CheckInRewardDto;
     /** BE가 갱신한 보유 재료 스냅샷 (권장) */
     ingredientInventory: Record<string, number>;
+    /** 출석 보너스 무료 가챠 횟수 (mock: 1) */
+    gachaTicketsGranted?: number;
 };
 
 export type CheckInResult =

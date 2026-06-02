@@ -10,6 +10,7 @@ export const DEFAULT_USER_STATE: AppUserState = {
     weeklyMissionTotal: 5,
     totalPoints: 0,
     ecoJam: 10,
+    gachaTickets: 0,
     ingredientInventory: {
         herb: 1,
         carrot: 1,
@@ -18,4 +19,6 @@ export const DEFAULT_USER_STATE: AppUserState = {
     },
     completedRecipeIds: [],
     missionProgress: {},
+    ecoJamLedger: [],
+    pendingRealRewards: [],
 };

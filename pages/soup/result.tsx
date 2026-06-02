@@ -1,10 +1,7 @@
 import { createRoute } from '@granite-js/react-native';
+import { decodeSoupOutcome, type SoupRewardKind } from '@api/mock/soupRewardMock';
 import { SoupResultScreen } from '../../src/features/soup/SoupResultScreen';
 import { ROUTES } from '../../src/shared/constants/routes';
-import {
-    decodeSoupOutcome,
-    type SoupRewardKind,
-} from '../../src/features/soup/soupRewardLogic';
 
 export const Route = createRoute('/soup/result', {
     component: Page,

@@ -29,9 +29,12 @@ export async function loadUserState(): Promise<AppUserState> {
         ...DEFAULT_USER_STATE,
         ...rest,
         ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
+        gachaTickets: rest.gachaTickets ?? 0,
         ingredientInventory: normalizeIngredientInventory(rest.ingredientInventory),
         completedRecipeIds: rest.completedRecipeIds ?? [],
         missionProgress: missionProgress ?? {},
+        ecoJamLedger: rest.ecoJamLedger ?? [],
+        pendingRealRewards: rest.pendingRealRewards ?? [],
     };
 }
 

@@ -8,11 +8,9 @@ import {
     useState,
     type PropsWithChildren,
 } from 'react';
-import { DEFAULT_USER_STATE } from './defaultState';
-import { loadUserState, saveUserState } from './userRepository';
 import { postCheckIn, type CheckInResult } from '@api/checkIn';
-import type { AppUserState } from './types';
-import { formatDateKey } from './userStateLogic';
+import { postGachaPull } from '@api/gacha';
+import { postMissionApprove } from '@api/missions';
 import type { Recipe } from '@api/mock/recipes';
 import {
     findMatchingRecipe,
@@ -20,21 +18,29 @@ import {
     getFilledIngredientIds,
     isValidBrewFillCount,
 } from '@api/mock/recipes';
+import type { SoupBrewOutcome } from '@api/mock/soupRewardMock';
+import { postSoupBrewReward } from '@api/soup';
 import { GACHA_PULL_COST_ECO_JAM } from '../gacha/gachaConfig';
-import { applyGachaPull, rollGachaReward } from '../gacha/gachaLogic';
+import { applyGachaPull, applyGachaReward } from '../gacha/gachaLogic';
 import type { GachaPullResult } from '../gacha/gachaTypes';
-import { rollSoupReward, type SoupBrewOutcome } from '../soup/soupRewardLogic';
+import { appendEcoJamLedger } from './ecoJamLedger';
+import { DEFAULT_USER_STATE } from './defaultState';
+import { loadUserState, saveUserState } from './userRepository';
+import type { AppUserState } from './types';
 import {
     addEcoJam,
     approveMission,
     applyCheckInFromServer,
     completeRecipe,
+    consumeGachaTicket,
     consumeIngredientsForSlots,
     finishOnboarding as finishOnboardingState,
     resetOnboarding as resetOnboardingState,
     setShopId,
+    spendEcoJam,
     submitMissionReview,
 } from './userStateLogic';
+import { formatDateKey } from './userStateLogic';
 
 type UserContextValue = {
     isReady: boolean;
@@ -124,25 +130,54 @@ export function UserProvider({ children }: PropsWithChildren) {
                 await persist((prev) => submitMissionReview(prev, missionId));
             },
             approveMissionDemo: async (missionId) => {
-                await persist((prev) => approveMission(prev, missionId));
+                const api = await postMissionApprove(missionId);
+                if (!api.ok) {
+                    return;
+                }
+                await persist((prev) => approveMission(prev, missionId, api.ingredientId));
             },
             grantTestEcoJam: async (amount) => {
-                await persist((prev) => addEcoJam(prev, amount));
+                await persist((prev) => addEcoJam(prev, amount, '테스트 지급'));
             },
             pullGacha: async (): Promise<GachaPullResult> => {
                 const current = stateRef.current;
-                if (current.ecoJam < GACHA_PULL_COST_ECO_JAM) {
+                const useTicket = current.gachaTickets > 0;
+                if (!useTicket && current.ecoJam < GACHA_PULL_COST_ECO_JAM) {
                     return { ok: false, reason: 'insufficient_eco_jam' };
                 }
-                const reward = rollGachaReward();
-                const next = applyGachaPull(current, reward);
+                const reward = await postGachaPull();
+                let next: AppUserState | null = current;
+                if (useTicket) {
+                    next = consumeGachaTicket(current);
+                    if (next == null) {
+                        return { ok: false, reason: 'insufficient_eco_jam' };
+                    }
+                    next = applyGachaReward(next, reward);
+                    if (reward.type === 'ecoJam') {
+                        next = appendEcoJamLedger(next, '가챠 보상', reward.amount);
+                    }
+                } else {
+                    const spent = spendEcoJam(current, GACHA_PULL_COST_ECO_JAM, '가챠 뽑기');
+                    if (spent == null) {
+                        return { ok: false, reason: 'insufficient_eco_jam' };
+                    }
+                    next = applyGachaPull(spent, reward, 0);
+                    if (next != null && reward.type === 'ecoJam') {
+                        next = appendEcoJamLedger(next, '가챠 보상', reward.amount);
+                    }
+                }
                 if (next == null) {
                     return { ok: false, reason: 'insufficient_eco_jam' };
                 }
                 stateRef.current = next;
                 setState(next);
                 await saveUserState(next);
-                return { ok: true, reward, costEcoJam: GACHA_PULL_COST_ECO_JAM };
+                return {
+                    ok: true,
+                    reward,
+                    costEcoJam: useTicket ? 0 : GACHA_PULL_COST_ECO_JAM,
+                    usedTicket: useTicket,
+                };
             },
             brewSoup: async (slots) => {
                 const filled = getFilledIngredientIds(slots);
@@ -162,7 +197,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                 if (consumed == null) {
                     return { ok: false, reason: 'no_stock' };
                 }
-                const outcome = rollSoupReward(recipe);
+                const outcome = await postSoupBrewReward(recipe);
                 const next = completeRecipe(consumed, recipe, outcome);
                 stateRef.current = next;
                 setState(next);
