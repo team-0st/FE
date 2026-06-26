@@ -1,4 +1,4 @@
-import type { Mission } from './types';
+import type { Mission } from '@api/mock/types';
 
 export const DAILY_MISSIONS: Mission[] = [
     {
@@ -47,12 +47,9 @@ export function getMissionById(id: string): Mission | undefined {
     return DAILY_MISSIONS.find((mission) => mission.id === id);
 }
 
-export function missionStatusLabel(status: 'available' | 'pending_review' | 'completed'): string {
+export function missionStatusLabel(status: 'available' | 'completed'): string {
     if (status === 'completed') {
         return '완료';
-    }
-    if (status === 'pending_review') {
-        return '검수 중';
     }
     return '미완료';
 }

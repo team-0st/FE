@@ -1,21 +1,25 @@
+import type { IngredientCatalogType } from '../notion/types';
+
 export type Ingredient = {
     id: string;
     name: string;
     emoji: string;
+    type: IngredientCatalogType;
+    imageUrl: string | null;
 };
 
-/** 일반 7 + 히든·전설용 3 = 10종 */
+/** 일반 7 + 히든 3 = 10종 (노션 Ingredients.type) */
 export const INGREDIENTS: Ingredient[] = [
-    { id: 'herb', name: '제로 허브', emoji: '🌿' },
-    { id: 'carrot', name: '당근 조각', emoji: '🥕' },
-    { id: 'mushroom', name: '버섯', emoji: '🍄' },
-    { id: 'star', name: '별가루', emoji: '✨' },
-    { id: 'leaf', name: '친환경 잎', emoji: '🍃' },
-    { id: 'drop', name: '이슬', emoji: '💧' },
-    { id: 'seed', name: '씨앗', emoji: '🌱' },
-    { id: 'crystal', name: '수정', emoji: '💎' },
-    { id: 'wind', name: '바람잎', emoji: '🌬️' },
-    { id: 'ember', name: '잔불', emoji: '🔥' },
+    { id: 'herb', name: '제로 허브', emoji: '🌿', type: 'COMMON', imageUrl: null },
+    { id: 'carrot', name: '당근 조각', emoji: '🥕', type: 'COMMON', imageUrl: null },
+    { id: 'mushroom', name: '버섯', emoji: '🍄', type: 'COMMON', imageUrl: null },
+    { id: 'leaf', name: '친환경 잎', emoji: '🍃', type: 'COMMON', imageUrl: null },
+    { id: 'drop', name: '이슬', emoji: '💧', type: 'COMMON', imageUrl: null },
+    { id: 'seed', name: '씨앗', emoji: '🌱', type: 'COMMON', imageUrl: null },
+    { id: 'wind', name: '바람잎', emoji: '🌬️', type: 'COMMON', imageUrl: null },
+    { id: 'star', name: '별가루', emoji: '✨', type: 'HIDDEN', imageUrl: null },
+    { id: 'crystal', name: '수정', emoji: '💎', type: 'HIDDEN', imageUrl: null },
+    { id: 'ember', name: '잔불', emoji: '🔥', type: 'HIDDEN', imageUrl: null },
 ];
 
 export const MISSION_REWARD_POOLS: Record<string, string[]> = {

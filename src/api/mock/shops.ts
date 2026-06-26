@@ -1,8 +1,8 @@
 export type Shop = {
     id: string;
     name: string;
-    area: string;
-    philosophy: string;
+    description: string;
+    imageUrl: string | null;
     emoji: string;
 };
 
@@ -10,15 +10,15 @@ export const MOCK_SHOPS: Shop[] = [
     {
         id: 'demo',
         name: '알맹상점',
-        area: '파일럿',
-        philosophy: '일상에서 작은 실천을 함께 기록해요.',
+        description: '일상에서 작은 실천을 함께 기록해요. (파일럿)',
+        imageUrl: null,
         emoji: '🌿',
     },
     {
         id: 'almae',
         name: '알맹상점',
-        area: '성수',
-        philosophy: '쓰레기 없는 소비를 함께 만들어가요.',
+        description: '쓰레기 없는 소비를 함께 만들어가요. (성수)',
+        imageUrl: null,
         emoji: '♻️',
     },
 ];
