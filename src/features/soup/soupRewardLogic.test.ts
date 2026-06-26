@@ -1,4 +1,4 @@
-import { mockRollSoupReward } from '@api/mock/soupRewardMock';
+import { mockRollSoupCraft } from '@api/mock/soupCraftMock';
 import type { Recipe } from '@api/mock/recipeTypes';
 
 const weeklyRecipe: Recipe = {
@@ -21,22 +21,25 @@ const hiddenRecipe: Recipe = {
     realRewardLabel: '쿠폰',
 };
 
-describe('mockRollSoupReward', () => {
-    it('returns miss when random is below weekly miss rate', () => {
-        const outcome = mockRollSoupReward(weeklyRecipe, () => 0.1);
-        expect(outcome.kind).toBe('miss');
-        expect(outcome.missMessage).toBeTruthy();
+describe('mockRollSoupCraft', () => {
+    it('returns FAIL with TRASH_ITEM when random is below success rate', () => {
+        const craft = mockRollSoupCraft(weeklyRecipe, () => 0.95);
+        expect(craft.result).toBe('FAIL');
+        expect(craft.rewardType).toBe('TRASH_ITEM');
+        expect(craft.rewardDescription).toBeTruthy();
     });
 
-    it('returns ecoJam when random is above weekly miss rate', () => {
-        const outcome = mockRollSoupReward(weeklyRecipe, () => 0.85);
-        expect(outcome.kind).toBe('ecoJam');
-        expect(outcome.ecoJamAmount).toBeGreaterThan(0);
+    it('returns SUCCESS with ECO_JAM when random is within success rate', () => {
+        const craft = mockRollSoupCraft(weeklyRecipe, () => 0.5);
+        expect(craft.result).toBe('SUCCESS');
+        expect(craft.rewardType).toBe('ECO_JAM');
+        expect(craft.rewardAmount).toBeGreaterThan(0);
     });
 
-    it('returns real reward for hidden when not miss', () => {
-        const outcome = mockRollSoupReward(hiddenRecipe, () => 0.5);
-        expect(outcome.kind).toBe('real');
-        expect(outcome.realRewardLabel).toBe('쿠폰');
+    it('returns SUCCESS with REAL_ITEM for hidden recipes', () => {
+        const craft = mockRollSoupCraft(hiddenRecipe, () => 0.5);
+        expect(craft.result).toBe('SUCCESS');
+        expect(craft.rewardType).toBe('REAL_ITEM');
+        expect(craft.rewardDescription).toBe('쿠폰');
     });
 });
