@@ -2,15 +2,41 @@ import { readJson, writeJson } from '../../shared/storage/jsonStorage';
 import { STORAGE_KEYS } from '../../shared/storage/keys';
 import { DEFAULT_USER_STATE } from './defaultState';
 import { normalizeIngredientInventory } from './ingredientInventory';
-import type { AppUserState } from './types';
+import type { AppUserState, MissionProgress } from './types';
 
 type LegacyUserState = Partial<AppUserState> & {
     teamId?: string;
     onboarding?: unknown;
     preSurveyDone?: boolean;
     postSurveyDone?: boolean;
-    missionProgress?: AppUserState['missionProgress'];
+    streakDays?: number;
+    gachaTickets?: number;
+    missionProgress?: Record<string, MissionProgress & { status?: string; submittedAt?: string }>;
 };
+
+function normalizeMissionProgress(
+    raw: LegacyUserState['missionProgress'],
+): AppUserState['missionProgress'] {
+    if (raw == null) {
+        return {};
+    }
+    const next: AppUserState['missionProgress'] = {};
+    for (const [id, progress] of Object.entries(raw)) {
+        const legacyStatus = progress.status as string | undefined;
+        if (legacyStatus === 'pending_review') {
+            next[id] = { status: 'available' };
+            continue;
+        }
+        if (progress.status === 'completed' || legacyStatus === 'completed') {
+            next[id] = {
+                status: 'completed',
+                completedAt: progress.completedAt,
+                rewardIngredientId: progress.rewardIngredientId,
+            };
+        }
+    }
+    return next;
+}
 
 export async function loadUserState(): Promise<AppUserState> {
     const saved = await readJson<LegacyUserState>(STORAGE_KEYS.appState);
@@ -22,6 +48,8 @@ export async function loadUserState(): Promise<AppUserState> {
         onboarding: _onboarding,
         preSurveyDone: _preSurveyDone,
         postSurveyDone: _postSurveyDone,
+        streakDays: _streakDays,
+        gachaTickets: _gachaTickets,
         missionProgress,
         ...rest
     } = saved;
@@ -37,10 +65,9 @@ export async function loadUserState(): Promise<AppUserState> {
         ...DEFAULT_USER_STATE,
         ...rest,
         ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
-        gachaTickets: rest.gachaTickets ?? 0,
         ingredientInventory: normalizeIngredientInventory(rest.ingredientInventory),
         completedRecipeIds,
-        missionProgress: missionProgress ?? {},
+        missionProgress: normalizeMissionProgress(missionProgress),
         ecoJamLedger: rest.ecoJamLedger ?? [],
         pendingRealRewards: rest.pendingRealRewards ?? [],
     };
