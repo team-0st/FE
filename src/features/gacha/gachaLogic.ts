@@ -16,7 +16,7 @@ function pickRewardType(random: () => number): GachaRewardType {
             return entry.type;
         }
     }
-    return GACHA_WEIGHT_TABLE[GACHA_WEIGHT_TABLE.length - 1]?.type ?? 'nothing';
+    return GACHA_WEIGHT_TABLE[GACHA_WEIGHT_TABLE.length - 1]?.type ?? 'FAIL';
 }
 
 function pickIngredientId(random: () => number): string {
@@ -28,25 +28,22 @@ function pickIngredientId(random: () => number): string {
     return GACHA_INGREDIENT_POOL[0] ?? 'herb';
 }
 
-/** mock 확률표로 보상 1건 결정 (random 주입으로 테스트 가능) */
-export function rollGachaReward(
-    random: () => number = Math.random,
-): GachaReward {
+export function rollGachaReward(random: () => number = Math.random): GachaReward {
     const type = pickRewardType(random);
     switch (type) {
-        case 'nothing':
-            return { type: 'nothing' };
-        case 'ecoJam':
-            return { type: 'ecoJam', amount: 1 + Math.floor(random() * 3) };
-        case 'ingredient':
+        case 'FAIL':
+            return { type: 'FAIL' };
+        case 'ECO_JAM':
+            return { type: 'ECO_JAM', amount: 1 + Math.floor(random() * 3) };
+        case 'INGREDIENT':
             return {
-                type: 'ingredient',
+                type: 'INGREDIENT',
                 ingredientId: pickIngredientId(random),
                 amount: 1,
             };
-        case 'shopPoints':
+        case 'ALMANG_POINT':
             return {
-                type: 'shopPoints',
+                type: 'ALMANG_POINT',
                 amount: 10 + Math.floor(random() * 21),
             };
     }
@@ -54,16 +51,16 @@ export function rollGachaReward(
 
 export function formatGachaRewardMessage(reward: GachaReward): string {
     switch (reward.type) {
-        case 'nothing':
+        case 'FAIL':
             return '아쉽게도 꽝이에요. 다음에 다시 도전해 보세요!';
-        case 'ecoJam':
+        case 'ECO_JAM':
             return `에코잼 ${reward.amount}개를 받았어요!`;
-        case 'ingredient': {
+        case 'INGREDIENT': {
             const item = getIngredientById(reward.ingredientId);
             const label = item != null ? `${item.emoji} ${item.name}` : '재료';
             return `${label} ${reward.amount}개를 받았어요!`;
         }
-        case 'shopPoints':
+        case 'ALMANG_POINT':
             return `알맹상점 포인트 ${reward.amount}P를 받았어요! (희소)`;
     }
 }
@@ -86,15 +83,15 @@ function addIngredient(
 export function applyGachaReward(state: AppUserState, reward: GachaReward): AppUserState {
     let next = state;
     switch (reward.type) {
-        case 'nothing':
+        case 'FAIL':
             break;
-        case 'ecoJam':
+        case 'ECO_JAM':
             next = { ...next, ecoJam: next.ecoJam + reward.amount };
             break;
-        case 'ingredient':
+        case 'INGREDIENT':
             next = addIngredient(next, reward.ingredientId, reward.amount);
             break;
-        case 'shopPoints':
+        case 'ALMANG_POINT':
             next = { ...next, totalPoints: next.totalPoints + reward.amount };
             break;
     }
@@ -117,5 +114,5 @@ export function canAffordGachaPull(
     state: AppUserState,
     costEcoJam = GACHA_PULL_COST_ECO_JAM,
 ): boolean {
-    return state.gachaTickets > 0 || state.ecoJam >= costEcoJam;
+    return state.ecoJam >= costEcoJam;
 }

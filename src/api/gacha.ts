@@ -1,10 +1,14 @@
-import { rollGachaReward } from '../features/gacha/gachaLogic';
 import type { GachaReward } from '../features/gacha/gachaTypes';
+import { mockPostGacha, type GachaPullApiResult } from './mock/gachaMock';
 
 export type { GachaReward };
 
-/** BE `POST /gacha/pull` mock */
-export async function postGachaPull(random: () => number = Math.random): Promise<GachaReward> {
-    await new Promise((r) => setTimeout(r, 60));
-    return rollGachaReward(random);
+export type { GachaPullApiResult };
+
+/** POST /api/gacha — 에코잼으로 뽑기 (노션 명세) */
+export async function postGacha(
+    currentEcoJam: number,
+    random: () => number = Math.random,
+): Promise<GachaPullApiResult> {
+    return mockPostGacha(currentEcoJam, random);
 }
