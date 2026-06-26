@@ -14,12 +14,9 @@ type MissionsListScreenProps = {
     onPressBack?: () => void;
 };
 
-function statusColor(status: MissionProgressStatus): 'green500' | 'blue500' | 'grey500' {
+function statusColor(status: MissionProgressStatus): 'green500' | 'blue500' {
     if (status === 'completed') {
         return 'green500';
-    }
-    if (status === 'pending_review') {
-        return 'grey500';
     }
     return 'blue500';
 }

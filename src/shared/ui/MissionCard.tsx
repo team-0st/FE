@@ -14,7 +14,6 @@ type MissionCardProps = {
 
 export function MissionCard({ mission, status, onPress }: MissionCardProps) {
     const isCompleted = status === 'completed';
-    const isPending = status === 'pending_review';
 
     return (
         <Pressable onPress={onPress} style={styles.card}>
@@ -29,9 +28,9 @@ export function MissionCard({ mission, status, onPress }: MissionCardProps) {
                 <Badge
                     size="tiny"
                     badgeStyle="weak"
-                    type={isCompleted ? 'green' : isPending ? 'yellow' : 'blue'}
+                    type={isCompleted ? 'green' : 'blue'}
                 >
-                    {isCompleted || isPending ? missionStatusLabel(status) : formatMissionIngredientReward(mission.id)}
+                    {isCompleted ? missionStatusLabel(status) : formatMissionIngredientReward(mission.id)}
                 </Badge>
             </View>
         </Pressable>

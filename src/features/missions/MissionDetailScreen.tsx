@@ -1,5 +1,4 @@
 import type { Mission } from '@api/mock';
-import { missionStatusLabel } from '@api/mock/missions';
 import { Button, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
@@ -22,7 +21,6 @@ type MissionDetailScreenProps = {
 
 export function MissionDetailScreen({ mission, status, onPressVerify }: MissionDetailScreenProps) {
     const isCompleted = status === 'completed';
-    const isPending = status === 'pending_review';
 
     return (
         <Screen scrollable>
@@ -52,23 +50,18 @@ export function MissionDetailScreen({ mission, status, onPressVerify }: MissionD
             </View>
             <View style={styles.note}>
                 <Txt typography="t7" color="grey500">
-                    사진을 올리면 검수 후 재료가 지급돼요.
+                    사진 업로드 후 즉시 재료가 지급돼요. (노션 verify API)
                 </Txt>
-                {isPending ? (
-                    <Txt typography="t6" color="grey600" style={styles.status}>
-                        {missionStatusLabel(status)}
-                    </Txt>
-                ) : null}
             </View>
             <View style={styles.cta}>
                 <Button
                     size="large"
                     type="primary"
                     display="block"
-                    disabled={isCompleted || isPending}
+                    disabled={isCompleted}
                     onPress={onPressVerify}
                 >
-                    {isCompleted ? '이미 완료한 미션' : isPending ? '검수 중' : '인증하기'}
+                    {isCompleted ? '이미 완료한 미션' : '인증하기'}
                 </Button>
             </View>
         </Screen>
@@ -88,9 +81,6 @@ const styles = StyleSheet.create({
     note: {
         marginTop: 16,
         gap: 8,
-    },
-    status: {
-        marginTop: 4,
     },
     cta: {
         marginTop: 24,

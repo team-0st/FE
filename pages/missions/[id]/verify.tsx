@@ -17,7 +17,7 @@ export const Route = createRoute('/missions/:id/verify', {
 function Page() {
     const { id } = Route.useParams();
     const navigation = Route.useNavigation();
-    const { submitMission } = useUser();
+    const { verifyMission } = useUser();
     const mission = getMissionById(id);
 
     if (mission == null) {
@@ -34,8 +34,10 @@ function Page() {
         <MissionVerifyScreen
             mission={mission}
             onSubmit={async () => {
-                await submitMission(mission.id);
-                navigateMissionResult(navigation, mission.id);
+                const result = await verifyMission(mission.id);
+                if (result.ok) {
+                    navigateMissionResult(navigation, mission.id);
+                }
             }}
         />
     );

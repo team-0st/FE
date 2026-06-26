@@ -1,11 +1,8 @@
 import { getMissionById } from '@api/mock';
 import { createRoute } from '@granite-js/react-native';
 import { MissionResultScreen } from '../../../src/features/missions/MissionResultScreen';
-import { useUser } from '../../../src/features/user/UserProvider';
-import { isDemoAutoApproveMission } from '../../../src/shared/constants/featureFlags';
 import { ROUTES } from '../../../src/shared/constants/routes';
 import { Txt } from '@toss/tds-react-native';
-import { useCallback } from 'react';
 import { View } from 'react-native';
 import { Screen } from '../../../src/shared/ui/Screen';
 
@@ -19,14 +16,7 @@ export const Route = createRoute('/missions/:id/result', {
 function Page() {
     const { id } = Route.useParams();
     const navigation = Route.useNavigation();
-    const { approveMissionDemo } = useUser();
     const mission = getMissionById(id);
-
-    const onApproved = useCallback(() => {
-        if (mission != null) {
-            void approveMissionDemo(mission.id);
-        }
-    }, [approveMissionDemo, mission]);
 
     if (mission == null) {
         return (
@@ -41,8 +31,6 @@ function Page() {
     return (
         <MissionResultScreen
             mission={mission}
-            onApproved={onApproved}
-            autoApproveDemo={isDemoAutoApproveMission()}
             onPressHome={() => navigation.navigate(ROUTES.home)}
         />
     );
