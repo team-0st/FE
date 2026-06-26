@@ -34,11 +34,8 @@ export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
                         <Txt typography="t4" fontWeight="bold" style={styles.name}>
                             {shop.name}
                         </Txt>
-                        <Txt typography="t6" color="grey600">
-                            {shop.area}
-                        </Txt>
-                        <Txt typography="t6" color="grey700" style={styles.philosophy}>
-                            {shop.philosophy}
+                        <Txt typography="t6" color="grey700" style={styles.description}>
+                            {shop.description}
                         </Txt>
                     </View>
                 </>
@@ -64,7 +61,7 @@ export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
                             type="2RowTypeA"
                             top={`${item.emoji} ${item.name}`}
                             topProps={{ fontWeight: 'bold' }}
-                            bottom={item.area}
+                            bottom={item.description}
                         />
                     }
                     right={
@@ -92,7 +89,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
         marginBottom: 4,
     },
-    philosophy: {
+    description: {
         marginTop: 12,
         textAlign: 'center',
         lineHeight: 22,

@@ -31,7 +31,7 @@ export function HomeScreen({ onPressMissions, onPressMission, onPressShop }: Hom
         }
         const result = await checkInToday();
         if (result.ok) {
-            const ingredient = getIngredientById(result.data.reward.ingredientId);
+            const ingredient = getIngredientById(result.data.ingredientId);
             if (ingredient != null) {
                 setTodayRewardLabel(`${ingredient.emoji} ${ingredient.name}`);
             }
@@ -47,10 +47,11 @@ export function HomeScreen({ onPressMissions, onPressMission, onPressShop }: Hom
                 <HomeHero
                     nickname={state.nickname}
                     totalPoints={state.totalPoints}
-                    streakDays={state.streakDays}
+                    weeklyMissionDone={state.weeklyMissionDone}
+                    weeklyMissionTotal={state.weeklyMissionTotal}
                     shopEmoji={shop?.emoji ?? '🏪'}
                     shopName={shopName}
-                    shopArea={shop?.area ?? '샵 선택 필요'}
+                    shopDescription={shop?.description ?? '샵 선택 필요'}
                 />
                 <GuideHero
                     message={guideMessage}

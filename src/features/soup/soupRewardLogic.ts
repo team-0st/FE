@@ -1,8 +1,8 @@
-/** @deprecated Use `@api/soup` / `@api/mock/soupRewardMock` */
+/** @deprecated Use `@api/soup` / `@api/mock/soupCraftMock` */
 export {
-    decodeSoupOutcome,
-    encodeSoupOutcome,
-    mockRollSoupReward as rollSoupReward,
-    type SoupBrewOutcome,
-    type SoupRewardKind,
-} from '@api/mock/soupRewardMock';
+    decodeSoupCraftFromRoute as decodeSoupOutcome,
+    encodeSoupCraftForRoute as encodeSoupOutcome,
+    mockRollSoupCraft as rollSoupReward,
+} from '@api/mock/soupCraftMock';
+
+export type { SoupCraftResponse as SoupBrewOutcome } from '@api/notion/types';

@@ -1,5 +1,5 @@
-import type { SoupBrewOutcome } from '@api/mock/soupRewardMock';
-import { encodeSoupOutcome } from '@api/mock/soupRewardMock';
+import type { SoupCraftResponse } from '@api/notion/types';
+import { encodeSoupCraftForRoute } from '@api/mock/soupCraftMock';
 
 export const ROUTES = {
     home: '/',
@@ -22,8 +22,11 @@ type AppNavigation = {
         params?: {
             id?: string;
             recipeId?: string;
-            rewardKind?: string;
-            rewardValue?: string;
+            soupId?: string;
+            result?: string;
+            rewardType?: string;
+            rewardAmount?: string;
+            rewardDescription?: string;
         },
     ) => void;
 };
@@ -43,8 +46,8 @@ export function navigateMissionResult(navigation: AppNavigation, id: string): vo
 export function navigateSoupResult(
     navigation: AppNavigation,
     recipeId: string,
-    outcome: SoupBrewOutcome,
+    craft: SoupCraftResponse,
 ): void {
-    const encoded = encodeSoupOutcome(outcome);
+    const encoded = encodeSoupCraftForRoute(craft);
     navigation.navigate('/soup/result', { recipeId, ...encoded });
 }

@@ -40,22 +40,13 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
         try {
             const result = await checkInToday();
             if (result.ok) {
-                const ingredient = getIngredientById(result.data.reward.ingredientId);
-                const tickets = result.data.gachaTicketsGranted ?? 0;
+                const ingredient = getIngredientById(result.data.ingredientId);
                 if (ingredient != null) {
                     const label = `${ingredient.emoji} ${ingredient.name}`;
                     setTodayRewardLabel(label);
-                    showSuccess(
-                        tickets > 0
-                            ? `${ingredient.name} 재료와 가챠 무료 ${tickets}회를 받았어요.`
-                            : `${ingredient.name} 재료를 받았어요.`,
-                    );
+                    showSuccess(`${ingredient.name} 재료를 받았어요.`);
                 } else {
-                    showSuccess(
-                        tickets > 0
-                            ? `오늘의 재료와 가챠 무료 ${tickets}회를 받았어요.`
-                            : '오늘의 재료를 받았어요.',
-                    );
+                    showSuccess('오늘의 재료를 받았어요.');
                 }
                 return;
             }
@@ -95,7 +86,7 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
                     accessibilityLabel="오늘 출석하기"
                 />
                 <StatCard label="에코잼" value={`${state.ecoJam}잼`} hintTone="info" />
-                <StatCard label="가챠 무료" value={`${state.gachaTickets}회`} hintTone="info" />
+                <StatCard label="알맹 포인트" value={`${state.totalPoints}P`} hintTone="info" />
             </View>
             <View style={styles.stage}>
                 <Txt typography="t1" style={styles.witch}>

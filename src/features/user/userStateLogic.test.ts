@@ -1,20 +1,19 @@
 import { DEFAULT_USER_STATE } from './defaultState';
-import { approveMission, finishOnboarding, resetOnboarding } from './userStateLogic';
+import { completeMissionVerify, finishOnboarding, resetOnboarding } from './userStateLogic';
 import type { AppUserState } from './types';
 
 function stateWithProgress(): AppUserState {
     return {
         ...DEFAULT_USER_STATE,
         onboardingCompleted: true,
-        shopId: 'shop-a',
-        streakDays: 3,
+        shopId: 'demo',
         lastCheckInDate: '2026-05-19',
         weeklyMissionDone: 2,
         totalPoints: 100,
         ecoJam: 5,
         ingredientInventory: { herb: 9, carrot: 0, mushroom: 0, leaf: 0 },
-        completedRecipeIds: ['weekly-soup'],
-        missionProgress: { 'mission-1': { status: 'completed', submittedAt: '2026-05-18T00:00:00.000Z' } },
+        completedRecipeIds: ['weekly-01'],
+        missionProgress: { tumbler: { status: 'completed', completedAt: '2026-05-18T00:00:00.000Z' } },
     };
 }
 
@@ -29,10 +28,10 @@ describe('resetOnboarding', () => {
     });
 });
 
-describe('approveMission', () => {
-    it('grants a random ingredient from the mission pool', () => {
+describe('completeMissionVerify', () => {
+    it('grants ingredient on verify', () => {
         const base = { ...DEFAULT_USER_STATE, ingredientInventory: {} };
-        const next = approveMission(base, 'tumbler', 'herb');
+        const next = completeMissionVerify(base, 'tumbler', 'herb');
         expect(next.missionProgress.tumbler?.status).toBe('completed');
         expect(next.missionProgress.tumbler?.rewardIngredientId).toBe('herb');
         expect(next.ingredientInventory.herb).toBe(1);
@@ -41,8 +40,8 @@ describe('approveMission', () => {
 
 describe('finishOnboarding', () => {
     it('marks onboarding complete and sets shop', () => {
-        const next = finishOnboarding(DEFAULT_USER_STATE, 'shop-b');
+        const next = finishOnboarding(DEFAULT_USER_STATE, 'almae');
         expect(next.onboardingCompleted).toBe(true);
-        expect(next.shopId).toBe('shop-b');
+        expect(next.shopId).toBe('almae');
     });
 });

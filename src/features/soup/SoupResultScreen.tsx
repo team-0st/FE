@@ -1,21 +1,23 @@
 import { getRecipeById } from '@api/mock/recipes';
+import type { SoupCraftResponse } from '@api/notion/types';
 import { Button, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
-import type { SoupBrewOutcome } from '@api/mock/soupRewardMock';
 
 type SoupResultScreenProps = {
     recipeId: string;
-    outcome: SoupBrewOutcome;
+    craft: SoupCraftResponse;
     onPressDone: () => void;
 };
 
-export function SoupResultScreen({ recipeId, outcome, onPressDone }: SoupResultScreenProps) {
+export function SoupResultScreen({ recipeId, craft, onPressDone }: SoupResultScreenProps) {
     const recipe = getRecipeById(recipeId);
     if (recipe == null) {
         return null;
     }
+    const isFail = craft.result === 'FAIL';
+    const isReal = craft.rewardType === 'REAL_ITEM';
 
     return (
         <Screen scrollable contentCentered>
@@ -23,40 +25,32 @@ export function SoupResultScreen({ recipeId, outcome, onPressDone }: SoupResultS
             <View style={styles.hero}>
                 <Txt typography="t1">🍲</Txt>
                 <Txt typography="t3" fontWeight="bold" style={styles.name}>
-                    {recipe.name}
+                    {craft.recipeName ?? recipe.name}
                 </Txt>
             </View>
             <View
                 style={[
                     styles.reward,
-                    outcome.kind === 'miss'
-                        ? styles.rewardMiss
-                        : outcome.kind === 'real'
-                          ? styles.rewardReal
-                          : styles.rewardEco,
+                    isFail ? styles.rewardMiss : isReal ? styles.rewardReal : styles.rewardEco,
                 ]}
             >
                 <Txt typography="t7" fontWeight="semibold">
-                    {outcome.kind === 'miss'
-                        ? '꽝…'
-                        : outcome.kind === 'real'
-                          ? '실물 리워드'
-                          : '에코잼 획득'}
+                    {isFail ? '실패 (확률)' : isReal ? '실물 리워드' : '에코잼 획득'}
                 </Txt>
                 <Txt typography="t4" fontWeight="bold" style={styles.rewardValue}>
-                    {outcome.kind === 'miss'
-                        ? (outcome.missMessage ?? '아쉽게도 보상이 없어요')
-                        : outcome.kind === 'real'
-                          ? (outcome.realRewardLabel ?? '리워드 지급 예정')
-                          : `+${outcome.ecoJamAmount ?? 0} 잼`}
+                    {isFail
+                        ? (craft.rewardDescription ?? '쓰레기 봉투')
+                        : isReal
+                          ? (craft.rewardDescription ?? '리워드 지급 예정')
+                          : `+${craft.rewardAmount ?? 0} 잼`}
                 </Txt>
-                {outcome.kind === 'real' ? (
+                {isReal ? (
                     <Txt typography="t7" color="grey600" style={styles.sub}>
                         팀에서 확인 후 연락드릴게요.
                     </Txt>
-                ) : outcome.kind === 'miss' ? (
+                ) : isFail ? (
                     <Txt typography="t7" color="grey600" style={styles.sub}>
-                        레시피는 완성됐어요. 다음엔 운이 따라줄 거예요!
+                        레시피는 완성됐어요. 재료는 사용되었어요.
                     </Txt>
                 ) : null}
             </View>

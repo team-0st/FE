@@ -24,12 +24,8 @@ export function GachaScreen() {
     const toast = useAppToast();
     const [lastReward, setLastReward] = useState<GachaReward | null>(null);
     const [isPulling, setIsPulling] = useState(false);
-    const canPull =
-        (state.gachaTickets > 0 || state.ecoJam >= GACHA_PULL_COST_ECO_JAM) && !isPulling;
-    const pullLabel =
-        state.gachaTickets > 0
-            ? `무료 뽑기 (${state.gachaTickets}회)`
-            : `에코잼 ${GACHA_PULL_COST_ECO_JAM}개로 뽑기`;
+    const canPull = state.ecoJam >= GACHA_PULL_COST_ECO_JAM && !isPulling;
+    const pullLabel = `에코잼 ${GACHA_PULL_COST_ECO_JAM}개로 뽑기`;
 
     const onPressPull = useCallback(async () => {
         if (!canPull) {
@@ -44,8 +40,7 @@ export function GachaScreen() {
                 return;
             }
             setLastReward(result.reward);
-            const prefix = result.usedTicket ? '무료 뽑기! ' : '';
-            toast.showSuccess(prefix + formatGachaRewardMessage(result.reward));
+            toast.showSuccess(formatGachaRewardMessage(result.reward));
         } finally {
             setIsPulling(false);
         }
@@ -57,13 +52,12 @@ export function GachaScreen() {
                 title={<Top.TitleParagraph size={22}>가챠</Top.TitleParagraph>}
                 subtitle2={
                     <Top.SubtitleParagraph>
-                        에코잼 또는 출석 무료권으로 뽑기
+                        에코잼으로 뽑기 (POST /api/gacha)
                     </Top.SubtitleParagraph>
                 }
             />
             <View style={styles.stats}>
                 <StatCard label="보유 에코잼" value={`${state.ecoJam}개`} />
-                <StatCard label="무료 뽑기" value={`${state.gachaTickets}회`} />
                 <StatCard label="알맹 포인트" value={`${state.totalPoints}P`} />
             </View>
             <View style={styles.probRow}>
@@ -78,7 +72,7 @@ export function GachaScreen() {
                     🎁
                 </Txt>
                 <Txt typography="t6" color="grey600" style={styles.potHint}>
-                    출석하면 무료 뽑기권을 받을 수 있어요.
+                    1회 {GACHA_PULL_COST_ECO_JAM} 에코잼이 소모돼요.
                 </Txt>
             </View>
             {lastReward != null ? (
@@ -106,8 +100,7 @@ export function GachaScreen() {
                 </Button>
             </View>
             <Txt typography="t7" color="grey500" style={styles.costNote}>
-                무료 뽑기권이 있으면 우선 사용돼요. 없으면 에코잼 {GACHA_PULL_COST_ECO_JAM}개가
-                소모됩니다.
+                노션 명세: INSUFFICIENT_ECO_JAM 시 뽑기 불가
             </Txt>
             {__DEV__ ? (
                 <View style={styles.testGrantButton}>
@@ -141,11 +134,11 @@ export function GachaScreen() {
                                 top={GACHA_REWARD_LABEL[key]}
                                 topProps={{ fontWeight: 'bold' }}
                                 bottom={
-                                    key === 'nothing'
+                                    key === 'FAIL'
                                         ? '아무것도 받지 못해요'
-                                        : key === 'ecoJam'
+                                        : key === 'ECO_JAM'
                                           ? '에코잼 1~3개'
-                                          : key === 'ingredient'
+                                          : key === 'INGREDIENT'
                                             ? '재료 1종 랜덤'
                                             : '알맹상점 포인트 10~30P (희소)'
                                 }

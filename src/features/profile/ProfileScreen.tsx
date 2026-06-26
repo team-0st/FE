@@ -60,15 +60,6 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     </Txt>
                 </View>
                 <View style={styles.card}>
-                    <Txt typography="t3">🎁</Txt>
-                    <Txt typography="t7" color="grey600">
-                        가챠 무료
-                    </Txt>
-                    <Txt typography="t4" fontWeight="bold">
-                        {state.gachaTickets}회
-                    </Txt>
-                </View>
-                <View style={styles.card}>
                     <Txt typography="t3">🌰</Txt>
                     <Txt typography="t7" color="grey600">
                         알맹 포인트
@@ -182,9 +173,6 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 </Txt>
                 <Txt typography="t5" fontWeight="bold">
                     {state.weeklyMissionDone}/{state.weeklyMissionTotal}
-                </Txt>
-                <Txt typography="t7" color="grey600" style={styles.sub}>
-                    연속 출석 {state.streakDays}일
                 </Txt>
             </View>
             {onPressRestartOnboarding != null ? (

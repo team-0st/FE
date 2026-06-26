@@ -1,4 +1,6 @@
-import type { CheckInRequestContext, CheckInResult, CheckInSuccessDto } from '../checkIn';
+import type { CheckInRequestContext, CheckInResult } from '../checkIn';
+import { ingredientSlugFromNumeric, toIngredientDto } from '../notion/idMap';
+import type { CheckInResponse } from '../notion/types';
 
 const MOCK_WEIGHTS: { id: string; weight: number }[] = [
     { id: 'herb', weight: 4 },
@@ -13,7 +15,7 @@ const MOCK_WEIGHTS: { id: string; weight: number }[] = [
     { id: 'ember', weight: 1 },
 ];
 
-function pickMockRewardId(): string {
+function pickMockRewardSlug(): string {
     const total = MOCK_WEIGHTS.reduce((sum, item) => sum + item.weight, 0);
     let roll = Math.random() * total;
     for (const item of MOCK_WEIGHTS) {
@@ -25,33 +27,44 @@ function pickMockRewardId(): string {
     return 'herb';
 }
 
-function yesterdayKey(today: string): string {
-    const d = new Date(`${today}T12:00:00`);
-    d.setDate(d.getDate() - 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-}
-
 export async function mockPostCheckIn(ctx: CheckInRequestContext): Promise<CheckInResult> {
     await new Promise((r) => setTimeout(r, 80));
     if (ctx.lastCheckInDate === ctx.today) {
         return { ok: false, code: 'ALREADY_CHECKED_IN' };
     }
-    const ingredientId = pickMockRewardId();
-    const prev = ctx.ingredientInventory[ingredientId] ?? 0;
+    const slug = pickMockRewardSlug();
+    const dto = toIngredientDto(slug);
+    if (dto == null) {
+        return { ok: false, code: 'NETWORK_ERROR' };
+    }
+    const prev = ctx.ingredientInventory[slug] ?? 0;
     const ingredientInventory = {
         ...ctx.ingredientInventory,
-        [ingredientId]: prev + 1,
+        [slug]: prev + 1,
     };
-    const streakDays =
-        ctx.lastCheckInDate === yesterdayKey(ctx.today) ? ctx.streakDays + 1 : 1;
-    const data: CheckInSuccessDto = {
-        streakDays,
-        reward: { ingredientId, quantity: 1 },
-        ingredientInventory,
-        gachaTicketsGranted: 1,
+    const response: CheckInResponse = {
+        alreadyChecked: false,
+        rewardedIngredient: dto,
     };
-    return { ok: true, data };
+    return {
+        ok: true,
+        data: {
+            ingredientInventory,
+            response,
+            ingredientId: slug,
+        },
+    };
+}
+
+export async function mockGetCheckInStatus(lastCheckInDate: string | null, today: string): Promise<CheckInResponse> {
+    await new Promise((r) => setTimeout(r, 20));
+    return { alreadyChecked: lastCheckInDate === today };
+}
+
+export function ingredientIdFromCheckInResponse(response: CheckInResponse): string | undefined {
+    const numericId = response.rewardedIngredient?.id;
+    if (numericId == null) {
+        return undefined;
+    }
+    return ingredientSlugFromNumeric(numericId);
 }

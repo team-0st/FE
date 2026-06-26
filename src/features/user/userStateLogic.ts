@@ -1,6 +1,6 @@
 import type { CheckInSuccessDto } from '@api/checkIn';
 import type { Recipe } from '@api/mock/recipes';
-import type { SoupBrewOutcome } from '@api/mock/soupRewardMock';
+import type { SoupCraftResponse } from '@api/notion/types';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
 import type { AppUserState, MissionProgressStatus, PendingRealReward } from './types';
@@ -21,13 +21,10 @@ export function applyCheckInFromServer(
     payload: CheckInSuccessDto,
     today = formatDateKey(new Date()),
 ): AppUserState {
-    const ticketGrant = payload.gachaTicketsGranted ?? 0;
     return {
         ...state,
         lastCheckInDate: today,
-        streakDays: payload.streakDays,
         ingredientInventory: payload.ingredientInventory,
-        gachaTickets: state.gachaTickets + ticketGrant,
     };
 }
 
@@ -51,17 +48,6 @@ export function getMissionStatus(state: AppUserState, missionId: string): Missio
     return state.missionProgress[missionId]?.status ?? 'available';
 }
 
-export function submitMissionReview(state: AppUserState, missionId: string): AppUserState {
-    const now = new Date().toISOString();
-    return {
-        ...state,
-        missionProgress: {
-            ...state.missionProgress,
-            [missionId]: { status: 'pending_review', submittedAt: now },
-        },
-    };
-}
-
 function addIngredient(state: AppUserState, ingredientId: string, amount = 1): AppUserState {
     const current = state.ingredientInventory[ingredientId] ?? 0;
     return {
@@ -73,7 +59,7 @@ function addIngredient(state: AppUserState, ingredientId: string, amount = 1): A
     };
 }
 
-export function approveMission(
+export function completeMissionVerify(
     state: AppUserState,
     missionId: string,
     rewardIngredientId: string,
@@ -121,7 +107,7 @@ export function consumeIngredientsForSlots(
 export function completeRecipe(
     state: AppUserState,
     recipe: Recipe,
-    outcome: SoupBrewOutcome,
+    craft: SoupCraftResponse,
 ): AppUserState {
     if (state.completedRecipeIds.includes(recipe.id)) {
         return state;
@@ -130,16 +116,19 @@ export function completeRecipe(
         ...state,
         completedRecipeIds: [...state.completedRecipeIds, recipe.id],
     };
-    if (outcome.kind === 'ecoJam' && (outcome.ecoJamAmount ?? 0) > 0) {
-        const gain = outcome.ecoJamAmount ?? 0;
+    if (craft.result !== 'SUCCESS') {
+        return next;
+    }
+    if (craft.rewardType === 'ECO_JAM' && (craft.rewardAmount ?? 0) > 0) {
+        const gain = craft.rewardAmount ?? 0;
         next = { ...next, ecoJam: next.ecoJam + gain };
         next = appendEcoJamLedger(next, `${recipe.name} 보상`, gain);
     }
-    if (outcome.kind === 'real') {
+    if (craft.rewardType === 'REAL_ITEM') {
         const pending: PendingRealReward = {
             id: `reward-${recipe.id}-${Date.now()}`,
             recipeId: recipe.id,
-            label: outcome.realRewardLabel ?? recipe.realRewardLabel ?? '실물 리워드',
+            label: craft.rewardDescription ?? recipe.realRewardLabel ?? '실물 리워드',
             createdAt: new Date().toISOString(),
             status: 'pending_contact',
         };
@@ -147,6 +136,9 @@ export function completeRecipe(
             ...next,
             pendingRealRewards: [pending, ...next.pendingRealRewards],
         };
+    }
+    if (craft.rewardType === 'ALMANG_POINT' && (craft.rewardAmount ?? 0) > 0) {
+        next = { ...next, totalPoints: next.totalPoints + (craft.rewardAmount ?? 0) };
     }
     return next;
 }
@@ -167,11 +159,4 @@ export function spendEcoJam(state: AppUserState, amount: number, label: string):
     let next = { ...state, ecoJam: state.ecoJam - amount };
     next = appendEcoJamLedger(next, label, -amount);
     return next;
-}
-
-export function consumeGachaTicket(state: AppUserState): AppUserState | null {
-    if (state.gachaTickets < 1) {
-        return null;
-    }
-    return { ...state, gachaTickets: state.gachaTickets - 1 };
 }

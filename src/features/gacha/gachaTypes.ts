@@ -1,15 +1,11 @@
-export type GachaRewardType =
-    | 'nothing'
-    | 'ecoJam'
-    | 'ingredient'
-    | 'shopPoints';
+export type GachaRewardType = 'FAIL' | 'ECO_JAM' | 'INGREDIENT' | 'ALMANG_POINT';
 
 export type GachaReward =
-    | { type: 'nothing' }
-    | { type: 'ecoJam'; amount: number }
-    | { type: 'ingredient'; ingredientId: string; amount: number }
-    | { type: 'shopPoints'; amount: number };
+    | { type: 'FAIL' }
+    | { type: 'ECO_JAM'; amount: number }
+    | { type: 'INGREDIENT'; ingredientId: string; amount: number }
+    | { type: 'ALMANG_POINT'; amount: number };
 
 export type GachaPullResult =
-    | { ok: true; reward: GachaReward; costEcoJam: number; usedTicket?: boolean }
+    | { ok: true; reward: GachaReward; costEcoJam: number }
     | { ok: false; reason: 'insufficient_eco_jam' };
