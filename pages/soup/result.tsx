@@ -1,5 +1,5 @@
 import { createRoute } from '@granite-js/react-native';
-import { decodeSoupOutcome, type SoupRewardKind } from '@api/mock/soupRewardMock';
+import { decodeSoupCraftFromRoute } from '@api/mock/soupCraftMock';
 import { SoupResultScreen } from '../../src/features/soup/SoupResultScreen';
 import { ROUTES } from '../../src/shared/constants/routes';
 
@@ -7,28 +7,40 @@ export const Route = createRoute('/soup/result', {
     component: Page,
     validateParams: (params: Readonly<object | undefined>): {
         recipeId: string;
-        rewardKind: SoupRewardKind;
-        rewardValue: string;
+        soupId: string;
+        result: string;
+        rewardType: string;
+        rewardAmount: string;
+        rewardDescription: string;
     } => {
-        const p = params as { recipeId?: string; rewardKind?: string; rewardValue?: string } | undefined;
-        const rewardKind = (p?.rewardKind ?? 'miss') as SoupRewardKind;
+        const p = params as {
+            recipeId?: string;
+            soupId?: string;
+            result?: string;
+            rewardType?: string;
+            rewardAmount?: string;
+            rewardDescription?: string;
+        } | undefined;
         return {
             recipeId: String(p?.recipeId ?? ''),
-            rewardKind,
-            rewardValue: String(p?.rewardValue ?? ''),
+            soupId: String(p?.soupId ?? ''),
+            result: String(p?.result ?? 'FAIL'),
+            rewardType: String(p?.rewardType ?? ''),
+            rewardAmount: String(p?.rewardAmount ?? '0'),
+            rewardDescription: String(p?.rewardDescription ?? ''),
         };
     },
 });
 
 function Page() {
-    const { recipeId, rewardKind, rewardValue } = Route.useParams();
+    const params = Route.useParams();
     const navigation = Route.useNavigation();
-    const outcome = decodeSoupOutcome(rewardKind, rewardValue);
+    const craft = decodeSoupCraftFromRoute(params);
 
     return (
         <SoupResultScreen
-            recipeId={recipeId}
-            outcome={outcome}
+            recipeId={params.recipeId}
+            craft={craft}
             onPressDone={() => navigation.replace(ROUTES.ingredients)}
         />
     );

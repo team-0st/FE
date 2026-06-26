@@ -12,7 +12,7 @@ import { useAppToast } from '../../shared/feedback/useAppToast';
 import { useUser } from '../user/UserProvider';
 import { IngredientSlotBar } from '../../shared/ui/IngredientSlotBar';
 import { Screen } from '../../shared/ui/Screen';
-import type { SoupBrewOutcome } from '@api/mock/soupRewardMock';
+import type { SoupCraftResponse } from '@api/notion/types';
 import {
     SOUP_BEGINNER_PROBABILITY_LINES,
     SOUP_BEGINNER_PROBABILITY_TITLE,
@@ -24,7 +24,7 @@ import {
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 
 type IngredientsScreenProps = {
-    onSoupMade: (recipeId: string, outcome: SoupBrewOutcome) => void;
+    onSoupMade: (recipeId: string, craft: SoupCraftResponse) => void;
 };
 
 function emptySlots(): (string | null)[] {
@@ -80,7 +80,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                 return;
             }
             setSlots(emptySlots());
-            onSoupMade(result.recipe.id, result.outcome);
+            onSoupMade(result.recipe.id, result.craft);
         } finally {
             setBrewing(false);
         }
