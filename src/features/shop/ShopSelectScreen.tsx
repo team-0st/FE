@@ -39,7 +39,7 @@ export function ShopSelectScreen({ initialShopId, onPressComplete, onboarding = 
                                     type="2RowTypeA"
                                     top={`${shop.emoji} ${shop.name}`}
                                     topProps={{ fontWeight: 'bold' }}
-                                    bottom={shop.philosophy}
+                                    bottom={shop.description}
                                 />
                             }
                             right={

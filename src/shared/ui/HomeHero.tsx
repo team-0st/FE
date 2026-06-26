@@ -7,13 +7,22 @@ import { SproutAvatar } from './SproutAvatar';
 type HomeHeroProps = {
     nickname: string;
     totalPoints: number;
-    streakDays: number;
+    weeklyMissionDone: number;
+    weeklyMissionTotal: number;
     shopEmoji: string;
     shopName: string;
-    shopArea: string;
+    shopDescription: string;
 };
 
-export function HomeHero({ nickname, totalPoints, streakDays, shopEmoji, shopName, shopArea }: HomeHeroProps) {
+export function HomeHero({
+    nickname,
+    totalPoints,
+    weeklyMissionDone,
+    weeklyMissionTotal,
+    shopEmoji,
+    shopName,
+    shopDescription,
+}: HomeHeroProps) {
     return (
         <View style={styles.hero}>
             <SproutAvatar mood="happy" size="hero" animate />
@@ -24,7 +33,7 @@ export function HomeHero({ nickname, totalPoints, streakDays, shopEmoji, shopNam
                 {`${nickname}님`}
             </Txt>
             <Txt typography="t6" color="grey600" style={styles.stats}>
-                {`누적 ${totalPoints}P · 연속 ${streakDays}일`}
+                {`알맹 ${totalPoints}P · 이번 주 미션 ${weeklyMissionDone}/${weeklyMissionTotal}`}
             </Txt>
             <View style={styles.shopBadge}>
                 <Txt typography="t1">{shopEmoji}</Txt>
@@ -32,7 +41,7 @@ export function HomeHero({ nickname, totalPoints, streakDays, shopEmoji, shopNam
                     {shopName}
                 </Txt>
                 <Txt typography="t7" color="grey500">
-                    {shopArea}
+                    {shopDescription}
                 </Txt>
             </View>
         </View>
