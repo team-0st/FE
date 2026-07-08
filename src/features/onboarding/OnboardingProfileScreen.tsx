@@ -2,10 +2,15 @@ import { Button, Checkbox, TextField, Txt } from '@toss/tds-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import type { AlmangPayoutConsent } from '../user/types';
+import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
+import { ONBOARDING_PROFILE_GUIDE } from '../../shared/constants/guideCopy';
+import {
+    PHONE_CONSENT_NOTICE,
+    PRIVACY_POLICY_LABELS,
+} from '../../shared/constants/privacyPolicy';
 import { colors } from '../../shared/theme/colors';
 import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
-import { ONBOARDING_PROFILE_GUIDE } from '../../shared/constants/guideCopy';
 import {
     normalizePhoneBody,
     PHONE_PREFIX,
@@ -37,6 +42,8 @@ export function OnboardingProfileScreen({
     const [phoneBody, setPhoneBody] = useState('');
     const [phoneError, setPhoneError] = useState<string | null>(null);
     const [consentChecked, setConsentChecked] = useState(false);
+    const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
+    const [policyModalVisible, setPolicyModalVisible] = useState(false);
     const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
 
     const submitNickname = () => {
@@ -59,6 +66,10 @@ export function OnboardingProfileScreen({
         const phoneResult = validatePhoneBody(phoneBody);
         if (!phoneResult.ok) {
             setPhoneError(phoneResult.message);
+            return;
+        }
+        if (!policyAcknowledged) {
+            setPhoneError(PRIVACY_POLICY_LABELS.mustReadHint);
             return;
         }
         if (!consentChecked) {
@@ -87,6 +98,15 @@ export function OnboardingProfileScreen({
             consentAt: null,
         });
         setSkipConfirmVisible(false);
+    };
+
+    const handleConsentChange = (checked: boolean) => {
+        if (!policyAcknowledged) {
+            setPhoneError(PRIVACY_POLICY_LABELS.mustReadHint);
+            return;
+        }
+        setConsentChecked(checked);
+        setPhoneError(null);
     };
 
     if (step === 'nickname') {
@@ -156,26 +176,39 @@ export function OnboardingProfileScreen({
                     maxLength={8}
                 />
                 <View style={styles.noticeBox}>
-                    <Txt typography="t7" fontWeight="semibold" color="grey800">
-                        개인정보 수집·이용 안내
+                    <Txt typography="t7" fontWeight="semibold">
+                        휴대전화번호 수집·이용 요약
                     </Txt>
                     <Txt typography="t7" color="grey700" style={styles.noticeLine}>
-                        {`· 수집·이용 목적: ${ONBOARDING_PROFILE_GUIDE.phoneConsentNotice.purpose}`}
+                        {`· 목적: ${PHONE_CONSENT_NOTICE.purpose}`}
                     </Txt>
                     <Txt typography="t7" color="grey700" style={styles.noticeLine}>
-                        {`· 수집 항목: ${ONBOARDING_PROFILE_GUIDE.phoneConsentNotice.items}`}
+                        {`· 항목: ${PHONE_CONSENT_NOTICE.items}`}
                     </Txt>
-                    <Txt typography="t7" color="grey700" style={styles.noticeLine}>
-                        {`· 보유·이용 기간: ${ONBOARDING_PROFILE_GUIDE.phoneConsentNotice.retention}`}
-                    </Txt>
-                    <Txt typography="t7" color="grey700" style={styles.noticeLine}>
-                        {`· 동의 거부 권리 및 불이익: ${ONBOARDING_PROFILE_GUIDE.phoneConsentNotice.refuse}`}
-                    </Txt>
-                    <Txt typography="t7" color="grey500" style={styles.policyHint}>
-                        {ONBOARDING_PROFILE_GUIDE.phoneConsentPolicyHint}
-                    </Txt>
+                    <Button
+                        size="medium"
+                        type="dark"
+                        style="weak"
+                        display="block"
+                        onPress={() => setPolicyModalVisible(true)}
+                    >
+                        {PRIVACY_POLICY_LABELS.viewFull}
+                    </Button>
+                    {policyAcknowledged ? (
+                        <Txt typography="t7" color="green500">
+                            전문을 확인했어요.
+                        </Txt>
+                    ) : (
+                        <Txt typography="t7" color="grey600">
+                            {PRIVACY_POLICY_LABELS.mustReadHint}
+                        </Txt>
+                    )}
                 </View>
-                <Checkbox.Line checked={consentChecked} onCheckedChange={setConsentChecked}>
+                <Checkbox.Line
+                    checked={consentChecked}
+                    disabled={!policyAcknowledged}
+                    onCheckedChange={handleConsentChange}
+                >
                     {ONBOARDING_PROFILE_GUIDE.phoneConsentCheckbox}
                 </Checkbox.Line>
                 {phoneError != null ? (
@@ -201,6 +234,15 @@ export function OnboardingProfileScreen({
                     나중에 할게요
                 </Button>
             </View>
+            <PrivacyPolicyModal
+                visible={policyModalVisible}
+                onClose={() => setPolicyModalVisible(false)}
+                requireAcknowledge
+                onAcknowledge={() => {
+                    setPolicyAcknowledged(true);
+                    setPhoneError(null);
+                }}
+            />
             {skipConfirmVisible ? (
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalCard}>
@@ -254,22 +296,10 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
         backgroundColor: colors.surface,
         padding: 14,
-        gap: 6,
+        gap: 8,
     },
     noticeLine: {
         lineHeight: 20,
-    },
-    policyHint: {
-        marginTop: 4,
-        lineHeight: 18,
-    },
-    consentRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: 10,
-    },
-    consentLabel: {
-        flex: 1,
     },
     payoutHint: {
         lineHeight: 20,

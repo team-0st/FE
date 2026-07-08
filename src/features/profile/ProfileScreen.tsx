@@ -1,5 +1,8 @@
 import { Top, Txt } from '@toss/tds-react-native';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
+import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
 import { formatLedgerDelta } from '../user/ecoJamLedger';
 import { listIngredientStock } from '../user/ingredientInventory';
 import { useUser } from '../user/UserProvider';
@@ -25,6 +28,7 @@ function formatLedgerTime(iso: string): string {
 
 export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: ProfileScreenProps) {
     const { state } = useUser();
+    const [privacyVisible, setPrivacyVisible] = useState(false);
     const shopName = resolveShopName(state.shopId);
     const completed = state.completedRecipeIds.length;
     const ingredientRows = listIngredientStock(state.ingredientInventory);
@@ -183,6 +187,16 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     {state.weeklyMissionDone}/{state.weeklyMissionTotal}
                 </Txt>
             </View>
+            <Txt
+                typography="t6"
+                color="blue500"
+                style={styles.policyLink}
+                onPress={() => setPrivacyVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel={PRIVACY_POLICY_LABELS.myPageEntry}
+            >
+                {PRIVACY_POLICY_LABELS.myPageEntry}
+            </Txt>
             {onPressRestartOnboarding != null ? (
                 <Txt
                     typography="t7"
@@ -195,6 +209,7 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     처음부터 다시 시작
                 </Txt>
             ) : null}
+            <PrivacyPolicyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
         </Screen>
     );
 }
@@ -261,6 +276,11 @@ const styles = StyleSheet.create({
     },
     restartOnboarding: {
         marginTop: 24,
+        textAlign: 'center',
+        textDecorationLine: 'underline',
+    },
+    policyLink: {
+        marginTop: 16,
         textAlign: 'center',
         textDecorationLine: 'underline',
     },
