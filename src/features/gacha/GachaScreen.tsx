@@ -1,4 +1,4 @@
-import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
+import { Button, Top, Txt } from '@toss/tds-react-native';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -62,7 +62,7 @@ export function GachaScreen() {
             </View>
             <View style={styles.probRow}>
                 <ProbabilityInfoRow
-                    label="가챠 확률"
+                    label="가챠·보상"
                     title={GACHA_PROBABILITY_TITLE}
                     lines={GACHA_PROBABILITY_LINES}
                 />
@@ -121,32 +121,6 @@ export function GachaScreen() {
                     </Button>
                 </View>
             ) : null}
-            <Txt typography="t5" fontWeight="semibold" style={styles.section}>
-                보상 안내
-            </Txt>
-            {(Object.keys(GACHA_REWARD_LABEL) as Array<keyof typeof GACHA_REWARD_LABEL>).map(
-                (key) => (
-                    <ListRow
-                        key={key}
-                        contents={
-                            <ListRow.Texts
-                                type="2RowTypeA"
-                                top={GACHA_REWARD_LABEL[key]}
-                                topProps={{ fontWeight: 'bold' }}
-                                bottom={
-                                    key === 'FAIL'
-                                        ? '아무것도 받지 못해요'
-                                        : key === 'ECO_JAM'
-                                          ? '에코잼 1~3개'
-                                          : key === 'INGREDIENT'
-                                            ? '재료 1종 랜덤'
-                                            : '알맹상점 포인트 10~30P (희소)'
-                                }
-                            />
-                        }
-                    />
-                ),
-            )}
         </Screen>
     );
 }
@@ -197,9 +171,5 @@ const styles = StyleSheet.create({
     },
     testGrantButton: {
         marginTop: 12,
-    },
-    section: {
-        marginTop: 28,
-        marginBottom: 8,
     },
 });
