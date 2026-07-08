@@ -6,7 +6,7 @@ const weeklyRecipe: Recipe = {
     kind: 'weekly',
     name: '테스트 스프',
     hint: 'hint',
-    ingredientIds: ['herb', 'drop', 'leaf'],
+    ingredientIds: ['cabbage', 'tomato', 'onion'],
     slotCount: 3,
     ecoJamReward: 30,
 };
@@ -16,7 +16,7 @@ const hiddenRecipe: Recipe = {
     kind: 'hidden',
     name: '히든 스프',
     hint: 'hint',
-    ingredientIds: ['star', 'herb', 'mushroom', 'drop'],
+    ingredientIds: ['refill_crystal', 'cabbage', 'mushroom', 'tomato'],
     slotCount: 4,
     realRewardLabel: '쿠폰',
 };

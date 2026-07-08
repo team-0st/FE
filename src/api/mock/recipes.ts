@@ -4,6 +4,7 @@ import {
     BEGINNER_SLOT_COUNT,
     getIsoWeekKey,
     HIDDEN_SLOT_COUNT,
+    LEGENDARY_SLOT_COUNT,
     type Recipe,
     type RecipeKind,
     WEEKLY_SLOT_COUNT,
@@ -15,6 +16,7 @@ export {
     BEGINNER_SLOT_COUNT,
     getIsoWeekKey,
     HIDDEN_SLOT_COUNT,
+    LEGENDARY_SLOT_COUNT,
     WEEKLY_SLOT_COUNT,
 };
 
@@ -61,7 +63,12 @@ export function slotsMatchRecipe(slots: (string | null)[], recipe: Recipe): bool
     return a === b;
 }
 
-const VALID_SLOT_COUNTS = [BEGINNER_SLOT_COUNT, WEEKLY_SLOT_COUNT, HIDDEN_SLOT_COUNT] as const;
+const VALID_SLOT_COUNTS = [
+    BEGINNER_SLOT_COUNT,
+    WEEKLY_SLOT_COUNT,
+    HIDDEN_SLOT_COUNT,
+    LEGENDARY_SLOT_COUNT,
+] as const;
 
 export function findRecipeBySlots(slots: (string | null)[]): Recipe | undefined {
     const filled = getFilledIngredientIds(slots);
@@ -117,7 +124,7 @@ export function getRecipeRewardSummary(recipe: Recipe, done: boolean): string {
         return `재료 ${recipe.slotCount}개 · 확률 보상`;
     }
     if (recipe.kind === 'legendary') {
-        return '재료 4개 · 전설 (비공개)';
+        return `재료 ${recipe.slotCount}개 · 전설 (비공개)`;
     }
     return '재료 4개 · 히든 (비공개)';
 }

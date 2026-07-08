@@ -13,10 +13,11 @@ export type Recipe = {
     weekKey?: string;
 };
 
-export const BREW_SLOT_MAX = 4;
+export const BREW_SLOT_MAX = 5;
 export const BEGINNER_SLOT_COUNT = 2;
 export const WEEKLY_SLOT_COUNT = 3;
 export const HIDDEN_SLOT_COUNT = 4;
+export const LEGENDARY_SLOT_COUNT = 5;
 
 export function getIsoWeekKey(date = new Date()): string {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
