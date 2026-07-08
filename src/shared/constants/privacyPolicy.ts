@@ -55,6 +55,7 @@ export const PRIVACY_POLICY_SECTIONS: PrivacyPolicySection[] = [
 export const PRIVACY_POLICY_LABELS = {
     viewFull: '개인정보 처리방침 전문 보기',
     mustReadHint: '전문을 확인한 후에만 동의할 수 있어요.',
+    mustReadBeforeConsent: '전문을 확인해야 해요.',
     confirmRead: '확인했어요',
     close: '닫기',
     myPageEntry: '개인정보 처리방침',

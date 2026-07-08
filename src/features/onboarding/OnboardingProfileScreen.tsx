@@ -1,6 +1,6 @@
 import { Button, Checkbox, TextField, Txt } from '@toss/tds-react-native';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, ScrollView, StyleSheet, View } from 'react-native';
 import type { AlmangPayoutConsent } from '../user/types';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { ONBOARDING_PROFILE_GUIDE } from '../../shared/constants/guideCopy';
@@ -11,6 +11,7 @@ import {
 import { colors } from '../../shared/theme/colors';
 import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
+import { useAttentionPulse } from '../../shared/hooks/useAttentionPulse';
 import {
     normalizePhoneBody,
     PHONE_PREFIX,
@@ -45,6 +46,19 @@ export function OnboardingProfileScreen({
     const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
     const [policyModalVisible, setPolicyModalVisible] = useState(false);
     const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
+    const [policyButtonPulse, setPolicyButtonPulse] = useState(false);
+    const policyButtonOpacity = useAttentionPulse(policyButtonPulse);
+
+    useEffect(() => {
+        if (policyAcknowledged) {
+            setPolicyButtonPulse(false);
+        }
+    }, [policyAcknowledged]);
+
+    const nudgeReadPolicy = () => {
+        setPhoneError(PRIVACY_POLICY_LABELS.mustReadBeforeConsent);
+        setPolicyButtonPulse(true);
+    };
 
     const submitNickname = () => {
         const result = validateNickname(nickname);
@@ -69,7 +83,7 @@ export function OnboardingProfileScreen({
             return;
         }
         if (!policyAcknowledged) {
-            setPhoneError(PRIVACY_POLICY_LABELS.mustReadHint);
+            nudgeReadPolicy();
             return;
         }
         if (!consentChecked) {
@@ -102,7 +116,7 @@ export function OnboardingProfileScreen({
 
     const handleConsentChange = (checked: boolean) => {
         if (!policyAcknowledged) {
-            setPhoneError(PRIVACY_POLICY_LABELS.mustReadHint);
+            nudgeReadPolicy();
             return;
         }
         setConsentChecked(checked);
@@ -185,15 +199,20 @@ export function OnboardingProfileScreen({
                     <Txt typography="t7" color="grey700" style={styles.noticeLine}>
                         {`· 항목: ${PHONE_CONSENT_NOTICE.items}`}
                     </Txt>
-                    <Button
-                        size="medium"
-                        type="dark"
-                        style="weak"
-                        display="block"
-                        onPress={() => setPolicyModalVisible(true)}
-                    >
-                        {PRIVACY_POLICY_LABELS.viewFull}
-                    </Button>
+                    <Animated.View style={{ opacity: policyButtonOpacity }}>
+                        <Button
+                            size="medium"
+                            type={policyButtonPulse ? 'primary' : 'dark'}
+                            style={policyButtonPulse ? undefined : 'weak'}
+                            display="block"
+                            onPress={() => {
+                                setPolicyButtonPulse(false);
+                                setPolicyModalVisible(true);
+                            }}
+                        >
+                            {PRIVACY_POLICY_LABELS.viewFull}
+                        </Button>
+                    </Animated.View>
                     {policyAcknowledged ? (
                         <Txt typography="t7" color="green500">
                             전문을 확인했어요.
@@ -204,11 +223,7 @@ export function OnboardingProfileScreen({
                         </Txt>
                     )}
                 </View>
-                <Checkbox.Line
-                    checked={consentChecked}
-                    disabled={!policyAcknowledged}
-                    onCheckedChange={handleConsentChange}
-                >
+                <Checkbox.Line checked={consentChecked} onCheckedChange={handleConsentChange}>
                     {ONBOARDING_PROFILE_GUIDE.phoneConsentCheckbox}
                 </Checkbox.Line>
                 {phoneError != null ? (
