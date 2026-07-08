@@ -1,10 +1,11 @@
 import {
+    formatRecipeIngredients,
     getBeginnerRecipes,
     getHiddenRecipes,
     getLegendaryRecipes,
-    getRecipeRewardSummary,
     getWeeklyRecipes,
 } from '@api/mock/recipes';
+import type { Recipe } from '@api/mock/recipeTypes';
 import { ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -13,13 +14,36 @@ import {
     SOUP_WEEKLY_PROBABILITY_LINES,
     SOUP_WEEKLY_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
+import { useAppToast } from '../../shared/feedback/useAppToast';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { useUser } from '../user/UserProvider';
+import { RecipeListRowShell } from './RecipeCompletedStamp';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
+const HIDDEN_LOCKED_MESSAGE = '히든 레시피는 아직 밝혀지지 않았어요. 조합을 맞추면 공개돼요.';
+const LEGENDARY_LOCKED_MESSAGE = '전설 레시피는 아직 밝혀지지 않았어요. 조합을 맞추면 공개돼요.';
+
+function publicRecipeBottom(recipe: Recipe): string {
+    return formatRecipeIngredients(recipe);
+}
+
+function secretRecipeBottom(recipe: Recipe, kind: 'hidden' | 'legendary'): string {
+    if (kind === 'legendary') {
+        return '레시피북에 이름도 없대요';
+    }
+    return recipe.hintDrip ?? '조합을 맞추면 공개';
+}
+
+function unlockedSecretBottom(recipe: Recipe): string {
+    const ingredients = formatRecipeIngredients(recipe);
+    const reward = recipe.realRewardLabel;
+    return reward != null ? `${ingredients} · ${reward}` : ingredients;
+}
+
 export function RecipesScreen() {
     const { state } = useUser();
+    const { show } = useAppToast();
     const weekly = getWeeklyRecipes();
     const beginner = getBeginnerRecipes();
     const hidden = getHiddenRecipes();
@@ -30,7 +54,9 @@ export function RecipesScreen() {
             <Top
                 title={<Top.TitleParagraph size={22}>레시피</Top.TitleParagraph>}
                 subtitle2={
-                    <Top.SubtitleParagraph>이번 주 레시피는 매주 바뀌어요.</Top.SubtitleParagraph>
+                    <Top.SubtitleParagraph>
+                        입문·이번주 레시피는 재료 조합이 바로 보여요.
+                    </Top.SubtitleParagraph>
                 }
             />
             <View style={styles.probHeader}>
@@ -41,31 +67,23 @@ export function RecipesScreen() {
                 />
             </View>
             <Txt typography="t5" fontWeight="semibold" style={styles.section}>
-                입문 스프 (재료 2개)
+                입문 스프
             </Txt>
             {beginner.map((recipe) => {
                 const done = state.completedRecipeIds.includes(recipe.id);
                 return (
-                    <ListRow
-                        key={recipe.id}
-                        contents={
-                            <ListRow.Texts
-                                type="2RowTypeA"
-                                top={recipe.name}
-                                topProps={{ fontWeight: 'bold' }}
-                                bottom={
-                                    done
-                                        ? '완료'
-                                        : `${recipe.hintDrip ?? recipe.hint} · ${getRecipeRewardSummary(recipe, done)}`
-                                }
-                            />
-                        }
-                        right={
-                            done ? (
-                                <ListRow.RightTexts type="1RowTypeA" top="완료" topProps={{ color: 'green500' }} />
-                            ) : undefined
-                        }
-                    />
+                    <RecipeListRowShell key={recipe.id} done={done}>
+                        <ListRow
+                            contents={
+                                <ListRow.Texts
+                                    type="2RowTypeA"
+                                    top={recipe.name}
+                                    topProps={{ fontWeight: 'bold' }}
+                                    bottom={publicRecipeBottom(recipe)}
+                                />
+                            }
+                        />
+                    </RecipeListRowShell>
                 );
             })}
             <Txt typography="t5" fontWeight="semibold" style={styles.section}>
@@ -74,26 +92,18 @@ export function RecipesScreen() {
             {weekly.map((recipe) => {
                 const done = state.completedRecipeIds.includes(recipe.id);
                 return (
-                    <ListRow
-                        key={recipe.id}
-                        contents={
-                            <ListRow.Texts
-                                type="2RowTypeA"
-                                top={recipe.name}
-                                topProps={{ fontWeight: 'bold' }}
-                                bottom={
-                                    done
-                                        ? '완료 · 보상은 제작 결과에서 확인'
-                                        : `${recipe.hintDrip ?? recipe.hint} · ${getRecipeRewardSummary(recipe, done)}`
-                                }
-                            />
-                        }
-                        right={
-                            done ? (
-                                <ListRow.RightTexts type="1RowTypeA" top="완료" topProps={{ color: 'green500' }} />
-                            ) : undefined
-                        }
-                    />
+                    <RecipeListRowShell key={recipe.id} done={done}>
+                        <ListRow
+                            contents={
+                                <ListRow.Texts
+                                    type="2RowTypeA"
+                                    top={recipe.name}
+                                    topProps={{ fontWeight: 'bold' }}
+                                    bottom={publicRecipeBottom(recipe)}
+                                />
+                            }
+                        />
+                    </RecipeListRowShell>
                 );
             })}
             <View style={styles.probHeader}>
@@ -110,28 +120,38 @@ export function RecipesScreen() {
                 const done = state.completedRecipeIds.includes(recipe.id);
                 const unlocked = done;
                 return (
-                    <ListRow
-                        key={recipe.id}
-                        contents={
-                            <ListRow.Texts
-                                type="2RowTypeA"
-                                top={unlocked ? recipe.name : '???'}
-                                topProps={{ fontWeight: 'bold' }}
-                                bottom={
-                                    unlocked
-                                        ? `${recipe.realRewardLabel ?? '실물 리워드'} · 완료`
-                                        : `${recipe.hintDrip ?? '조합을 맞추면 공개'} · 1회 제작`
-                                }
-                            />
-                        }
-                        right={
-                            done ? (
-                                <ListRow.RightTexts type="1RowTypeA" top="완료" topProps={{ color: 'green500' }} />
-                            ) : (
-                                <ListRow.RightTexts type="1RowTypeA" top="비밀" topProps={{ color: 'grey500' }} />
-                            )
-                        }
-                    />
+                    <RecipeListRowShell key={recipe.id} done={done}>
+                        <ListRow
+                            onPress={
+                                unlocked
+                                    ? undefined
+                                    : () => {
+                                          show(HIDDEN_LOCKED_MESSAGE);
+                                      }
+                            }
+                            contents={
+                                <ListRow.Texts
+                                    type="2RowTypeA"
+                                    top={unlocked ? recipe.name : '???'}
+                                    topProps={{ fontWeight: 'bold' }}
+                                    bottom={
+                                        unlocked
+                                            ? unlockedSecretBottom(recipe)
+                                            : secretRecipeBottom(recipe, 'hidden')
+                                    }
+                                />
+                            }
+                            right={
+                                unlocked ? undefined : (
+                                    <ListRow.RightTexts
+                                        type="1RowTypeA"
+                                        top="???"
+                                        topProps={{ color: 'grey500' }}
+                                    />
+                                )
+                            }
+                        />
+                    </RecipeListRowShell>
                 );
             })}
             <Txt typography="t5" fontWeight="semibold" style={styles.section}>
@@ -141,33 +161,44 @@ export function RecipesScreen() {
                 const done = state.completedRecipeIds.includes(recipe.id);
                 const unlocked = done;
                 return (
-                    <ListRow
-                        key={recipe.id}
-                        contents={
-                            <ListRow.Texts
-                                type="2RowTypeA"
-                                top={unlocked ? recipe.name : '??? (전설)'}
-                                topProps={{ fontWeight: 'bold' }}
-                                bottom={
-                                    unlocked
-                                        ? `${recipe.realRewardLabel ?? '전설 리워드'} · 완료`
-                                        : '레시피북에 이름도 없대요 · 5재료'
-                                }
-                            />
-                        }
-                        right={
-                            done ? (
-                                <ListRow.RightTexts type="1RowTypeA" top="완료" topProps={{ color: 'green500' }} />
-                            ) : (
-                                <ListRow.RightTexts type="1RowTypeA" top="전설" topProps={{ color: 'grey500' }} />
-                            )
-                        }
-                    />
+                    <RecipeListRowShell key={recipe.id} done={done}>
+                        <ListRow
+                            onPress={
+                                unlocked
+                                    ? undefined
+                                    : () => {
+                                          show(LEGENDARY_LOCKED_MESSAGE);
+                                      }
+                            }
+                            contents={
+                                <ListRow.Texts
+                                    type="2RowTypeA"
+                                    top={unlocked ? recipe.name : '???'}
+                                    topProps={{ fontWeight: 'bold' }}
+                                    bottom={
+                                        unlocked
+                                            ? unlockedSecretBottom(recipe)
+                                            : secretRecipeBottom(recipe, 'legendary')
+                                    }
+                                />
+                            }
+                            right={
+                                unlocked ? undefined : (
+                                    <ListRow.RightTexts
+                                        type="1RowTypeA"
+                                        top="???"
+                                        topProps={{ color: 'grey500' }}
+                                    />
+                                )
+                            }
+                        />
+                    </RecipeListRowShell>
                 );
             })}
             <View style={styles.note}>
                 <Txt typography="t7" color="grey600" style={styles.noteText}>
-                    모든 레시피는 한 번만 만들 수 있어요. 미완료 레시피는 재료 조합을 공개하지 않아요.
+                    입문·이번주 레시피는 재료 조합이 공개돼요. 히든·전설은 완성 후에만 확인할 수 있어요. 모든
+                    레시피는 한 번만 만들 수 있어요.
                 </Txt>
             </View>
         </Screen>
