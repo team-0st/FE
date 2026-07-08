@@ -1,6 +1,8 @@
 import type { AppUserState } from './types';
 
 export const DEFAULT_USER_STATE: AppUserState = {
+    userId: null,
+    deviceId: null,
     onboardingCompleted: false,
     nickname: '사용자',
     phoneMasked: null,

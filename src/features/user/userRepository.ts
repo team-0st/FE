@@ -24,7 +24,11 @@ function normalizeMissionProgress(
     for (const [id, progress] of Object.entries(raw)) {
         const legacyStatus = progress.status as string | undefined;
         if (legacyStatus === 'pending_review') {
-            next[id] = { status: 'available' };
+            next[id] = {
+                status: 'pending_review',
+                completionId: progress.completionId,
+                submittedAt: progress.submittedAt,
+            };
             continue;
         }
         if (progress.status === 'completed' || legacyStatus === 'completed') {
@@ -64,6 +68,8 @@ export async function loadUserState(): Promise<AppUserState> {
     return {
         ...DEFAULT_USER_STATE,
         ...rest,
+        userId: rest.userId ?? null,
+        deviceId: rest.deviceId ?? null,
         phoneMasked: rest.phoneMasked ?? null,
         almangPayoutConsent: rest.almangPayoutConsent ?? DEFAULT_USER_STATE.almangPayoutConsent,
         almangConsentAt: rest.almangConsentAt ?? null,

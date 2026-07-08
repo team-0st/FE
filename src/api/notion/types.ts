@@ -31,10 +31,33 @@ export type CheckInResponse = {
     rewardedIngredient?: IngredientDto;
 };
 
-export type MissionVerifyResponse = {
-    missionId: number;
+export type RegisterUserResponse = {
+    userId: number;
+    onboardingCompleted: boolean;
+};
+
+export type MissionVerifyPendingResponse = {
+    completionId: number;
+    status: 'PENDING';
+};
+
+export type MissionVerifyApprovedResponse = {
+    completionId: number;
+    status: 'APPROVED';
     rewardedIngredient: IngredientDto;
 };
+
+export type MissionCompletionItem = {
+    completionId: number;
+    missionId: number;
+    missionTitle: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    rewardedIngredient?: IngredientDto;
+    submittedAt: string;
+    reviewedAt?: string;
+};
+
+export type MissionVerifyResponse = MissionVerifyPendingResponse | MissionVerifyApprovedResponse;
 
 export type SoupCraftResponse = {
     soupId: number;
@@ -83,6 +106,7 @@ export type EcoJamHistoryItem = {
 };
 
 export const API_PATHS = {
+    usersRegister: '/api/users/register',
     shops: '/api/shops',
     onboardingComplete: '/api/onboarding/complete',
     checkIn: '/api/check-in',
@@ -90,11 +114,12 @@ export const API_PATHS = {
     missions: '/api/missions',
     missionDetail: (id: number) => `/api/missions/${id}`,
     missionVerify: (id: number) => `/api/missions/${id}/verify`,
+    missionCompletions: '/api/missions/completions',
     ingredients: '/api/ingredients',
     recipes: '/api/recipes',
     recipesHidden: '/api/recipes/hidden',
     soupCraft: '/api/soup/craft',
-    soupResult: (soupId: number) => `/api/soup/result/${soupId}`,
+    soupDetail: (soupId: number) => `/api/soup/${soupId}`,
     profile: '/api/profile',
     ecoJamHistory: '/api/eco-jam/history',
     gacha: '/api/gacha',

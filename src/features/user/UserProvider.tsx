@@ -8,7 +8,9 @@ import {
     useState,
     type PropsWithChildren,
 } from 'react';
-import { postCheckIn, type CheckInResult } from '@api/checkIn';
+import { postCheckIn, getCheckInStatus, type CheckInResult } from '@api/checkIn';
+import { postRegisterUser } from '@api/users';
+import { getOrCreateDeviceId } from '../../shared/device/deviceId';
 import { postGacha } from '@api/gacha';
 import { postMissionVerify } from '@api/missions';
 import type { Recipe } from '@api/mock/recipes';
@@ -30,14 +32,16 @@ import type { AppUserState, AlmangPayoutConsent } from './types';
 import {
     addEcoJam,
     applyCheckInFromServer,
+    applyRegisterUser,
     completeMissionVerify,
     completeRecipe,
     consumeIngredientsForSlots,
     finishOnboarding as finishOnboardingState,
-    getMissionStatus,
+    getMissionTodayStatus,
     resetOnboarding as resetOnboardingState,
     saveOnboardingProfile as saveOnboardingProfileState,
     setShopId,
+    submitMissionPendingReview,
     spendEcoJam,
     formatDateKey,
 } from './userStateLogic';
@@ -56,8 +60,15 @@ type UserContextValue = {
     resetOnboarding: () => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
     verifyMission: (missionId: string) => Promise<
-        | { ok: true; ingredientId: string }
-        | { ok: false; code: 'NOT_FOUND' | 'MISSION_ALREADY_COMPLETED' | 'NETWORK_ERROR' }
+        | { ok: true; pending: boolean; ingredientId?: string }
+        | {
+              ok: false;
+              code:
+                  | 'NOT_FOUND'
+                  | 'MISSION_ALREADY_COMPLETED'
+                  | 'MISSION_UNDER_REVIEW'
+                  | 'NETWORK_ERROR';
+          }
     >;
     brewSoup: (slots: (string | null)[]) => Promise<
         | { ok: true; recipe: Recipe; craft: SoupCraftResponse }
@@ -80,13 +91,47 @@ export function UserProvider({ children }: PropsWithChildren) {
 
     useEffect(() => {
         let mounted = true;
-        loadUserState().then((loaded) => {
+        (async () => {
+            const loaded = await loadUserState();
+            if (!mounted) {
+                return;
+            }
+            let next = loaded;
+            const deviceId = await getOrCreateDeviceId();
+            if (next.userId == null) {
+                try {
+                    const registered = await postRegisterUser();
+                    next = applyRegisterUser(next, {
+                        userId: registered.userId,
+                        deviceId,
+                        onboardingCompleted: registered.onboardingCompleted,
+                    });
+                } catch {
+                    next = applyRegisterUser(next, {
+                        userId: 1001,
+                        deviceId,
+                        onboardingCompleted: next.onboardingCompleted,
+                    });
+                }
+            } else if (next.deviceId == null) {
+                next = { ...next, deviceId };
+            }
+            try {
+                const today = formatDateKey(new Date());
+                const status = await getCheckInStatus(next.lastCheckInDate, today);
+                if (status.alreadyChecked && next.lastCheckInDate !== today) {
+                    next = { ...next, lastCheckInDate: today };
+                }
+            } catch {
+                // keep local state
+            }
+            stateRef.current = next;
+            setState(next);
+            await saveUserState(next);
             if (mounted) {
-                stateRef.current = loaded;
-                setState(loaded);
                 setIsReady(true);
             }
-        });
+        })();
         return () => {
             mounted = false;
         };
@@ -146,16 +191,30 @@ export function UserProvider({ children }: PropsWithChildren) {
             verifyMission: async (missionId) => {
                 try {
                     const current = stateRef.current;
-                    const isCompleted = getMissionStatus(current, missionId) === 'completed';
-                    const api = await postMissionVerify(missionId, isCompleted);
+                    const todayStatus = getMissionTodayStatus(current, missionId);
+                    const api = await postMissionVerify(missionId, todayStatus);
                     if (!api.ok) {
                         return api;
+                    }
+                    if (api.data.status === 'PENDING') {
+                        const next = submitMissionPendingReview(
+                            current,
+                            missionId,
+                            api.data.completionId,
+                        );
+                        stateRef.current = next;
+                        setState(next);
+                        await saveUserState(next);
+                        return { ok: true, pending: true };
+                    }
+                    if (api.ingredientId == null) {
+                        return { ok: false, code: 'NOT_FOUND' };
                     }
                     const next = completeMissionVerify(current, missionId, api.ingredientId);
                     stateRef.current = next;
                     setState(next);
                     await saveUserState(next);
-                    return { ok: true, ingredientId: api.ingredientId };
+                    return { ok: true, pending: false, ingredientId: api.ingredientId };
                 } catch {
                     return { ok: false, code: 'NETWORK_ERROR' };
                 }

@@ -71,6 +71,51 @@ export function getMissionStatus(state: AppUserState, missionId: string): Missio
     return state.missionProgress[missionId]?.status ?? 'available';
 }
 
+export function getMissionTodayStatus(state: AppUserState, missionId: string): 'PENDING' | 'APPROVED' | 'REJECTED' | null {
+    const progress = state.missionProgress[missionId];
+    if (progress == null || progress.status === 'available') {
+        return null;
+    }
+    if (progress.status === 'pending_review') {
+        return 'PENDING';
+    }
+    if (progress.status === 'rejected') {
+        return 'REJECTED';
+    }
+    return 'APPROVED';
+}
+
+export function applyRegisterUser(
+    state: AppUserState,
+    payload: { userId: number; deviceId: string; onboardingCompleted: boolean },
+): AppUserState {
+    return {
+        ...state,
+        userId: payload.userId,
+        deviceId: payload.deviceId,
+        onboardingCompleted: state.onboardingCompleted || payload.onboardingCompleted,
+    };
+}
+
+export function submitMissionPendingReview(
+    state: AppUserState,
+    missionId: string,
+    completionId: number,
+): AppUserState {
+    const now = new Date().toISOString();
+    return {
+        ...state,
+        missionProgress: {
+            ...state.missionProgress,
+            [missionId]: {
+                status: 'pending_review',
+                completionId,
+                submittedAt: now,
+            },
+        },
+    };
+}
+
 function addIngredient(state: AppUserState, ingredientId: string, amount = 1): AppUserState {
     const current = state.ingredientInventory[ingredientId] ?? 0;
     return {

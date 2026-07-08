@@ -1,9 +1,11 @@
-export type MissionProgressStatus = 'available' | 'completed';
+export type MissionProgressStatus = 'available' | 'pending_review' | 'completed' | 'rejected';
 
 export type MissionProgress = {
     status: MissionProgressStatus;
+    completionId?: number;
+    submittedAt?: string;
     completedAt?: string;
-    /** verify 즉시 지급된 재료 (slug) */
+    /** 승인 후 지급된 재료 (slug) */
     rewardIngredientId?: string;
 };
 
@@ -26,6 +28,8 @@ export type PendingRealReward = {
 export type AlmangPayoutConsent = 'granted' | 'declined';
 
 export type AppUserState = {
+    userId: number | null;
+    deviceId: string | null;
     onboardingCompleted: boolean;
     nickname: string;
     phoneMasked: string | null;
