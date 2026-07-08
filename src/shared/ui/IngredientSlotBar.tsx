@@ -1,5 +1,5 @@
 import { getIngredientById } from '@api/mock';
-import { BREW_SLOT_MAX, WEEKLY_SLOT_COUNT } from '@api/mock/recipes';
+import { BREW_SLOT_MAX, LEGENDARY_SLOT_COUNT, WEEKLY_SLOT_COUNT } from '@api/mock/recipes';
 import { Txt } from '@toss/tds-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
@@ -18,6 +18,7 @@ export function IngredientSlotBar({ slots, onPressSlot }: IngredientSlotBarProps
                     const ingredient = id != null ? getIngredientById(id) : undefined;
                     const filled = ingredient != null;
                     const isHiddenSlot = index === WEEKLY_SLOT_COUNT;
+                    const isLegendarySlot = index === LEGENDARY_SLOT_COUNT - 1;
                     return (
                         <View key={index} style={styles.slotCol}>
                             <Pressable
@@ -25,15 +26,18 @@ export function IngredientSlotBar({ slots, onPressSlot }: IngredientSlotBarProps
                                 style={[
                                     styles.slot,
                                     filled ? styles.slotFilled : styles.slotEmpty,
+                                    isLegendarySlot ? styles.slotLegendaryLane : undefined,
                                     isHiddenSlot ? styles.slotHiddenLane : undefined,
                                 ]}
                                 accessibilityRole="button"
                                 accessibilityLabel={
                                     filled
                                         ? `${ingredient.name} 제거`
-                                        : isHiddenSlot
-                                          ? '히든 레시피 재료 칸'
-                                          : `일반 레시피 재료 칸 ${index + 1}`
+                                        : isLegendarySlot
+                                          ? '전설 레시피 재료 칸'
+                                          : isHiddenSlot
+                                            ? '히든 레시피 재료 칸'
+                                            : `일반 레시피 재료 칸 ${index + 1}`
                                 }
                             >
                                 {filled ? (
@@ -44,9 +48,9 @@ export function IngredientSlotBar({ slots, onPressSlot }: IngredientSlotBarProps
                                     </Txt>
                                 )}
                             </Pressable>
-                            {index === 0 || isHiddenSlot ? (
+                            {index === 0 || isHiddenSlot || isLegendarySlot ? (
                                 <Txt typography="t7" color="grey500" style={styles.slotLabel}>
-                                    {isHiddenSlot ? '히든' : '일반·3'}
+                                    {isLegendarySlot ? '전설' : isHiddenSlot ? '히든' : '일반·3'}
                                 </Txt>
                             ) : (
                                 <View style={styles.slotLabelSpacer} />
@@ -91,6 +95,9 @@ const styles = StyleSheet.create({
         borderColor: colors.primary,
     },
     slotHiddenLane: {
+        marginLeft: 4,
+    },
+    slotLegendaryLane: {
         marginLeft: 4,
     },
     slotLabel: {

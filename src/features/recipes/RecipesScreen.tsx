@@ -151,7 +151,7 @@ export function RecipesScreen() {
                                 bottom={
                                     unlocked
                                         ? `${recipe.realRewardLabel ?? '전설 리워드'} · 완료`
-                                        : '레시피북에 이름도 없대요 · 4재료'
+                                        : '레시피북에 이름도 없대요 · 5재료'
                                 }
                             />
                         }

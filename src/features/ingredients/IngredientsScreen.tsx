@@ -96,7 +96,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
             />
             <IngredientSlotBar slots={slots} onPressSlot={handlePressSlot} />
             <Txt typography="t7" color="grey600" style={styles.hint}>
-                입문 2칸 · 일반 3칸 · 히든·전설 4칸. 칸을 탭하면 재료를 빼요.
+                입문 2칸 · 일반 3칸 · 히든 4칸 · 전설 5칸. 칸을 탭하면 재료를 빼요.
             </Txt>
             <View style={styles.probRow}>
                 <ProbabilityInfoRow
