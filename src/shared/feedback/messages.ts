@@ -3,7 +3,7 @@ export type BrewFailureReason = 'incomplete' | 'no_match' | 'already_done' | 'no
 export function getBrewFailureMessage(reason: BrewFailureReason): string {
     switch (reason) {
         case 'incomplete':
-            return '일반 레시피는 재료 3개, 히든 레시피는 4개를 넣어 주세요.';
+            return '입문 2개 · 일반 3개 · 히든 4개 · 전설 5개를 맞춰 넣어 주세요.';
         case 'no_match':
             return '아직 알려지지 않은 조합이에요. 레시피 힌트를 확인해 보세요.';
         case 'already_done':

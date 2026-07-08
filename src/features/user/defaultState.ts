@@ -11,6 +11,7 @@ export const DEFAULT_USER_STATE: AppUserState = {
     ecoJam: 10,
     ingredientInventory: {
         tomato: 1,
+        onion: 1,
         carrot: 1,
         mushroom: 1,
         cabbage: 1,

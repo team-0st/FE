@@ -13,9 +13,7 @@ type SoupResultScreenProps = {
 
 export function SoupResultScreen({ recipeId, craft, onPressDone }: SoupResultScreenProps) {
     const recipe = getRecipeById(recipeId);
-    if (recipe == null) {
-        return null;
-    }
+    const displayName = craft.recipeName ?? recipe?.name ?? '스프';
     const isFail = craft.result === 'FAIL';
     const isReal = craft.rewardType === 'REAL_ITEM';
 
@@ -25,7 +23,7 @@ export function SoupResultScreen({ recipeId, craft, onPressDone }: SoupResultScr
             <View style={styles.hero}>
                 <Txt typography="t1">🍲</Txt>
                 <Txt typography="t3" fontWeight="bold" style={styles.name}>
-                    {craft.recipeName ?? recipe.name}
+                    {displayName}
                 </Txt>
             </View>
             <View

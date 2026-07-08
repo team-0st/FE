@@ -49,5 +49,13 @@ export function navigateSoupResult(
     craft: SoupCraftResponse,
 ): void {
     const encoded = encodeSoupCraftForRoute(craft);
-    navigation.navigate('/soup/result', { recipeId, ...encoded });
+    const params = { recipeId, ...encoded };
+    const nav = navigation as AppNavigation & {
+        replace?: (name: string, routeParams: Record<string, string>) => void;
+    };
+    if (nav.replace != null) {
+        nav.replace('/soup/result', params);
+        return;
+    }
+    navigation.navigate('/soup/result', params);
 }
