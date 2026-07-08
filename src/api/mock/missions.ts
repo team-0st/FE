@@ -84,9 +84,17 @@ export function getMissionById(id: string): Mission | undefined {
     return ALL_MISSIONS.find((mission) => mission.id === id);
 }
 
-export function missionStatusLabel(status: 'available' | 'completed'): string {
-    if (status === 'completed') {
-        return '완료';
+import type { MissionProgressStatus } from '../../features/user/types';
+
+export function missionStatusLabel(status: MissionProgressStatus): string {
+    switch (status) {
+        case 'completed':
+            return '완료';
+        case 'pending_review':
+            return '검수 중';
+        case 'rejected':
+            return '반려됨';
+        default:
+            return '미완료';
     }
-    return '미완료';
 }

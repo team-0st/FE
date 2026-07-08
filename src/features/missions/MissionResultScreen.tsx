@@ -20,6 +20,7 @@ type MissionResultScreenProps = {
 export function MissionResultScreen({ mission, onPressHome }: MissionResultScreenProps) {
     const { state } = useUser();
     const progress = state.missionProgress[mission.id];
+    const isPending = progress?.status === 'pending_review';
     const rewardIngredient = getMissionRewardIngredient(
         mission.id,
         progress?.rewardIngredientId,
@@ -33,8 +34,12 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
         <Screen scrollable>
             <View style={styles.body}>
                 <GuideHero
-                    message={getMissionCompleteMessage(rewardLabel)}
-                    mood="happy"
+                    message={
+                        isPending
+                            ? '인증 사진을 제출했어요.\n검수가 끝나면 재료를 받을 수 있어요.'
+                            : getMissionCompleteMessage(rewardLabel)
+                    }
+                    mood={isPending ? 'think' : 'happy'}
                     align="start"
                 />
                 <View style={styles.card}>
@@ -42,12 +47,19 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
                     <Txt typography="t5" fontWeight="bold" style={styles.title}>
                         {mission.title}
                     </Txt>
-                    {rewardIngredient != null ? (
+                    {isPending ? (
+                        <Txt typography="t7" color="grey600" style={styles.note}>
+                            보통 몇 시간 안에 검수가 완료돼요. 마이페이지에서 상태를 확인할 수 있어요.
+                        </Txt>
+                    ) : null}
+                    {!isPending && rewardIngredient != null ? (
                         <RewardIngredientBadge ingredient={rewardIngredient} />
                     ) : null}
-                    <Txt typography="t7" color="grey600" style={styles.note}>
-                        재료는 제작 탭에서 스프를 끓일 때 사용해요.
-                    </Txt>
+                    {!isPending ? (
+                        <Txt typography="t7" color="grey600" style={styles.note}>
+                            재료는 제작 탭에서 스프를 끓일 때 사용해요.
+                        </Txt>
+                    ) : null}
                 </View>
             </View>
             <View style={styles.cta}>

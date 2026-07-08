@@ -14,9 +14,15 @@ type MissionsListScreenProps = {
     onPressBack?: () => void;
 };
 
-function statusColor(status: MissionProgressStatus): 'green500' | 'blue500' {
+function statusColor(status: MissionProgressStatus): 'green500' | 'blue500' | 'grey600' | 'red500' {
     if (status === 'completed') {
         return 'green500';
+    }
+    if (status === 'pending_review') {
+        return 'grey600';
+    }
+    if (status === 'rejected') {
+        return 'red500';
     }
     return 'blue500';
 }
@@ -31,7 +37,9 @@ function MissionRow({
     onPress: () => void;
 }) {
     const rightLabel =
-        status === 'available' ? formatMissionIngredientReward(mission.id) : missionStatusLabel(status);
+        status === 'available'
+            ? formatMissionIngredientReward(mission.id)
+            : missionStatusLabel(status);
 
     return (
         <ListRow
