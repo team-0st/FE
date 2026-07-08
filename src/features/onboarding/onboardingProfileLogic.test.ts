@@ -1,10 +1,4 @@
-import {
-    formatPhoneBodyForDisplay,
-    maskPhone,
-    normalizePhoneBody,
-    validateNickname,
-    validatePhoneBody,
-} from './onboardingProfileLogic';
+import { maskPhone, normalizePhoneBody, validateNickname, validatePhoneBody } from './onboardingProfileLogic';
 
 describe('validateNickname', () => {
     it('accepts valid nickname', () => {
@@ -43,12 +37,6 @@ describe('validatePhoneBody', () => {
 describe('normalizePhoneBody', () => {
     it('removes non-digits and leading 010', () => {
         expect(normalizePhoneBody('010-1234-5678')).toBe('12345678');
-    });
-});
-
-describe('formatPhoneBodyForDisplay', () => {
-    it('formats middle hyphen', () => {
-        expect(formatPhoneBodyForDisplay('12345678')).toBe('1234-5678');
     });
 });
 

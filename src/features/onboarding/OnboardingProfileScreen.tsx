@@ -7,7 +7,6 @@ import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
 import { ONBOARDING_PROFILE_GUIDE } from '../../shared/constants/guideCopy';
 import {
-    formatPhoneBodyForDisplay,
     normalizePhoneBody,
     PHONE_PREFIX,
     validateNickname,
@@ -27,12 +26,6 @@ type OnboardingProfileScreenProps = {
 };
 
 type Step = 'nickname' | 'phone';
-
-const PRIVACY_NOTICE =
-    '수집 목적: 알맹상점 포인트 지급·본인 확인\n' +
-    '수집 항목: 휴대전화번호\n' +
-    '보유 기간: 회원 탈퇴 또는 최종 지급 완료 후 3년\n' +
-    '거부 시 불이익: 적립은 가능하나 자동 지급 불가, 알맹상점 방문 후 지급';
 
 export function OnboardingProfileScreen({
     initialNickname = '',
@@ -154,22 +147,37 @@ export function OnboardingProfileScreen({
                     label="휴대전화번호"
                     prefix={PHONE_PREFIX}
                     placeholder={ONBOARDING_PROFILE_GUIDE.phoneBodyPlaceholder}
-                    value={formatPhoneBodyForDisplay(phoneBody)}
+                    value={phoneBody}
                     onChangeText={(value) => {
                         setPhoneBody(normalizePhoneBody(value));
                         setPhoneError(null);
                     }}
                     keyboardType="phone-pad"
-                    maxLength={9}
+                    maxLength={8}
                 />
                 <View style={styles.noticeBox}>
-                    <Txt typography="t7" color="grey700">
-                        {PRIVACY_NOTICE}
+                    <Txt typography="t7" fontWeight="semibold" color="grey800">
+                        개인정보 수집·이용 안내
+                    </Txt>
+                    <Txt typography="t7" color="grey700" style={styles.noticeLine}>
+                        {`· 수집·이용 목적: ${ONBOARDING_PROFILE_GUIDE.phoneConsentNotice.purpose}`}
+                    </Txt>
+                    <Txt typography="t7" color="grey700" style={styles.noticeLine}>
+                        {`· 수집 항목: ${ONBOARDING_PROFILE_GUIDE.phoneConsentNotice.items}`}
+                    </Txt>
+                    <Txt typography="t7" color="grey700" style={styles.noticeLine}>
+                        {`· 보유·이용 기간: ${ONBOARDING_PROFILE_GUIDE.phoneConsentNotice.retention}`}
+                    </Txt>
+                    <Txt typography="t7" color="grey700" style={styles.noticeLine}>
+                        {`· 동의 거부 권리 및 불이익: ${ONBOARDING_PROFILE_GUIDE.phoneConsentNotice.refuse}`}
+                    </Txt>
+                    <Txt typography="t7" color="grey500" style={styles.policyHint}>
+                        {ONBOARDING_PROFILE_GUIDE.phoneConsentPolicyHint}
                     </Txt>
                 </View>
-                    <Checkbox.Line checked={consentChecked} onCheckedChange={setConsentChecked}>
-                        개인정보 수집·이용에 동의해요 (알맹 포인트 지급 목적)
-                    </Checkbox.Line>
+                <Checkbox.Line checked={consentChecked} onCheckedChange={setConsentChecked}>
+                    {ONBOARDING_PROFILE_GUIDE.phoneConsentCheckbox}
+                </Checkbox.Line>
                 {phoneError != null ? (
                     <Txt typography="t7" color="red500">
                         {phoneError}
@@ -246,6 +254,14 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
         backgroundColor: colors.surface,
         padding: 14,
+        gap: 6,
+    },
+    noticeLine: {
+        lineHeight: 20,
+    },
+    policyHint: {
+        marginTop: 4,
+        lineHeight: 18,
     },
     consentRow: {
         flexDirection: 'row',

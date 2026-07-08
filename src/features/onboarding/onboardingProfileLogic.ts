@@ -35,14 +35,6 @@ export function normalizePhoneBody(raw: string): string {
     return digits.slice(0, PHONE_BODY_LENGTH);
 }
 
-export function formatPhoneBodyForDisplay(body: string): string {
-    const digits = normalizePhoneBody(body);
-    if (digits.length <= 4) {
-        return digits;
-    }
-    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-}
-
 export function maskPhone(digits: string): string {
     if (digits.length < 10) {
         return digits;
