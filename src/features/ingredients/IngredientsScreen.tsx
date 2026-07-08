@@ -1,6 +1,7 @@
 import { INGREDIENTS } from '@api/mock';
 import {
     BREW_SLOT_MAX,
+    findMatchingRecipe,
     getFilledIngredientIds,
     isValidBrewFillCount,
 } from '@api/mock/recipes';
@@ -11,17 +12,13 @@ import { getBrewFailureMessage } from '../../shared/feedback/messages';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { useUser } from '../user/UserProvider';
 import { IngredientSlotBar } from '../../shared/ui/IngredientSlotBar';
-import { Screen } from '../../shared/ui/Screen';
 import type { SoupCraftResponse } from '@api/notion/types';
 import {
-    SOUP_BEGINNER_PROBABILITY_LINES,
-    SOUP_BEGINNER_PROBABILITY_TITLE,
-    SOUP_HIDDEN_PROBABILITY_LINES,
-    SOUP_HIDDEN_PROBABILITY_TITLE,
-    SOUP_WEEKLY_PROBABILITY_LINES,
-    SOUP_WEEKLY_PROBABILITY_TITLE,
+    SOUP_BREW_PROBABILITY_LINES,
+    SOUP_BREW_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
+import { colors } from '../../shared/theme/colors';
 
 type IngredientsScreenProps = {
     onSoupMade: (recipeId: string, craft: SoupCraftResponse) => void;
@@ -39,6 +36,15 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
 
     const filledCount = getFilledIngredientIds(slots).length;
     const canBrew = isValidBrewFillCount(filledCount) && !brewing;
+    const matchedRecipe = isValidBrewFillCount(filledCount)
+        ? findMatchingRecipe(slots, state.completedRecipeIds)
+        : undefined;
+    const matchedLabel =
+        matchedRecipe == null
+            ? null
+            : matchedRecipe.kind === 'hidden' || matchedRecipe.kind === 'legendary'
+              ? '비밀 레시피 조합이에요'
+              : `${matchedRecipe.name} 조합이에요`;
 
     const handlePressIngredient = useCallback(
         (ingredientId: string) => {
@@ -87,37 +93,32 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
     };
 
     return (
-        <Screen scrollable contentCentered>
-            <Top
-                title={<Top.TitleParagraph size={22}>제작</Top.TitleParagraph>}
-                subtitle2={
-                    <Top.SubtitleParagraph>재료를 골라 냄비에 넣어 스프를 만들어요.</Top.SubtitleParagraph>
-                }
-            />
-            <IngredientSlotBar slots={slots} onPressSlot={handlePressSlot} />
-            <Txt typography="t7" color="grey600" style={styles.hint}>
-                입문 2칸 · 일반 3칸 · 히든 4칸 · 전설 5칸. 칸을 탭하면 재료를 빼요.
-            </Txt>
-            <View style={styles.probRow}>
-                <ProbabilityInfoRow
-                    label="일반 스프 보상"
-                    title={SOUP_WEEKLY_PROBABILITY_TITLE}
-                    lines={SOUP_WEEKLY_PROBABILITY_LINES}
+        <View style={styles.root}>
+            <View style={styles.header}>
+                <Top
+                    title={<Top.TitleParagraph size={22}>제작</Top.TitleParagraph>}
+                    subtitle2={
+                        <Top.SubtitleParagraph>재료를 골라 냄비에 넣어 스프를 만들어요.</Top.SubtitleParagraph>
+                    }
                 />
-            </View>
-            <View style={styles.probRow}>
-                <ProbabilityInfoRow
-                    label="히든·전설 보상"
-                    title={SOUP_HIDDEN_PROBABILITY_TITLE}
-                    lines={SOUP_HIDDEN_PROBABILITY_LINES}
-                />
-            </View>
-            <View style={styles.probRow}>
-                <ProbabilityInfoRow
-                    label="입문 스프 보상"
-                    title={SOUP_BEGINNER_PROBABILITY_TITLE}
-                    lines={SOUP_BEGINNER_PROBABILITY_LINES}
-                />
+                <IngredientSlotBar slots={slots} onPressSlot={handlePressSlot} />
+                <View style={styles.matchHintSlot}>
+                    {matchedLabel != null ? (
+                        <Txt typography="t6" color="blue500" style={styles.matchHint}>
+                            {matchedLabel}
+                        </Txt>
+                    ) : null}
+                </View>
+                <Txt typography="t7" color="grey600" style={styles.hint}>
+                    칸을 탭하면 재료를 빼요.
+                </Txt>
+                <View style={styles.probRow}>
+                    <ProbabilityInfoRow
+                        label="제작 보상"
+                        title={SOUP_BREW_PROBABILITY_TITLE}
+                        lines={SOUP_BREW_PROBABILITY_LINES}
+                    />
+                </View>
             </View>
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
                 {INGREDIENTS.map((item) => {
@@ -163,25 +164,50 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                     스프 만들기
                 </Button>
             </View>
-        </Screen>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingHorizontal: 20,
+        paddingBottom: 16,
+    },
+    header: {
+        paddingTop: 8,
+        width: '100%',
+        maxWidth: 400,
+        alignSelf: 'center',
+    },
+    matchHintSlot: {
+        minHeight: 28,
+        justifyContent: 'center',
+        marginBottom: 4,
+    },
+    matchHint: {
+        textAlign: 'center',
+        fontWeight: '600',
+    },
     hint: {
         textAlign: 'center',
         marginBottom: 8,
     },
     probRow: {
-        alignSelf: 'center',
-        marginBottom: 6,
+        alignSelf: 'flex-start',
+        marginBottom: 8,
     },
     list: {
+        flex: 1,
         width: '100%',
-        maxHeight: 320,
+        maxWidth: 400,
+        alignSelf: 'center',
     },
     cta: {
         width: '100%',
-        marginTop: 16,
+        maxWidth: 400,
+        alignSelf: 'center',
+        marginTop: 8,
     },
 });
