@@ -40,11 +40,11 @@ export function GachaScreen() {
                 return;
             }
             setLastReward(result.reward);
-            toast.showSuccess(formatGachaRewardMessage(result.reward));
+            toast.showSuccess(formatGachaRewardMessage(result.reward, state));
         } finally {
             setIsPulling(false);
         }
-    }, [canPull, pullGacha, toast]);
+    }, [canPull, pullGacha, state, toast]);
 
     return (
         <Screen scrollable>

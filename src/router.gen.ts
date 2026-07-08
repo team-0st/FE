@@ -8,6 +8,7 @@ import { Route as _MissionsIdResultRoute } from '../pages/missions/[id]/result';
 import { Route as _MissionsIdVerifyRoute } from '../pages/missions/[id]/verify';
 import { Route as _MissionsIdRoute } from '../pages/missions/[id]';
 import { Route as _MissionsRoute } from '../pages/missions';
+import { Route as _OnboardingProfileRoute } from '../pages/onboarding/profile';
 import { Route as _OnboardingRoute } from '../pages/onboarding';
 import { Route as _OnboardingShopRoute } from '../pages/onboarding/shop';
 import { Route as _ProfileRoute } from '../pages/profile';
@@ -27,6 +28,7 @@ declare module '@granite-js/react-native' {
     '/missions/[id]': (typeof _MissionsIdRoute)['_inputType'];
     '/missions': (typeof _MissionsRoute)['_inputType'];
     '/onboarding': (typeof _OnboardingRoute)['_inputType'];
+    '/onboarding/profile': (typeof _OnboardingProfileRoute)['_inputType'];
     '/onboarding/shop': (typeof _OnboardingShopRoute)['_inputType'];
     '/profile': (typeof _ProfileRoute)['_inputType'];
     '/recipes': (typeof _RecipesRoute)['_inputType'];
@@ -45,6 +47,7 @@ declare module '@granite-js/react-native' {
     '/missions/[id]': (typeof _MissionsIdRoute)['_outputType'];
     '/missions': (typeof _MissionsRoute)['_outputType'];
     '/onboarding': (typeof _OnboardingRoute)['_outputType'];
+    '/onboarding/profile': (typeof _OnboardingProfileRoute)['_outputType'];
     '/onboarding/shop': (typeof _OnboardingShopRoute)['_outputType'];
     '/profile': (typeof _ProfileRoute)['_outputType'];
     '/recipes': (typeof _RecipesRoute)['_outputType'];

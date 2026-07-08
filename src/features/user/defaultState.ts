@@ -3,6 +3,9 @@ import type { AppUserState } from './types';
 export const DEFAULT_USER_STATE: AppUserState = {
     onboardingCompleted: false,
     nickname: '사용자',
+    phoneMasked: null,
+    almangPayoutConsent: 'declined',
+    almangConsentAt: null,
     shopId: null,
     lastCheckInDate: null,
     weeklyMissionDone: 0,

@@ -64,6 +64,9 @@ export async function loadUserState(): Promise<AppUserState> {
     return {
         ...DEFAULT_USER_STATE,
         ...rest,
+        phoneMasked: rest.phoneMasked ?? null,
+        almangPayoutConsent: rest.almangPayoutConsent ?? DEFAULT_USER_STATE.almangPayoutConsent,
+        almangConsentAt: rest.almangConsentAt ?? null,
         ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
         ingredientInventory: normalizeIngredientInventory(rest.ingredientInventory),
         completedRecipeIds,

@@ -10,6 +10,6 @@ function Page() {
     const navigation = Route.useNavigation();
 
     return (
-        <OnboardingScreen onPressStart={() => navigation.navigate(ROUTES.onboardingShop)} />
+        <OnboardingScreen onPressStart={() => navigation.navigate(ROUTES.onboardingProfile)} />
     );
 }

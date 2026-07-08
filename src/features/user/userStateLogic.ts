@@ -3,7 +3,12 @@ import type { Recipe } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
-import type { AppUserState, MissionProgressStatus, PendingRealReward } from './types';
+import type {
+    AlmangPayoutConsent,
+    AppUserState,
+    MissionProgressStatus,
+    PendingRealReward,
+} from './types';
 
 export function formatDateKey(date: Date): string {
     const y = date.getFullYear();
@@ -25,6 +30,24 @@ export function applyCheckInFromServer(
         ...state,
         lastCheckInDate: today,
         ingredientInventory: payload.ingredientInventory,
+    };
+}
+
+export function saveOnboardingProfile(
+    state: AppUserState,
+    payload: {
+        nickname: string;
+        phoneMasked: string | null;
+        almangPayoutConsent: AlmangPayoutConsent;
+        consentAt: string | null;
+    },
+): AppUserState {
+    return {
+        ...state,
+        nickname: payload.nickname,
+        phoneMasked: payload.phoneMasked,
+        almangPayoutConsent: payload.almangPayoutConsent,
+        almangConsentAt: payload.consentAt,
     };
 }
 

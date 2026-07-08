@@ -5,6 +5,7 @@ export const ROUTES = {
     home: '/',
     login: '/login',
     onboarding: '/onboarding',
+    onboardingProfile: '/onboarding/profile',
     onboardingShop: '/onboarding/shop',
     ingredients: '/ingredients',
     gacha: '/gacha',

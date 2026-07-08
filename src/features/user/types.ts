@@ -22,9 +22,15 @@ export type PendingRealReward = {
     status: 'pending_contact';
 };
 
+/** 알맹 포인트 매장 지급용 개인정보 동의 */
+export type AlmangPayoutConsent = 'granted' | 'declined';
+
 export type AppUserState = {
     onboardingCompleted: boolean;
     nickname: string;
+    phoneMasked: string | null;
+    almangPayoutConsent: AlmangPayoutConsent;
+    almangConsentAt: string | null;
     shopId: string | null;
     lastCheckInDate: string | null;
     weeklyMissionDone: number;

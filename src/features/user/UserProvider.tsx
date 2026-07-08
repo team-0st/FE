@@ -26,7 +26,7 @@ import type { GachaPullResult } from '../gacha/gachaTypes';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
 import { loadUserState, saveUserState } from './userRepository';
-import type { AppUserState } from './types';
+import type { AppUserState, AlmangPayoutConsent } from './types';
 import {
     addEcoJam,
     applyCheckInFromServer,
@@ -36,6 +36,7 @@ import {
     finishOnboarding as finishOnboardingState,
     getMissionStatus,
     resetOnboarding as resetOnboardingState,
+    saveOnboardingProfile as saveOnboardingProfileState,
     setShopId,
     spendEcoJam,
     formatDateKey,
@@ -46,6 +47,12 @@ type UserContextValue = {
     state: AppUserState;
     checkInToday: () => Promise<CheckInResult>;
     finishOnboarding: (shopId: string) => Promise<void>;
+    saveOnboardingProfile: (payload: {
+        nickname: string;
+        phoneMasked: string | null;
+        almangPayoutConsent: AlmangPayoutConsent;
+        consentAt: string | null;
+    }) => Promise<void>;
     resetOnboarding: () => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
     verifyMission: (missionId: string) => Promise<
@@ -119,6 +126,16 @@ export function UserProvider({ children }: PropsWithChildren) {
             },
             finishOnboarding: async (shopId) => {
                 await persist((prev) => finishOnboardingState(prev, shopId));
+            },
+            saveOnboardingProfile: async (payload) => {
+                await persist((prev) =>
+                    saveOnboardingProfileState(prev, {
+                        nickname: payload.nickname,
+                        phoneMasked: payload.phoneMasked,
+                        almangPayoutConsent: payload.almangPayoutConsent,
+                        consentAt: payload.consentAt,
+                    }),
+                );
             },
             resetOnboarding: async () => {
                 await persist((prev) => resetOnboardingState(prev));
