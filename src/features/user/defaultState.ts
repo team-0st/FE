@@ -10,10 +10,10 @@ export const DEFAULT_USER_STATE: AppUserState = {
     totalPoints: 0,
     ecoJam: 10,
     ingredientInventory: {
-        herb: 1,
+        tomato: 1,
         carrot: 1,
         mushroom: 1,
-        leaf: 1,
+        cabbage: 1,
     },
     completedRecipeIds: [],
     missionProgress: {},

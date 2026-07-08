@@ -11,7 +11,7 @@ function stateWithProgress(): AppUserState {
         weeklyMissionDone: 2,
         totalPoints: 100,
         ecoJam: 5,
-        ingredientInventory: { herb: 9, carrot: 0, mushroom: 0, leaf: 0 },
+        ingredientInventory: { cabbage: 9, carrot: 0, mushroom: 0, tomato: 0 },
         completedRecipeIds: ['weekly-01'],
         missionProgress: { tumbler: { status: 'completed', completedAt: '2026-05-18T00:00:00.000Z' } },
     };
@@ -31,10 +31,10 @@ describe('resetOnboarding', () => {
 describe('completeMissionVerify', () => {
     it('grants ingredient on verify', () => {
         const base = { ...DEFAULT_USER_STATE, ingredientInventory: {} };
-        const next = completeMissionVerify(base, 'tumbler', 'herb');
+        const next = completeMissionVerify(base, 'tumbler', 'cabbage');
         expect(next.missionProgress.tumbler?.status).toBe('completed');
-        expect(next.missionProgress.tumbler?.rewardIngredientId).toBe('herb');
-        expect(next.ingredientInventory.herb).toBe(1);
+        expect(next.missionProgress.tumbler?.rewardIngredientId).toBe('cabbage');
+        expect(next.ingredientInventory.cabbage).toBe(1);
     });
 });
 

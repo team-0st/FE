@@ -25,7 +25,7 @@ function pickIngredientId(random: () => number): string {
     if (picked != null) {
         return picked;
     }
-    return GACHA_INGREDIENT_POOL[0] ?? 'herb';
+    return GACHA_INGREDIENT_POOL[0] ?? 'cabbage';
 }
 
 export function rollGachaReward(random: () => number = Math.random): GachaReward {
