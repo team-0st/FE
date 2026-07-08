@@ -1,8 +1,8 @@
 import { formatMissionIngredientReward } from '@api/mock/ingredients';
-import { DAILY_MISSIONS, missionStatusLabel } from '@api/mock/missions';
+import { DAILY_MISSIONS, missionStatusLabel, SPECIAL_MISSIONS } from '@api/mock/missions';
 import type { Mission } from '@api/mock';
 import { ListRow, Top, Txt } from '@toss/tds-react-native';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
 import { missionStatusFor } from '../user/selectors';
 import type { MissionProgressStatus } from '../user/types';
@@ -79,7 +79,22 @@ export function MissionsListScreen({ onPressMission, onPressBack }: MissionsList
                 align="start"
                 compact
             />
+            <Txt typography="t5" fontWeight="semibold" style={styles.section}>
+                일반 미션
+            </Txt>
             {DAILY_MISSIONS.map((mission) => (
+                <MissionRow
+                    key={mission.id}
+                    mission={mission}
+                    status={missionStatusFor(state, mission.id)}
+                    onPress={() => onPressMission(mission.id)}
+                />
+            ))}
+            <View style={styles.sectionGap} />
+            <Txt typography="t5" fontWeight="semibold" style={styles.section}>
+                특별 미션 (히든 재료)
+            </Txt>
+            {SPECIAL_MISSIONS.map((mission) => (
                 <MissionRow
                     key={mission.id}
                     mission={mission}
@@ -96,5 +111,13 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         paddingVertical: 8,
         marginBottom: 4,
+    },
+    section: {
+        width: '100%',
+        marginTop: 12,
+        marginBottom: 4,
+    },
+    sectionGap: {
+        height: 8,
     },
 });
