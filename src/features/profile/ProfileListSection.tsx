@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { colors } from '../../shared/theme/colors';
+import { SCROLL_PREVIEW_HINT } from '../../shared/ui/ScrollPreviewSection';
 
 const PREVIEW_ROW_HEIGHT = 64;
 const PREVIEW_VISIBLE_ROWS = 3;
@@ -67,6 +68,11 @@ export function ProfileListSection({
                     </ScrollView>
                 </View>
             )}
+            {itemCount > PREVIEW_VISIBLE_ROWS ? (
+                <Txt typography="t7" color="grey500" style={styles.scrollHint}>
+                    {SCROLL_PREVIEW_HINT}
+                </Txt>
+            ) : null}
             <Modal visible={expanded} transparent animationType="fade" onRequestClose={() => setExpanded(false)}>
                 <Pressable style={styles.overlay} onPress={() => setExpanded(false)}>
                     <View style={styles.sheet} onStartShouldSetResponder={() => true}>
@@ -198,6 +204,10 @@ const styles = StyleSheet.create({
     },
     previewScroll: {
         maxHeight: PREVIEW_ROW_HEIGHT * PREVIEW_VISIBLE_ROWS,
+    },
+    scrollHint: {
+        marginTop: 6,
+        textAlign: 'center',
     },
     overlay: {
         flex: 1,

@@ -2,7 +2,7 @@ import { getIngredientById } from '@api/mock/ingredients';
 import { getTodayRecipeHint } from '@api/mock/recipes';
 import { Button, Txt } from '@toss/tds-react-native';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import {
     CHECK_IN_ALREADY_MESSAGE,
     NETWORK_ERROR_MESSAGE,
@@ -16,13 +16,20 @@ import {
 } from '../../shared/constants/probabilityInfo';
 import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import { HomeNudgeBanner } from '../../shared/ui/HomeNudgeBanner';
-import { Screen } from '../../shared/ui/Screen';
 import { StatCard } from '../../shared/ui/StatCard';
+import { WeeklyMissionOxRow } from '../../shared/ui/WeeklyMissionOxRow';
 import { colors } from '../../shared/theme/colors';
 
 type WitchSoupHomeScreenProps = {
     onPressMissions: () => void;
 };
+
+function checkInDisplayValue(checkedIn: boolean, loading: boolean): string {
+    if (loading) {
+        return '…';
+    }
+    return checkedIn ? 'O' : 'X';
+}
 
 export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProps) {
     const { state, checkInToday } = useUser();
@@ -66,76 +73,100 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
 
     const weeklyNudge =
         state.weeklyMissionDone < state.weeklyMissionTotal
-            ? `이번 주 미션 ${state.weeklyMissionDone}/${state.weeklyMissionTotal} · 미션을 하면 재료가 쌓여요.`
+            ? '미션을 완료하면 재료가 쌓여요.'
             : !checkedIn
               ? '출석하고 랜덤 재료를 받아 보세요.'
               : null;
 
     return (
-        <Screen scrollable contentCentered>
-            {weeklyNudge != null ? <HomeNudgeBanner message={weeklyNudge} /> : null}
-            <View style={styles.statRow}>
-                <StatCard
-                    label="오늘 출석"
-                    value={checkedIn ? '완료' : checkInLoading ? '확인 중' : '미완료'}
-                    hint={checkInHint}
-                    hintTone="action"
-                    onPress={() => {
-                        void handleCheckIn();
-                    }}
-                    accessibilityLabel="오늘 출석하기"
-                />
-                <StatCard label="에코잼" value={`${state.ecoJam}잼`} hintTone="info" />
-                <StatCard label="알맹 포인트" value={`${state.totalPoints}P`} hintTone="info" />
-            </View>
-            <View style={styles.stage}>
-                <Txt typography="t1" style={styles.witch}>
-                    🐱‍👤
-                </Txt>
-                <Txt typography="t7" color="grey600">
-                    마녀의 주방
-                </Txt>
-                <View style={styles.pot}>
-                    <Txt typography="t1">🍲</Txt>
-                    <Txt typography="t7" color="grey500">
-                        휘리릭…
-                    </Txt>
+        <View style={styles.root}>
+            <View style={styles.header}>
+                {weeklyNudge != null ? <HomeNudgeBanner message={weeklyNudge} /> : null}
+                <View style={styles.statRow}>
+                    <StatCard
+                        label="오늘 출석"
+                        value={checkInDisplayValue(checkedIn, checkInLoading)}
+                        hint={checkInHint}
+                        hintTone="action"
+                        onPress={() => {
+                            void handleCheckIn();
+                        }}
+                        accessibilityLabel="오늘 출석하기"
+                    />
+                    <StatCard label="에코잼" value={`${state.ecoJam}잼`} hintTone="info" />
+                    <StatCard label="알맹 포인트" value={`${state.totalPoints}P`} hintTone="info" />
                 </View>
-                <View style={styles.hintBox}>
-                    <View style={styles.hintTitleRow}>
-                        <Txt typography="t7" fontWeight="semibold" style={{ color: colors.primary }}>
-                            오늘의 레시피 힌트
+                <WeeklyMissionOxRow state={state} />
+            </View>
+            <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
+                <View style={styles.stage}>
+                    <Txt typography="t1" style={styles.witch}>
+                        🐱‍👤
+                    </Txt>
+                    <Txt typography="t7" color="grey600">
+                        마녀의 주방
+                    </Txt>
+                    <View style={styles.pot}>
+                        <Txt typography="t1">🍲</Txt>
+                        <Txt typography="t7" color="grey500">
+                            휘리릭…
                         </Txt>
-                        <ProbabilityInfoButton
-                            title={SOUP_WEEKLY_PROBABILITY_TITLE}
-                            lines={SOUP_WEEKLY_PROBABILITY_LINES}
-                        />
                     </View>
-                    <Txt typography="t6" color="grey700" style={styles.hintText}>
-                        {hint}
-                    </Txt>
+                    <View style={styles.hintBox}>
+                        <View style={styles.hintTitleRow}>
+                            <Txt typography="t7" fontWeight="semibold" style={{ color: colors.primary }}>
+                                오늘의 레시피 힌트
+                            </Txt>
+                            <ProbabilityInfoButton
+                                title={SOUP_WEEKLY_PROBABILITY_TITLE}
+                                lines={SOUP_WEEKLY_PROBABILITY_LINES}
+                            />
+                        </View>
+                        <Txt typography="t6" color="grey700" style={styles.hintText}>
+                            {hint}
+                        </Txt>
+                    </View>
                 </View>
+            </ScrollView>
+            <View style={styles.footer}>
+                <Button
+                    size="large"
+                    type="primary"
+                    display="block"
+                    onPress={onPressMissions}
+                    accessibilityLabel="오늘 미션 하고 재료 받기"
+                >
+                    오늘 미션 하고 재료 받기
+                </Button>
             </View>
-            <Button
-                size="large"
-                type="primary"
-                display="block"
-                onPress={onPressMissions}
-                accessibilityLabel="오늘 미션 하고 재료 받기"
-            >
-                오늘 미션 하고 재료 받기
-            </Button>
-        </Screen>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingHorizontal: 20,
+        paddingBottom: 16,
+    },
+    header: {
+        paddingTop: 8,
+        width: '100%',
+        maxWidth: 400,
+        alignSelf: 'center',
+    },
     statRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 12,
         width: '100%',
-        marginBottom: 8,
+    },
+    body: {
+        flex: 1,
+        width: '100%',
+        maxWidth: 400,
+        alignSelf: 'center',
     },
     hintTitleRow: {
         flexDirection: 'row',
@@ -145,7 +176,7 @@ const styles = StyleSheet.create({
     stage: {
         alignItems: 'center',
         width: '100%',
-        paddingVertical: 16,
+        paddingVertical: 12,
         gap: 12,
     },
     witch: {
@@ -164,7 +195,6 @@ const styles = StyleSheet.create({
     },
     hintBox: {
         width: '100%',
-        maxWidth: 320,
         backgroundColor: colors.surface,
         borderRadius: 16,
         padding: 16,
@@ -176,5 +206,11 @@ const styles = StyleSheet.create({
     hintText: {
         textAlign: 'center',
         lineHeight: 22,
+    },
+    footer: {
+        width: '100%',
+        maxWidth: 400,
+        alignSelf: 'center',
+        marginTop: 8,
     },
 });

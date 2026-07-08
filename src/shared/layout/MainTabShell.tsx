@@ -11,8 +11,8 @@ type MainTabShellProps = PropsWithChildren<{
 export function MainTabShell({ activeTab, onPressTab, children }: MainTabShellProps) {
     return (
         <View style={styles.root}>
-            <View style={styles.content}>{children}</View>
             <MainTabBar activeTab={activeTab} onPressTab={onPressTab} />
+            <View style={styles.content}>{children}</View>
         </View>
     );
 }

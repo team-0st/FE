@@ -55,11 +55,11 @@ export function MainTabBar({ activeTab, onPressTab }: MainTabBarProps) {
 const styles = StyleSheet.create({
     bar: {
         flexDirection: 'row',
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
         backgroundColor: colors.tabBar,
-        paddingBottom: 8,
         paddingTop: 8,
+        paddingBottom: 8,
     },
     item: {
         flex: 1,
