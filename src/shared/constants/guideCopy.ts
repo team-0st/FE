@@ -16,6 +16,19 @@ export const ONBOARDING_GUIDE = {
     intro: '안녕하세요.\n저는 새싹이에요.\n함께 제로웨이스트 실천,\n천천히 시작해 볼까요?',
 } as const;
 
+export const ONBOARDING_PROFILE_GUIDE = {
+    nicknameTitle: '닉네임을 입력해 주세요',
+    nicknameSubtitle: '앱에서 사용할 이름이에요. 실명은 필요하지 않아요.',
+    nicknamePlaceholder: '예) 펭귄탐험가',
+    phoneTitle: '휴대전화번호를 입력해 주세요',
+    phoneSubtitle: '알맹상점 포인트 지급에 사용해요. 나중에 입력해도 괜찮아요.',
+    skipModalTitle: '나중에 입력해도 괜찮아요',
+    skipModalBody:
+        '알맹상점 포인트는 게임에서 쌓일 수 있어요. 지급을 받으려면 알맹상점에 직접 방문해 주세요. 매장에서 본인 확인 후 지급해 드려요.',
+    payoutHint:
+        '동의하지 않으면 포인트는 적립되지만 지급받을 수 없어요. 지급은 알맹상점 방문이 필요해요.',
+} as const;
+
 export function getMissionCompleteMessage(ingredientLabel: string): string {
     return `미션을 완료했어요.\n${ingredientLabel} 재료를 받았어요.`;
 }

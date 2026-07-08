@@ -5,6 +5,7 @@ import type { AlmangPayoutConsent } from '../user/types';
 import { colors } from '../../shared/theme/colors';
 import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
+import { ONBOARDING_PROFILE_GUIDE } from '../../shared/constants/guideCopy';
 import { validateNickname, validatePhone } from './onboardingProfileLogic';
 
 export type OnboardingProfilePayload = {
@@ -94,19 +95,19 @@ export function OnboardingProfileScreen({
             <Screen>
                 <View style={styles.body}>
                     <GuideHero
-                        message="처음에 뭐라고 불러줄까?"
+                        message={ONBOARDING_PROFILE_GUIDE.nicknameTitle}
                         align="start"
                         size="large"
                         animate
                         compact
                     />
                     <Txt typography="t7" color="grey600" style={styles.sub}>
-                        앱에서 쓸 닉네임이에요. 실명은 필요 없어요.
+                        {ONBOARDING_PROFILE_GUIDE.nicknameSubtitle}
                     </Txt>
                     <TextField
                         variant="line"
                         label="닉네임"
-                        placeholder="예) 펭귄탐험가"
+                        placeholder={ONBOARDING_PROFILE_GUIDE.nicknamePlaceholder}
                         value={nickname}
                         onChangeText={(value) => {
                             setNickname(value);
@@ -134,13 +135,13 @@ export function OnboardingProfileScreen({
         <Screen>
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
                 <GuideHero
-                    message="전화번호 알려줄래?"
+                    message={ONBOARDING_PROFILE_GUIDE.phoneTitle}
                     align="start"
                     size="large"
                     compact
                 />
                 <Txt typography="t7" color="grey600" style={styles.sub}>
-                    알맹상점 포인트를 받을 때 필요해요. 나중에 해도 돼요.
+                    {ONBOARDING_PROFILE_GUIDE.phoneSubtitle}
                 </Txt>
                 <TextField
                     variant="line"
@@ -168,8 +169,7 @@ export function OnboardingProfileScreen({
                     </Txt>
                 ) : null}
                 <Txt typography="t7" color="grey500" style={styles.payoutHint}>
-                    동의하지 않으면 포인트는 적립되지만 지급받을 수 없어요. 지급은 알맹상점 방문이
-                    필요해요.
+                    {ONBOARDING_PROFILE_GUIDE.payoutHint}
                 </Txt>
             </ScrollView>
             <View style={styles.footer}>
@@ -183,18 +183,17 @@ export function OnboardingProfileScreen({
                     display="block"
                     onPress={() => setSkipConfirmVisible(true)}
                 >
-                    나중에 할게
+                    나중에 할게요
                 </Button>
             </View>
             {skipConfirmVisible ? (
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalCard}>
                         <Txt typography="t5" fontWeight="bold">
-                            나중에 해도 괜찮아요
+                            {ONBOARDING_PROFILE_GUIDE.skipModalTitle}
                         </Txt>
                         <Txt typography="t6" color="grey700" style={styles.modalBody}>
-                            알맹상점 포인트는 게임에서 쌓일 수 있어요. 다만 지급을 받으려면 알맹상점에
-                            직접 방문해 주세요. 매장에서 본인 확인 후 지급해 드려요.
+                            {ONBOARDING_PROFILE_GUIDE.skipModalBody}
                         </Txt>
                         <Button size="medium" type="primary" display="block" onPress={finishSkipped}>
                             확인했어요
