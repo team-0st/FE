@@ -1,5 +1,7 @@
 import {
     findMatchingRecipe,
+    formatRecipeIngredients,
+    getBeginnerRecipes,
     getFilledIngredientIds,
     isValidBrewFillCount,
     LEGENDARY_SLOT_COUNT,
@@ -46,5 +48,11 @@ describe('recipes', () => {
         ];
         const recipe = findMatchingRecipe(slots, []);
         expect(recipe?.kind).toBe('legendary');
+    });
+
+    it('formats public recipe ingredients for display', () => {
+        const beginner = getBeginnerRecipes()[0];
+        expect(formatRecipeIngredients(beginner!)).toContain('토마토');
+        expect(formatRecipeIngredients(beginner!)).toContain('양파');
     });
 });

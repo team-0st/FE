@@ -232,3 +232,8 @@ export const LEGENDARY_RECIPES: Recipe[] = [
 export function buildAllRecipes(weekKey = getIsoWeekKey()): Recipe[] {
     return [...buildWeeklyRecipes(weekKey), ...BEGINNER_RECIPES, ...HIDDEN_RECIPES, ...LEGENDARY_RECIPES];
 }
+
+/** id·이름 조회용 */
+export function findRecipeInCatalog(id: string, weekKey = getIsoWeekKey()): Recipe | undefined {
+    return buildAllRecipes(weekKey).find((recipe) => recipe.id === id);
+}
