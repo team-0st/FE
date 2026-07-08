@@ -9,6 +9,10 @@ export type PhoneValidationResult =
 const NICKNAME_MIN = 2;
 const NICKNAME_MAX = 12;
 
+/** 휴대전화 앞자리 고정 (알맹 포인트·본인 확인) */
+export const PHONE_PREFIX = '010';
+export const PHONE_BODY_LENGTH = 8;
+
 export function validateNickname(raw: string): NicknameValidationResult {
     const nickname = raw.trim();
     if (nickname.length < NICKNAME_MIN) {
@@ -23,8 +27,20 @@ export function validateNickname(raw: string): NicknameValidationResult {
     return { ok: true, nickname };
 }
 
-export function normalizePhoneDigits(raw: string): string {
-    return raw.replace(/\D/g, '');
+export function normalizePhoneBody(raw: string): string {
+    let digits = raw.replace(/\D/g, '');
+    if (digits.startsWith(PHONE_PREFIX)) {
+        digits = digits.slice(PHONE_PREFIX.length);
+    }
+    return digits.slice(0, PHONE_BODY_LENGTH);
+}
+
+export function formatPhoneBodyForDisplay(body: string): string {
+    const digits = normalizePhoneBody(body);
+    if (digits.length <= 4) {
+        return digits;
+    }
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
 }
 
 export function maskPhone(digits: string): string {
@@ -36,13 +52,19 @@ export function maskPhone(digits: string): string {
     return `${head}-****-${tail}`;
 }
 
-export function validatePhone(raw: string): PhoneValidationResult {
-    const digits = normalizePhoneDigits(raw);
-    if (digits.length === 0) {
+export function validatePhoneBody(body: string): PhoneValidationResult {
+    const normalized = normalizePhoneBody(body);
+    if (normalized.length === 0) {
         return { ok: false, message: '전화번호를 입력해 주세요.' };
     }
-    if (!/^01[016789]\d{7,8}$/.test(digits)) {
-        return { ok: false, message: '올바른 휴대전화 번호를 입력해 주세요.' };
+    if (normalized.length !== PHONE_BODY_LENGTH) {
+        return { ok: false, message: '전화번호 8자리를 입력해 주세요.' };
     }
+    const digits = `${PHONE_PREFIX}${normalized}`;
     return { ok: true, digits, masked: maskPhone(digits) };
+}
+
+/** @deprecated validatePhoneBody 사용 */
+export function validatePhone(raw: string): PhoneValidationResult {
+    return validatePhoneBody(raw);
 }

@@ -6,7 +6,13 @@ import { colors } from '../../shared/theme/colors';
 import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
 import { ONBOARDING_PROFILE_GUIDE } from '../../shared/constants/guideCopy';
-import { validateNickname, validatePhone } from './onboardingProfileLogic';
+import {
+    formatPhoneBodyForDisplay,
+    normalizePhoneBody,
+    PHONE_PREFIX,
+    validateNickname,
+    validatePhoneBody,
+} from './onboardingProfileLogic';
 
 export type OnboardingProfilePayload = {
     nickname: string;
@@ -35,7 +41,7 @@ export function OnboardingProfileScreen({
     const [step, setStep] = useState<Step>('nickname');
     const [nickname, setNickname] = useState(initialNickname);
     const [nicknameError, setNicknameError] = useState<string | null>(null);
-    const [phone, setPhone] = useState('');
+    const [phoneBody, setPhoneBody] = useState('');
     const [phoneError, setPhoneError] = useState<string | null>(null);
     const [consentChecked, setConsentChecked] = useState(false);
     const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
@@ -57,7 +63,7 @@ export function OnboardingProfileScreen({
             setNicknameError(nick.message);
             return;
         }
-        const phoneResult = validatePhone(phone);
+        const phoneResult = validatePhoneBody(phoneBody);
         if (!phoneResult.ok) {
             setPhoneError(phoneResult.message);
             return;
@@ -146,14 +152,15 @@ export function OnboardingProfileScreen({
                 <TextField
                     variant="line"
                     label="휴대전화번호"
-                    placeholder="01012345678"
-                    value={phone}
+                    prefix={PHONE_PREFIX}
+                    placeholder={ONBOARDING_PROFILE_GUIDE.phoneBodyPlaceholder}
+                    value={formatPhoneBodyForDisplay(phoneBody)}
                     onChangeText={(value) => {
-                        setPhone(value);
+                        setPhoneBody(normalizePhoneBody(value));
                         setPhoneError(null);
                     }}
                     keyboardType="phone-pad"
-                    maxLength={13}
+                    maxLength={9}
                 />
                 <View style={styles.noticeBox}>
                     <Txt typography="t7" color="grey700">

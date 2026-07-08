@@ -21,7 +21,8 @@ export const ONBOARDING_PROFILE_GUIDE = {
     nicknameSubtitle: '앱에서 사용할 이름이에요. 실명은 필요하지 않아요.',
     nicknamePlaceholder: '예) 펭귄탐험가',
     phoneTitle: '휴대전화번호를 입력해 주세요',
-    phoneSubtitle: '알맹상점 포인트 지급에 사용해요. 나중에 입력해도 괜찮아요.',
+    phoneSubtitle: '알맹상점 포인트 지급에 사용해요. 010 번호만 입력할 수 있어요. 나중에 입력해도 괜찮아요.',
+    phoneBodyPlaceholder: '1234-5678',
     skipModalTitle: '나중에 입력해도 괜찮아요',
     skipModalBody:
         '알맹상점 포인트는 게임에서 쌓일 수 있어요. 지급을 받으려면 알맹상점에 직접 방문해 주세요. 매장에서 본인 확인 후 지급해 드려요.',

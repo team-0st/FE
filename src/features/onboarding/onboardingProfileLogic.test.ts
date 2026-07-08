@@ -1,4 +1,10 @@
-import { maskPhone, validateNickname, validatePhone } from './onboardingProfileLogic';
+import {
+    formatPhoneBodyForDisplay,
+    maskPhone,
+    normalizePhoneBody,
+    validateNickname,
+    validatePhoneBody,
+} from './onboardingProfileLogic';
 
 describe('validateNickname', () => {
     it('accepts valid nickname', () => {
@@ -14,17 +20,35 @@ describe('validateNickname', () => {
     });
 });
 
-describe('validatePhone', () => {
-    it('accepts mobile number', () => {
-        const result = validatePhone('010-1234-5678');
+describe('validatePhoneBody', () => {
+    it('accepts 8-digit body after fixed 010', () => {
+        const result = validatePhoneBody('12345678');
         expect(result.ok).toBe(true);
         if (result.ok) {
+            expect(result.digits).toBe('01012345678');
             expect(result.masked).toBe('010-****-5678');
         }
     });
 
-    it('rejects invalid number', () => {
-        expect(validatePhone('123').ok).toBe(false);
+    it('strips pasted 010 prefix', () => {
+        const result = validatePhoneBody('01012345678');
+        expect(result.ok).toBe(true);
+    });
+
+    it('rejects incomplete body', () => {
+        expect(validatePhoneBody('1234').ok).toBe(false);
+    });
+});
+
+describe('normalizePhoneBody', () => {
+    it('removes non-digits and leading 010', () => {
+        expect(normalizePhoneBody('010-1234-5678')).toBe('12345678');
+    });
+});
+
+describe('formatPhoneBodyForDisplay', () => {
+    it('formats middle hyphen', () => {
+        expect(formatPhoneBodyForDisplay('12345678')).toBe('1234-5678');
     });
 });
 
