@@ -8,6 +8,8 @@ type StatCardProps = {
     hint?: string;
     /** action: 탭 유도(blue), info: 안내만(grey) */
     hintTone?: 'action' | 'info';
+    /** 홈 출석 등 힌트가 길 때 여유 높이 */
+    spacious?: boolean;
     onPress?: () => void;
     accessibilityLabel?: string;
 };
@@ -17,6 +19,7 @@ export function StatCard({
     value,
     hint,
     hintTone = 'info',
+    spacious = false,
     onPress,
     accessibilityLabel,
 }: StatCardProps) {
@@ -24,7 +27,7 @@ export function StatCard({
     const hintColor = resolvedHintTone === 'action' ? 'blue500' : 'grey600';
 
     const content = (
-        <View style={styles.card}>
+        <View style={[styles.card, spacious ? styles.cardSpacious : undefined]}>
             <Txt typography="t7" color="grey600">
                 {label}
             </Txt>
@@ -32,7 +35,7 @@ export function StatCard({
                 {value}
             </Txt>
             {hint != null ? (
-                <Txt typography="t7" color={hintColor}>
+                <Txt typography="t7" color={hintColor} style={styles.hint}>
                     {hint}
                 </Txt>
             ) : null}
@@ -70,7 +73,14 @@ const styles = StyleSheet.create({
         minHeight: 96,
         justifyContent: 'space-between',
     },
+    cardSpacious: {
+        minHeight: 120,
+        paddingVertical: 18,
+    },
     value: {
-        marginVertical: 4,
+        marginVertical: 6,
+    },
+    hint: {
+        lineHeight: 18,
     },
 });

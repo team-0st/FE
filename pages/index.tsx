@@ -37,7 +37,10 @@ function Page() {
 
     return (
         <MainTabShell activeTab="home" onPressTab={onPressTab}>
-            <WitchSoupHomeScreen onPressMissions={() => navigation.navigate(ROUTES.missions)} />
+            <WitchSoupHomeScreen
+                onPressMissions={() => navigation.navigate(ROUTES.missions)}
+                onPressPartnerShops={() => navigation.navigate(ROUTES.shopPartners)}
+            />
         </MainTabShell>
     );
 }

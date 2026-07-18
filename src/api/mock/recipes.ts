@@ -1,9 +1,11 @@
-import { buildAllRecipes } from './recipeCatalog';
+import { buildAllRecipes, buildWeeklyRecipes, findRecipeInCatalog, BEGINNER_RECIPES, HIDDEN_RECIPES, LEGENDARY_RECIPES } from './recipeCatalog';
+import { getIngredientById } from './ingredients';
 import {
     BREW_SLOT_MAX,
     BEGINNER_SLOT_COUNT,
     getIsoWeekKey,
     HIDDEN_SLOT_COUNT,
+    LEGENDARY_SLOT_COUNT,
     type Recipe,
     type RecipeKind,
     WEEKLY_SLOT_COUNT,
@@ -15,12 +17,18 @@ export {
     BEGINNER_SLOT_COUNT,
     getIsoWeekKey,
     HIDDEN_SLOT_COUNT,
+    LEGENDARY_SLOT_COUNT,
     WEEKLY_SLOT_COUNT,
 };
 
 /** @deprecated BREW_SLOT_MAX 사용 */
 export const BREW_SLOT_COUNT = BREW_SLOT_MAX;
 
+export function getAllRecipes(weekKey = getIsoWeekKey()): Recipe[] {
+    return buildAllRecipes(weekKey);
+}
+
+/** idMap 등 초기화용 스냅샷 */
 export const ALL_RECIPES: Recipe[] = buildAllRecipes();
 
 export function recipeIngredientCount(recipe: Recipe): number {
@@ -32,23 +40,26 @@ export function getFilledIngredientIds(slots: (string | null)[]): string[] {
 }
 
 export function getWeeklyRecipes(weekKey = getIsoWeekKey()): Recipe[] {
-    return ALL_RECIPES.filter((r) => r.kind === 'weekly' && r.weekKey === weekKey);
+    return buildWeeklyRecipes(weekKey);
 }
 
 export function getBeginnerRecipes(): Recipe[] {
-    return ALL_RECIPES.filter((r) => r.kind === 'beginner');
+    return BEGINNER_RECIPES;
 }
 
 export function getHiddenRecipes(): Recipe[] {
-    return ALL_RECIPES.filter((r) => r.kind === 'hidden');
+    return HIDDEN_RECIPES;
 }
 
 export function getLegendaryRecipes(): Recipe[] {
-    return ALL_RECIPES.filter((r) => r.kind === 'legendary');
+    return LEGENDARY_RECIPES;
 }
 
 export function getRecipeById(id: string): Recipe | undefined {
-    return ALL_RECIPES.find((r) => r.id === id);
+    if (!id) {
+        return undefined;
+    }
+    return findRecipeInCatalog(id);
 }
 
 export function slotsMatchRecipe(slots: (string | null)[], recipe: Recipe): boolean {
@@ -61,14 +72,19 @@ export function slotsMatchRecipe(slots: (string | null)[], recipe: Recipe): bool
     return a === b;
 }
 
-const VALID_SLOT_COUNTS = [BEGINNER_SLOT_COUNT, WEEKLY_SLOT_COUNT, HIDDEN_SLOT_COUNT] as const;
+const VALID_SLOT_COUNTS = [
+    BEGINNER_SLOT_COUNT,
+    WEEKLY_SLOT_COUNT,
+    HIDDEN_SLOT_COUNT,
+    LEGENDARY_SLOT_COUNT,
+] as const;
 
 export function findRecipeBySlots(slots: (string | null)[]): Recipe | undefined {
     const filled = getFilledIngredientIds(slots);
     if (!VALID_SLOT_COUNTS.includes(filled.length as (typeof VALID_SLOT_COUNTS)[number])) {
         return undefined;
     }
-    return ALL_RECIPES.find((r) => slotsMatchRecipe(slots, r));
+    return getAllRecipes().find((r) => slotsMatchRecipe(slots, r));
 }
 
 export function findMatchingRecipe(
@@ -80,7 +96,7 @@ export function findMatchingRecipe(
         return undefined;
     }
     const weekKey = getIsoWeekKey();
-    const candidates = ALL_RECIPES.filter((r) => {
+    const candidates = getAllRecipes(weekKey).filter((r) => {
         if (completedIds.includes(r.id)) {
             return false;
         }
@@ -117,7 +133,110 @@ export function getRecipeRewardSummary(recipe: Recipe, done: boolean): string {
         return `재료 ${recipe.slotCount}개 · 확률 보상`;
     }
     if (recipe.kind === 'legendary') {
-        return '재료 4개 · 전설 (비공개)';
+        return `재료 ${recipe.slotCount}개 · 전설 (비공개)`;
     }
     return '재료 4개 · 히든 (비공개)';
+}
+
+/** 입문·이번주 등 공개 레시피 UI용 재료 조합 문자열 */
+export function formatRecipeIngredients(recipe: Recipe): string {
+    return recipe.ingredientIds
+        .map((id) => {
+            const item = getIngredientById(id);
+            return item != null ? `${item.emoji} ${item.name}` : id;
+        })
+        .join(' + ');
+}
+
+export function isPublicRecipe(recipe: Recipe): boolean {
+    return recipe.kind === 'beginner' || recipe.kind === 'weekly';
+}
+
+function countIngredientNeeds(ingredientIds: string[]): Record<string, number> {
+    return ingredientIds.reduce<Record<string, number>>((acc, id) => {
+        acc[id] = (acc[id] ?? 0) + 1;
+        return acc;
+    }, {});
+}
+
+export function canAffordRecipe(inventory: Record<string, number>, recipe: Recipe): boolean {
+    const need = countIngredientNeeds(recipe.ingredientIds);
+    return Object.entries(need).every(([id, count]) => (inventory[id] ?? 0) >= count);
+}
+
+export function recipeToSlots(recipe: Recipe): (string | null)[] {
+    const slots: (string | null)[] = Array.from({ length: BREW_SLOT_MAX }, () => null);
+    for (let i = 0; i < recipe.ingredientIds.length; i += 1) {
+        slots[i] = recipe.ingredientIds[i] ?? null;
+    }
+    return slots;
+}
+
+const RECOMMEND_KIND_ORDER: Record<RecipeKind, number> = {
+    beginner: 0,
+    weekly: 1,
+    hidden: 2,
+    legendary: 3,
+};
+
+export function getAffordableRecipes(
+    inventory: Record<string, number>,
+    completedIds: string[],
+    weekKey = getIsoWeekKey(),
+): Recipe[] {
+    return getAllRecipes(weekKey)
+        .filter((recipe) => {
+            if (completedIds.includes(recipe.id)) {
+                return false;
+            }
+            if (recipe.kind === 'weekly' && recipe.weekKey !== weekKey) {
+                return false;
+            }
+            return canAffordRecipe(inventory, recipe);
+        })
+        .sort((a, b) => {
+            const kindDiff = RECOMMEND_KIND_ORDER[a.kind] - RECOMMEND_KIND_ORDER[b.kind];
+            if (kindDiff !== 0) {
+                return kindDiff;
+            }
+            return a.slotCount - b.slotCount;
+        });
+}
+
+/** 제작 화면 추천용 — 입문·이번주만 (히idden·전설 제외) */
+export function getRecommendedRecipes(
+    inventory: Record<string, number>,
+    completedIds: string[],
+    weekKey = getIsoWeekKey(),
+): Recipe[] {
+    return getAffordableRecipes(inventory, completedIds, weekKey).filter(
+        (recipe) => recipe.kind === 'beginner' || recipe.kind === 'weekly',
+    );
+}
+
+export function hasAffordableSecretRecipes(
+    inventory: Record<string, number>,
+    completedIds: string[],
+    weekKey = getIsoWeekKey(),
+): boolean {
+    return getAllRecipes(weekKey).some((recipe) => {
+        if (recipe.kind !== 'hidden' && recipe.kind !== 'legendary') {
+            return false;
+        }
+        if (completedIds.includes(recipe.id)) {
+            return false;
+        }
+        return canAffordRecipe(inventory, recipe);
+    });
+}
+
+export const RECOMMEND_SECRET_RECIPE_NOTICE =
+    '히든·전설 레시피는 추천에 나오지 않아요. 재료를 직접 넣어 조합해 보세요.';
+
+export function recommendationTitle(recipe: Recipe): string {
+    return recipe.name;
+}
+
+export function recommendationSubtitle(recipe: Recipe): string {
+    return `${formatRecipeIngredients(recipe)} · 탭하면 바로 넣어요`;
 }

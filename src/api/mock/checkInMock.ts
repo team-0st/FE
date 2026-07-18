@@ -1,19 +1,12 @@
 import type { CheckInRequestContext, CheckInResult } from '../checkIn';
+import { COMMON_INGREDIENT_IDS } from './ingredients';
 import { ingredientSlugFromNumeric, toIngredientDto } from '../notion/idMap';
 import type { CheckInResponse } from '../notion/types';
 
-const MOCK_WEIGHTS: { id: string; weight: number }[] = [
-    { id: 'herb', weight: 4 },
-    { id: 'leaf', weight: 4 },
-    { id: 'drop', weight: 3 },
-    { id: 'carrot', weight: 3 },
-    { id: 'mushroom', weight: 2 },
-    { id: 'seed', weight: 2 },
-    { id: 'star', weight: 1 },
-    { id: 'crystal', weight: 1 },
-    { id: 'wind', weight: 1 },
-    { id: 'ember', weight: 1 },
-];
+const MOCK_WEIGHTS: { id: string; weight: number }[] = COMMON_INGREDIENT_IDS.map((id) => ({
+    id,
+    weight: id === 'cabbage' || id === 'tomato' ? 4 : 3,
+}));
 
 function pickMockRewardSlug(): string {
     const total = MOCK_WEIGHTS.reduce((sum, item) => sum + item.weight, 0);
@@ -24,7 +17,7 @@ function pickMockRewardSlug(): string {
             return item.id;
         }
     }
-    return 'herb';
+    return COMMON_INGREDIENT_IDS[0] ?? 'cabbage';
 }
 
 export async function mockPostCheckIn(ctx: CheckInRequestContext): Promise<CheckInResult> {

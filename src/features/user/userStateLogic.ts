@@ -3,7 +3,17 @@ import type { Recipe } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
-import type { AppUserState, MissionProgressStatus, PendingRealReward } from './types';
+import {
+    SHARE_REWARD_ECO_JAM_AMOUNT,
+    SHARE_REWARD_LEDGER_LABEL,
+} from '../../shared/constants/shareRewardPolicy';
+import type {
+    AlmangPayoutConsent,
+    AppUserState,
+    LocationConsent,
+    MissionProgressStatus,
+    PendingRealReward,
+} from './types';
 
 export function formatDateKey(date: Date): string {
     const y = date.getFullYear();
@@ -28,6 +38,26 @@ export function applyCheckInFromServer(
     };
 }
 
+export function saveOnboardingProfile(
+    state: AppUserState,
+    payload: {
+        nickname: string;
+        phoneMasked: string | null;
+        phoneNumber?: string | null;
+        almangPayoutConsent: AlmangPayoutConsent;
+        consentAt: string | null;
+    },
+): AppUserState {
+    return {
+        ...state,
+        nickname: payload.nickname,
+        phoneMasked: payload.phoneMasked,
+        phoneNumber: payload.phoneNumber ?? null,
+        almangPayoutConsent: payload.almangPayoutConsent,
+        almangConsentAt: payload.consentAt,
+    };
+}
+
 export function finishOnboarding(state: AppUserState, shopId: string): AppUserState {
     return {
         ...state,
@@ -44,8 +74,61 @@ export function setShopId(state: AppUserState, shopId: string): AppUserState {
     return { ...state, shopId };
 }
 
+export function setLocationConsent(state: AppUserState, consent: LocationConsent): AppUserState {
+    return {
+        ...state,
+        locationConsent: consent,
+        locationConsentAt: new Date().toISOString(),
+    };
+}
+
 export function getMissionStatus(state: AppUserState, missionId: string): MissionProgressStatus {
     return state.missionProgress[missionId]?.status ?? 'available';
+}
+
+export function getMissionTodayStatus(state: AppUserState, missionId: string): 'PENDING' | 'APPROVED' | 'REJECTED' | null {
+    const progress = state.missionProgress[missionId];
+    if (progress == null || progress.status === 'available') {
+        return null;
+    }
+    if (progress.status === 'pending_review') {
+        return 'PENDING';
+    }
+    if (progress.status === 'rejected') {
+        return 'REJECTED';
+    }
+    return 'APPROVED';
+}
+
+export function applyRegisterUser(
+    state: AppUserState,
+    payload: { userId: number; deviceId: string; onboardingCompleted: boolean },
+): AppUserState {
+    return {
+        ...state,
+        userId: payload.userId,
+        deviceId: payload.deviceId,
+        onboardingCompleted: state.onboardingCompleted || payload.onboardingCompleted,
+    };
+}
+
+export function submitMissionPendingReview(
+    state: AppUserState,
+    missionId: string,
+    completionId: number,
+): AppUserState {
+    const now = new Date().toISOString();
+    return {
+        ...state,
+        missionProgress: {
+            ...state.missionProgress,
+            [missionId]: {
+                status: 'pending_review',
+                completionId,
+                submittedAt: now,
+            },
+        },
+    };
 }
 
 function addIngredient(state: AppUserState, ingredientId: string, amount = 1): AppUserState {
@@ -159,4 +242,20 @@ export function spendEcoJam(state: AppUserState, amount: number, label: string):
     let next = { ...state, ecoJam: state.ecoJam - amount };
     next = appendEcoJamLedger(next, label, -amount);
     return next;
+}
+
+export type ShareRewardClaimResult =
+    | { ok: true; ecoJamGranted: number }
+    | { ok: false; reason: 'already_claimed_today' };
+
+export function claimShareReward(
+    state: AppUserState,
+    today = formatDateKey(new Date()),
+): { state: AppUserState; result: ShareRewardClaimResult } {
+    if (state.lastShareRewardDate === today) {
+        return { state, result: { ok: false, reason: 'already_claimed_today' } };
+    }
+    let next = addEcoJam(state, SHARE_REWARD_ECO_JAM_AMOUNT, SHARE_REWARD_LEDGER_LABEL);
+    next = { ...next, lastShareRewardDate: today };
+    return { state: next, result: { ok: true, ecoJamGranted: SHARE_REWARD_ECO_JAM_AMOUNT } };
 }

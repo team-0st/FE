@@ -28,7 +28,14 @@ export const SOUP_HIDDEN_PROBABILITY_LINES = [
 export const SOUP_BEGINNER_PROBABILITY_TITLE = '입문(COMMON) 스프';
 export const SOUP_BEGINNER_PROBABILITY_LINES = [
     '일반 스프와 동일 성공률 (약 70%)',
-    '재료 2개만 사용',
+];
+
+/** 제작 탭 — i 버튼 한 곳에 모음 */
+export const SOUP_BREW_PROBABILITY_TITLE = '스프 제작 보상';
+export const SOUP_BREW_PROBABILITY_LINES = [
+    '일반·입문: 성공 약 70% → 에코잼 / 실패 → TRASH_ITEM',
+    '히든·전설: 성공 100% → REAL_ITEM',
+    '레시피 1회 제한',
 ];
 
 export const MISSION_REWARD_PROBABILITY_TITLE = '미션 재료 지급';

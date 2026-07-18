@@ -1,5 +1,5 @@
 import { INGREDIENTS } from '../mock/ingredients';
-import { DAILY_MISSIONS } from '../mock/missions';
+import { ALL_MISSIONS } from '../mock/missions';
 import { ALL_RECIPES } from '../mock/recipes';
 import { MOCK_SHOPS } from '../mock/shops';
 import type { IngredientDto } from './types';
@@ -13,7 +13,7 @@ function buildNumericMap<T extends { id: string }>(items: T[]): Map<string, numb
 }
 
 const ingredientNumericBySlug = buildNumericMap(INGREDIENTS);
-const missionNumericBySlug = buildNumericMap(DAILY_MISSIONS);
+const missionNumericBySlug = buildNumericMap(ALL_MISSIONS);
 const shopNumericBySlug = buildNumericMap(MOCK_SHOPS);
 const recipeNumericBySlug = buildNumericMap(ALL_RECIPES);
 
@@ -31,7 +31,7 @@ export function missionNumericId(slug: string): number | undefined {
 }
 
 export function missionSlugFromNumeric(id: number): string | undefined {
-    return DAILY_MISSIONS[id - 1]?.id;
+    return ALL_MISSIONS[id - 1]?.id;
 }
 
 export function shopNumericId(slug: string): number | undefined {
@@ -60,6 +60,6 @@ export function toIngredientDto(slug: string): IngredientDto | undefined {
         id: numericId,
         name: ingredient.name,
         type: ingredient.type,
-        imageUrl: ingredient.imageUrl,
+        imageUrl: null,
     };
 }

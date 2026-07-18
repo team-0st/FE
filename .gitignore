@@ -16,3 +16,10 @@ yarn-error.log
 .swc
 *.ait
 .DS_Store
+
+# Local TDS Figma kit (large binaries)
+design/apps-in-toss/*.fig
+design/apps-in-toss/*.zip
+.screenshot-urls.txt
+# Do not redistribute TDS sample brand logos
+assets/figma-export/raw-unique/*.png

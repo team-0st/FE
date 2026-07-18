@@ -1,13 +1,17 @@
+import { getShopById } from '@api/mock/shops';
 import { getIngredientById } from '@api/mock/ingredients';
 import { getTodayRecipeHint } from '@api/mock/recipes';
-import { Button, Txt } from '@toss/tds-react-native';
-import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { BottomCTA, Top, Txt } from '@toss/tds-react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import {
     CHECK_IN_ALREADY_MESSAGE,
     NETWORK_ERROR_MESSAGE,
+    USER_NOT_FOUND_MESSAGE,
 } from '../../shared/feedback/messages';
 import { useAppToast } from '../../shared/feedback/useAppToast';
+import { LocationConsentModal } from '../legal/LocationConsentModal';
+import { ShopDetailSheet } from '../shop/ShopDetailSheet';
 import { useUser } from '../user/UserProvider';
 import { isUserCheckedInToday } from '../user/selectors';
 import {
@@ -15,22 +19,39 @@ import {
     SOUP_WEEKLY_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
 import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
+import { CommunityGoalSection } from '../../shared/ui/CommunityGoalSection';
 import { HomeNudgeBanner } from '../../shared/ui/HomeNudgeBanner';
-import { Screen } from '../../shared/ui/Screen';
-import { StatCard } from '../../shared/ui/StatCard';
+import { NearbyShopsSection } from '../../shared/ui/NearbyShopsSection';
+import { WeeklyMissionOxRow } from '../../shared/ui/WeeklyMissionOxRow';
 import { colors } from '../../shared/theme/colors';
 
 type WitchSoupHomeScreenProps = {
     onPressMissions: () => void;
+    onPressPartnerShops: () => void;
 };
 
-export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProps) {
-    const { state, checkInToday } = useUser();
+function checkInDisplayValue(checkedIn: boolean, loading: boolean): string {
+    if (loading) {
+        return '…';
+    }
+    return checkedIn ? 'O' : 'X';
+}
+
+export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: WitchSoupHomeScreenProps) {
+    const { state, checkInToday, setLocationConsent } = useUser();
     const { showSuccess, showError, show } = useAppToast();
     const hint = getTodayRecipeHint();
     const checkedIn = isUserCheckedInToday(state);
     const [todayRewardLabel, setTodayRewardLabel] = useState<string | null>(null);
     const [checkInLoading, setCheckInLoading] = useState(false);
+    const [consentModalVisible, setConsentModalVisible] = useState(false);
+    const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+
+    const locationConsentGranted = state.locationConsent === 'granted';
+    const selectedShop = useMemo(
+        () => (selectedShopId != null ? getShopById(selectedShopId) : null),
+        [selectedShopId],
+    );
 
     const handleCheckIn = useCallback(async () => {
         if (checkedIn || checkInLoading) {
@@ -54,53 +75,60 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
                 show(CHECK_IN_ALREADY_MESSAGE);
                 return;
             }
+            if (result.code === 'USER_NOT_FOUND') {
+                showError(USER_NOT_FOUND_MESSAGE);
+                return;
+            }
             showError(NETWORK_ERROR_MESSAGE);
         } finally {
             setCheckInLoading(false);
         }
     }, [checkInLoading, checkInToday, checkedIn, show, showError, showSuccess]);
 
-    const checkInHint = checkedIn
-        ? (todayRewardLabel ?? '오늘의 재료를 받았어요')
-        : '탭하면 재료 1개';
+    const summaryLine = `오늘 출석 ${checkInDisplayValue(checkedIn, checkInLoading)}  ·  에코잼 ${state.ecoJam}잼  ·  알맹 ${state.totalPoints}P`;
 
     const weeklyNudge =
         state.weeklyMissionDone < state.weeklyMissionTotal
-            ? `이번 주 미션 ${state.weeklyMissionDone}/${state.weeklyMissionTotal} · 미션을 하면 재료가 쌓여요.`
+            ? '미션을 완료하면 재료가 쌓여요.'
             : !checkedIn
               ? '출석하고 랜덤 재료를 받아 보세요.'
               : null;
 
     return (
-        <Screen scrollable contentCentered>
-            {weeklyNudge != null ? <HomeNudgeBanner message={weeklyNudge} /> : null}
-            <View style={styles.statRow}>
-                <StatCard
-                    label="오늘 출석"
-                    value={checkedIn ? '완료' : checkInLoading ? '확인 중' : '미완료'}
-                    hint={checkInHint}
-                    hintTone="action"
-                    onPress={() => {
-                        void handleCheckIn();
-                    }}
-                    accessibilityLabel="오늘 출석하기"
+        <View style={styles.root}>
+            <ScrollView
+                style={styles.body}
+                contentContainerStyle={styles.bodyContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <Top
+                    title={<Top.TitleParagraph size={22}>제로스트</Top.TitleParagraph>}
+                    subtitle2={
+                        <Pressable
+                            onPress={() => {
+                                void handleCheckIn();
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel="오늘 출석하기"
+                        >
+                            <Top.SubtitleParagraph>{summaryLine}</Top.SubtitleParagraph>
+                            {!checkedIn ? (
+                                <Txt typography="t7" color="blue500" style={styles.checkInHint}>
+                                    {todayRewardLabel ?? '탭하면 재료 1개'}
+                                </Txt>
+                            ) : null}
+                        </Pressable>
+                    }
                 />
-                <StatCard label="에코잼" value={`${state.ecoJam}잼`} hintTone="info" />
-                <StatCard label="알맹 포인트" value={`${state.totalPoints}P`} hintTone="info" />
-            </View>
-            <View style={styles.stage}>
-                <Txt typography="t1" style={styles.witch}>
-                    🐱‍👤
-                </Txt>
-                <Txt typography="t7" color="grey600">
-                    마녀의 주방
-                </Txt>
-                <View style={styles.pot}>
-                    <Txt typography="t1">🍲</Txt>
-                    <Txt typography="t7" color="grey500">
-                        휘리릭…
-                    </Txt>
-                </View>
+                {weeklyNudge != null ? <HomeNudgeBanner message={weeklyNudge} /> : null}
+                <CommunityGoalSection />
+                <WeeklyMissionOxRow state={state} />
+                <NearbyShopsSection
+                    locationConsentGranted={locationConsentGranted}
+                    onPressViewAll={onPressPartnerShops}
+                    onPressRequestConsent={() => setConsentModalVisible(true)}
+                    onPressShop={setSelectedShopId}
+                />
                 <View style={styles.hintBox}>
                     <View style={styles.hintTitleRow}>
                         <Txt typography="t7" fontWeight="semibold" style={{ color: colors.primary }}>
@@ -115,56 +143,73 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
                         {hint}
                     </Txt>
                 </View>
+            </ScrollView>
+            <View style={styles.footer}>
+                <BottomCTA.Single
+                    size="large"
+                    type="primary"
+                    display="block"
+                    onPress={onPressMissions}
+                    accessibilityLabel="오늘 미션 하고 재료 받기"
+                >
+                    오늘 미션 하고 재료 받기
+                </BottomCTA.Single>
             </View>
-            <Button
-                size="large"
-                type="primary"
-                display="block"
-                onPress={onPressMissions}
-                accessibilityLabel="오늘 미션 하고 재료 받기"
-            >
-                오늘 미션 하고 재료 받기
-            </Button>
-        </Screen>
+            <LocationConsentModal
+                visible={consentModalVisible}
+                onClose={() => setConsentModalVisible(false)}
+                onAgree={() => {
+                    void (async () => {
+                        await setLocationConsent('granted');
+                        setConsentModalVisible(false);
+                        showSuccess('위치 동의했어요. 가까운 상점을 보여드릴게요.');
+                    })();
+                }}
+                onDecline={() => {
+                    void (async () => {
+                        await setLocationConsent('declined');
+                        setConsentModalVisible(false);
+                        show('위치 동의 없이 상점 목록만 볼 수 있어요.');
+                    })();
+                }}
+            />
+            <ShopDetailSheet
+                shop={selectedShop ?? null}
+                visible={selectedShop != null}
+                onClose={() => setSelectedShopId(null)}
+            />
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    statRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
+    root: {
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingHorizontal: 20,
+        paddingBottom: 8,
+    },
+    body: {
+        flex: 1,
+    },
+    bodyContent: {
+        paddingTop: 8,
         width: '100%',
-        marginBottom: 8,
+        maxWidth: 400,
+        alignSelf: 'center',
+        gap: 12,
+        paddingBottom: 8,
+    },
+    checkInHint: {
+        marginTop: 4,
     },
     hintTitleRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
     },
-    stage: {
-        alignItems: 'center',
-        width: '100%',
-        paddingVertical: 16,
-        gap: 12,
-    },
-    witch: {
-        marginBottom: 4,
-    },
-    pot: {
-        width: 140,
-        height: 140,
-        borderRadius: 70,
-        backgroundColor: colors.primaryLight,
-        borderWidth: 2,
-        borderColor: colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
-    },
     hintBox: {
         width: '100%',
-        maxWidth: 320,
         backgroundColor: colors.surface,
         borderRadius: 16,
         padding: 16,
@@ -176,5 +221,11 @@ const styles = StyleSheet.create({
     hintText: {
         textAlign: 'center',
         lineHeight: 22,
+    },
+    footer: {
+        width: '100%',
+        maxWidth: 400,
+        alignSelf: 'center',
+        marginTop: 4,
     },
 });

@@ -1,11 +1,15 @@
 import { INGREDIENTS } from '@api/mock/ingredients';
+import {
+    ECO_JAM_GACHA_PULL_COST,
+    ECO_JAM_TEST_GRANT,
+} from '../../shared/constants/ecoJamPolicy';
 import type { GachaRewardType } from './gachaTypes';
 
-/** 노션 API 예시·명세 기준 1회 비용 (mock) */
-export const GACHA_PULL_COST_ECO_JAM = 100;
+/** @deprecated ecoJamPolicy 사용 권장 */
+export const GACHA_PULL_COST_ECO_JAM = ECO_JAM_GACHA_PULL_COST;
 
 /** 샌드박스·QA: 가챠 화면 테스트 충전량 */
-export const GACHA_TEST_ECO_JAM_GRANT = 50;
+export const GACHA_TEST_ECO_JAM_GRANT = ECO_JAM_TEST_GRANT;
 
 type WeightedEntry = {
     type: GachaRewardType;

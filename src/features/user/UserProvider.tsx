@@ -8,9 +8,15 @@ import {
     useState,
     type PropsWithChildren,
 } from 'react';
-import { postCheckIn, type CheckInResult } from '@api/checkIn';
+import { postCheckIn, getCheckInStatus, type CheckInResult } from '@api/checkIn';
+import { isApiEnabled } from '@api/client';
+import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
+import { formatPhoneForApi, postOnboardingComplete } from '@api/onboarding';
+import { postRegisterUser } from '@api/users';
+import { getOrCreateDeviceId } from '../../shared/device/deviceId';
 import { postGacha } from '@api/gacha';
 import { postMissionVerify } from '@api/missions';
+import { shopNumericId } from '@api/notion/idMap';
 import type { Recipe } from '@api/mock/recipes';
 import {
     findMatchingRecipe,
@@ -26,18 +32,23 @@ import type { GachaPullResult } from '../gacha/gachaTypes';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
 import { loadUserState, saveUserState } from './userRepository';
-import type { AppUserState } from './types';
+import type { AppUserState, AlmangPayoutConsent, LocationConsent } from './types';
 import {
     addEcoJam,
     applyCheckInFromServer,
+    applyRegisterUser,
     completeMissionVerify,
     completeRecipe,
     consumeIngredientsForSlots,
     finishOnboarding as finishOnboardingState,
-    getMissionStatus,
+    getMissionTodayStatus,
     resetOnboarding as resetOnboardingState,
+    saveOnboardingProfile as saveOnboardingProfileState,
     setShopId,
+    setLocationConsent as setLocationConsentState,
+    submitMissionPendingReview,
     spendEcoJam,
+    claimShareReward as applyShareRewardState,
     formatDateKey,
 } from './userStateLogic';
 
@@ -45,12 +56,28 @@ type UserContextValue = {
     isReady: boolean;
     state: AppUserState;
     checkInToday: () => Promise<CheckInResult>;
-    finishOnboarding: (shopId: string) => Promise<void>;
+    /** API 활성 시 BE 온보딩 실패하면 ok:false (로컬 완료하지 않음) */
+    finishOnboarding: (shopId: string) => Promise<{ ok: true } | { ok: false; code: 'SYNC_FAILED' | 'NOT_READY' }>;
+    saveOnboardingProfile: (payload: {
+        nickname: string;
+        phoneMasked: string | null;
+        phoneDigits?: string | null;
+        almangPayoutConsent: AlmangPayoutConsent;
+        consentAt: string | null;
+    }) => Promise<void>;
     resetOnboarding: () => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
+    setLocationConsent: (consent: LocationConsent) => Promise<void>;
     verifyMission: (missionId: string) => Promise<
-        | { ok: true; ingredientId: string }
-        | { ok: false; code: 'NOT_FOUND' | 'MISSION_ALREADY_COMPLETED' | 'NETWORK_ERROR' }
+        | { ok: true; pending: boolean; ingredientId?: string }
+        | {
+              ok: false;
+              code:
+                  | 'NOT_FOUND'
+                  | 'MISSION_ALREADY_COMPLETED'
+                  | 'MISSION_UNDER_REVIEW'
+                  | 'NETWORK_ERROR';
+          }
     >;
     brewSoup: (slots: (string | null)[]) => Promise<
         | { ok: true; recipe: Recipe; craft: SoupCraftResponse }
@@ -58,6 +85,10 @@ type UserContextValue = {
     >;
     pullGacha: () => Promise<GachaPullResult>;
     grantTestEcoJam: (amount: number) => Promise<void>;
+    claimShareReward: () => Promise<
+        | { ok: true; ecoJamGranted: number }
+        | { ok: false; reason: 'already_claimed_today' | 'share_cancelled' }
+    >;
 };
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -71,19 +102,75 @@ export function UserProvider({ children }: PropsWithChildren) {
         stateRef.current = state;
     }, [state]);
 
+    const ensureRegistered = useCallback(async (base: AppUserState): Promise<AppUserState> => {
+        const deviceId = await getOrCreateDeviceId();
+        if (base.userId != null) {
+            if (base.deviceId == null) {
+                return { ...base, deviceId };
+            }
+            return base;
+        }
+        try {
+            const registered = await postRegisterUser();
+            return applyRegisterUser(base, {
+                userId: registered.userId,
+                deviceId,
+                onboardingCompleted: registered.onboardingCompleted,
+            });
+        } catch {
+            if (isApiEnabled()) {
+                // 실서버 모드: 가짜 userId(1001)로 진행하지 않음
+                return { ...base, deviceId, userId: null };
+            }
+            return applyRegisterUser(base, {
+                userId: 1001,
+                deviceId,
+                onboardingCompleted: base.onboardingCompleted,
+            });
+        }
+    }, []);
+
     useEffect(() => {
         let mounted = true;
-        loadUserState().then((loaded) => {
+        (async () => {
+            const loaded = await loadUserState();
+            if (!mounted) {
+                return;
+            }
+            let next = await ensureRegistered(loaded);
+            try {
+                const today = formatDateKey(new Date());
+                const status = await getCheckInStatus(next.lastCheckInDate, today);
+                if (status.alreadyChecked && next.lastCheckInDate !== today) {
+                    next = { ...next, lastCheckInDate: today };
+                }
+            } catch {
+                // keep local state
+            }
+            if (isApiEnabled() && next.userId != null) {
+                try {
+                    const remoteIngredients = await getUserIngredients();
+                    if (remoteIngredients != null) {
+                        next = {
+                            ...next,
+                            ingredientInventory: inventoryFromUserIngredients(remoteIngredients),
+                        };
+                    }
+                } catch {
+                    // keep local inventory
+                }
+            }
+            stateRef.current = next;
+            setState(next);
+            await saveUserState(next);
             if (mounted) {
-                stateRef.current = loaded;
-                setState(loaded);
                 setIsReady(true);
             }
-        });
+        })();
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [ensureRegistered]);
 
     const persist = useCallback(async (updater: (prev: AppUserState) => AppUserState) => {
         const next = updater(stateRef.current);
@@ -118,27 +205,94 @@ export function UserProvider({ children }: PropsWithChildren) {
                 }
             },
             finishOnboarding: async (shopId) => {
+                let current = stateRef.current;
+                if (isApiEnabled() && current.userId == null) {
+                    current = await ensureRegistered(current);
+                    stateRef.current = current;
+                    setState(current);
+                    await saveUserState(current);
+                    if (current.userId == null) {
+                        return { ok: false, code: 'NOT_READY' };
+                    }
+                }
+                const numericShopId = shopNumericId(shopId);
+                if (
+                    isApiEnabled() &&
+                    current.phoneNumber != null &&
+                    current.phoneNumber.length > 0 &&
+                    numericShopId != null
+                ) {
+                    try {
+                        await postOnboardingComplete({
+                            nickname: current.nickname,
+                            phoneNumber: current.phoneNumber,
+                            shopId: numericShopId,
+                        });
+                    } catch {
+                        return { ok: false, code: 'SYNC_FAILED' };
+                    }
+                }
                 await persist((prev) => finishOnboardingState(prev, shopId));
+                return { ok: true };
+            },
+            saveOnboardingProfile: async (payload) => {
+                const phoneNumber =
+                    payload.phoneDigits != null && payload.phoneDigits.length > 0
+                        ? formatPhoneForApi(payload.phoneDigits)
+                        : null;
+                await persist((prev) =>
+                    saveOnboardingProfileState(prev, {
+                        nickname: payload.nickname,
+                        phoneMasked: payload.phoneMasked,
+                        phoneNumber,
+                        almangPayoutConsent: payload.almangPayoutConsent,
+                        consentAt: payload.consentAt,
+                    }),
+                );
             },
             resetOnboarding: async () => {
-                await persist((prev) => resetOnboardingState(prev));
+                const cleared = resetOnboardingState(stateRef.current);
+                stateRef.current = cleared;
+                setState(cleared);
+                await saveUserState(cleared);
+                const registered = await ensureRegistered(cleared);
+                stateRef.current = registered;
+                setState(registered);
+                await saveUserState(registered);
             },
             selectShop: async (shopId) => {
                 await persist((prev) => setShopId(prev, shopId));
             },
+            setLocationConsent: async (consent) => {
+                await persist((prev) => setLocationConsentState(prev, consent));
+            },
             verifyMission: async (missionId) => {
                 try {
                     const current = stateRef.current;
-                    const isCompleted = getMissionStatus(current, missionId) === 'completed';
-                    const api = await postMissionVerify(missionId, isCompleted);
+                    const todayStatus = getMissionTodayStatus(current, missionId);
+                    const api = await postMissionVerify(missionId, todayStatus);
                     if (!api.ok) {
                         return api;
+                    }
+                    if (api.data.status === 'PENDING') {
+                        const next = submitMissionPendingReview(
+                            current,
+                            missionId,
+                            api.data.completionId,
+                        );
+                        stateRef.current = next;
+                        setState(next);
+                        await saveUserState(next);
+                        return { ok: true, pending: true };
+                    }
+                    if (api.ingredientId == null) {
+                        return { ok: false, code: 'NOT_FOUND' };
                     }
                     const next = completeMissionVerify(current, missionId, api.ingredientId);
                     stateRef.current = next;
                     setState(next);
                     await saveUserState(next);
-                    return { ok: true, ingredientId: api.ingredientId };
+                    return { ok: true, pending: false, ingredientId: api.ingredientId };
                 } catch {
                     return { ok: false, code: 'NETWORK_ERROR' };
                 }
@@ -172,6 +326,16 @@ export function UserProvider({ children }: PropsWithChildren) {
                     costEcoJam: GACHA_PULL_COST_ECO_JAM,
                 };
             },
+            claimShareReward: async () => {
+                const { state: next, result } = applyShareRewardState(stateRef.current);
+                if (!result.ok) {
+                    return result;
+                }
+                stateRef.current = next;
+                setState(next);
+                await saveUserState(next);
+                return result;
+            },
             brewSoup: async (slots) => {
                 const filled = getFilledIngredientIds(slots);
                 if (!isValidBrewFillCount(filled.length)) {
@@ -198,7 +362,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                 return { ok: true, recipe, craft };
             },
         }),
-        [isReady, state, persist],
+        [isReady, state, persist, ensureRegistered],
     );
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

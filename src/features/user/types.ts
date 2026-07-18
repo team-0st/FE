@@ -1,9 +1,11 @@
-export type MissionProgressStatus = 'available' | 'completed';
+export type MissionProgressStatus = 'available' | 'pending_review' | 'completed' | 'rejected';
 
 export type MissionProgress = {
     status: MissionProgressStatus;
+    completionId?: number;
+    submittedAt?: string;
     completedAt?: string;
-    /** verify 즉시 지급된 재료 (slug) */
+    /** 승인 후 지급된 재료 (slug) */
     rewardIngredientId?: string;
 };
 
@@ -22,9 +24,24 @@ export type PendingRealReward = {
     status: 'pending_contact';
 };
 
+/** 알맹 포인트 매장 지급용 개인정보 동의 */
+export type AlmangPayoutConsent = 'granted' | 'declined';
+
+/** 주변 제휴 상점 안내용 위치정보 동의 */
+export type LocationConsent = 'granted' | 'declined';
+
 export type AppUserState = {
+    userId: number | null;
+    deviceId: string | null;
     onboardingCompleted: boolean;
     nickname: string;
+    phoneMasked: string | null;
+    /** BE 온보딩용 `010-1234-5678`. 동의 시에만 저장 */
+    phoneNumber: string | null;
+    almangPayoutConsent: AlmangPayoutConsent;
+    almangConsentAt: string | null;
+    locationConsent: LocationConsent | null;
+    locationConsentAt: string | null;
     shopId: string | null;
     lastCheckInDate: string | null;
     weeklyMissionDone: number;
@@ -36,4 +53,6 @@ export type AppUserState = {
     missionProgress: Record<string, MissionProgress>;
     ecoJamLedger: EcoJamLedgerEntry[];
     pendingRealRewards: PendingRealReward[];
+    /** SNS 공유 리워드 — 하루 1회 (YYYY-MM-DD) */
+    lastShareRewardDate: string | null;
 };

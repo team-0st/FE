@@ -2,7 +2,7 @@ import { Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { GUIDE_CHARACTER, type GuideMood } from '../constants/guideCharacter';
 import { colors } from '../theme/colors';
-import { SproutAvatar } from './SproutAvatar';
+import { SproutAvatar, SproutAvatarWrap } from './SproutAvatar';
 
 type GuideHeroProps = {
     message: string;
@@ -15,7 +15,7 @@ type GuideHeroProps = {
 
 export function GuideHero({
     message,
-    mood = 'default',
+    mood: _mood = 'default',
     size = 'hero',
     animate = true,
     compact = false,
@@ -28,7 +28,9 @@ export function GuideHero({
         <View style={[styles.wrap, compact && styles.wrapCompact, !isCentered && styles.wrapStart]}>
             {isCentered ? (
                 <>
-                    <SproutAvatar mood={mood} size={avatarSize} animate={animate} />
+                    <SproutAvatarWrap>
+                        <SproutAvatar size={avatarSize} animate={animate} />
+                    </SproutAvatarWrap>
                     <View style={styles.nameTag}>
                         <Txt typography="t7" fontWeight="semibold" color="grey600">
                             {GUIDE_CHARACTER.name}
@@ -37,7 +39,9 @@ export function GuideHero({
                 </>
             ) : (
                 <View style={styles.header}>
-                    <SproutAvatar mood={mood} size={compact ? 'small' : 'medium'} animate={false} />
+                    <SproutAvatarWrap>
+                        <SproutAvatar size={compact ? 'small' : 'medium'} animate={false} />
+                    </SproutAvatarWrap>
                     <View style={styles.nameTag}>
                         <Txt typography="t7" fontWeight="semibold" color="grey600">
                             {GUIDE_CHARACTER.name}

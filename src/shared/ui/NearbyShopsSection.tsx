@@ -1,0 +1,141 @@
+import { getMapShops, MOCK_USER_LOCATION } from '@api/mock/shops';
+import { Button, ListHeader, ListRow, Txt } from '@toss/tds-react-native';
+import { useMemo } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { TDS_ICON } from '../constants/tdsAssets';
+import { colors } from '../theme/colors';
+import {
+    formatStraightLineDistance,
+    getNearbyShops,
+    LOCATION_CONSENT_DENIED_LIST_HINT,
+    LOCATION_CONSENT_NOTICE,
+    MAP_SHOPS_SCOPE_HINT,
+    STRAIGHT_LINE_DISTANCE_HINT,
+} from '../../features/shop/nearbyShopLogic';
+
+const HOME_NEARBY_LIMIT = 2;
+
+type NearbyShopsSectionProps = {
+    locationConsentGranted: boolean;
+    onPressViewAll: () => void;
+    onPressRequestConsent: () => void;
+    onPressShop: (shopId: string) => void;
+};
+
+export function NearbyShopsSection({
+    locationConsentGranted,
+    onPressViewAll,
+    onPressRequestConsent,
+    onPressShop,
+}: NearbyShopsSectionProps) {
+    const nearbyShops = useMemo(
+        () =>
+            getNearbyShops(
+                getMapShops(),
+                MOCK_USER_LOCATION.latitude,
+                MOCK_USER_LOCATION.longitude,
+                HOME_NEARBY_LIMIT,
+            ),
+        [],
+    );
+
+    return (
+        <View style={styles.section}>
+            <ListHeader
+                title={
+                    <ListHeader.TitleParagraph typography="t5" fontWeight="semibold">
+                        내 주변 상점
+                    </ListHeader.TitleParagraph>
+                }
+                lower={
+                    <ListHeader.DescriptionParagraph>{MAP_SHOPS_SCOPE_HINT}</ListHeader.DescriptionParagraph>
+                }
+            />
+            {!locationConsentGranted ? (
+                <>
+                    <Txt typography="t7" color="grey600" style={styles.notice}>
+                        {LOCATION_CONSENT_NOTICE}
+                    </Txt>
+                    <Txt typography="t7" color="grey500" style={styles.deniedHint}>
+                        {LOCATION_CONSENT_DENIED_LIST_HINT}
+                    </Txt>
+                    <Button size="medium" type="primary" style="weak" display="block" onPress={onPressRequestConsent}>
+                        위치 동의하고 가까운 상점 보기
+                    </Button>
+                </>
+            ) : (
+                <>
+                    <Txt typography="t7" color="grey600" style={styles.notice}>
+                        가장 가까운 상점이에요. {STRAIGHT_LINE_DISTANCE_HINT}
+                    </Txt>
+                    <View style={styles.listCard}>
+                        {nearbyShops.map((shop) => {
+                            const distanceLabel = Number.isFinite(shop.distanceMeters)
+                                ? formatStraightLineDistance(shop.distanceMeters)
+                                : null;
+                            return (
+                            <ListRow
+                                key={shop.id}
+                                onPress={() => onPressShop(shop.id)}
+                                left={<ListRow.Icon name={TDS_ICON.nearbyShop} />}
+                                contents={
+                                    <ListRow.Texts
+                                        type="2RowTypeA"
+                                        top={shop.name}
+                                        topProps={{ fontWeight: 'bold' }}
+                                        bottom={
+                                            distanceLabel != null
+                                                ? `${shop.region} · ${distanceLabel}`
+                                                : `${shop.region} · ${shop.address}`
+                                        }
+                                    />
+                                }
+                                withArrow
+                                right={
+                                    distanceLabel != null ? (
+                                        <ListRow.RightTexts
+                                            type="1RowTypeA"
+                                            top={distanceLabel}
+                                            topProps={{ color: 'blue500' }}
+                                        />
+                                    ) : undefined
+                                }
+                            />
+                            );
+                        })}
+                    </View>
+                </>
+            )}
+            <Pressable onPress={onPressViewAll} accessibilityRole="button" accessibilityLabel="주변 상점 전체 보기">
+                <Txt typography="t7" color="blue500" style={styles.viewAll}>
+                    주변 상점 전체 보기 →
+                </Txt>
+            </Pressable>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    section: {
+        width: '100%',
+        gap: 8,
+    },
+    notice: {
+        lineHeight: 18,
+    },
+    listCard: {
+        width: '100%',
+        backgroundColor: colors.surface,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.border,
+        overflow: 'hidden',
+    },
+    deniedHint: {
+        textAlign: 'center',
+    },
+    viewAll: {
+        textAlign: 'center',
+        paddingVertical: 4,
+    },
+});

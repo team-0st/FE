@@ -1,4 +1,4 @@
-import { getShopById, MOCK_SHOPS } from '@api/mock';
+import { getPointEligibleShops, getShopById } from '@api/mock';
 import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
@@ -12,6 +12,7 @@ type ShopScreenProps = {
 
 export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
     const { state } = useUser();
+    const pointShops = getPointEligibleShops();
     const shop = state.shopId != null ? getShopById(state.shopId) : undefined;
 
     return (
@@ -51,9 +52,9 @@ export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
                 {shop != null ? '샵 바꾸기' : '샵 선택하기'}
             </Button>
             <Txt typography="t5" fontWeight="semibold" style={styles.section}>
-                파일럿 샵
+                포인트 연동 샵
             </Txt>
-            {MOCK_SHOPS.map((item) => (
+            {pointShops.map((item) => (
                 <ListRow
                     key={item.id}
                     contents={

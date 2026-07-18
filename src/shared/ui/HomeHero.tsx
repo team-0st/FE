@@ -25,7 +25,7 @@ export function HomeHero({
 }: HomeHeroProps) {
     return (
         <View style={styles.hero}>
-            <SproutAvatar mood="happy" size="hero" animate />
+            <SproutAvatar size="hero" animate />
             <Txt typography="t7" color="grey600" style={styles.appName}>
                 {APP_DISPLAY_NAME}
             </Txt>

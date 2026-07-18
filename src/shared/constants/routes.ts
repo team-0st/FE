@@ -5,6 +5,7 @@ export const ROUTES = {
     home: '/',
     login: '/login',
     onboarding: '/onboarding',
+    onboardingProfile: '/onboarding/profile',
     onboardingShop: '/onboarding/shop',
     ingredients: '/ingredients',
     gacha: '/gacha',
@@ -13,6 +14,7 @@ export const ROUTES = {
     missions: '/missions',
     shop: '/shop',
     shopSelect: '/shop/select',
+    shopPartners: '/shop/partners',
     profile: '/profile',
 } as const;
 
@@ -49,5 +51,13 @@ export function navigateSoupResult(
     craft: SoupCraftResponse,
 ): void {
     const encoded = encodeSoupCraftForRoute(craft);
-    navigation.navigate('/soup/result', { recipeId, ...encoded });
+    const params = { recipeId, ...encoded };
+    const nav = navigation as AppNavigation & {
+        replace?: (name: string, routeParams: Record<string, string>) => void;
+    };
+    if (nav.replace != null) {
+        nav.replace('/soup/result', params);
+        return;
+    }
+    navigation.navigate('/soup/result', params);
 }

@@ -1,6 +1,8 @@
 import { getMissionById } from '@api/mock';
+import { isCoopMission } from '@api/mock/types';
 import { createRoute } from '@granite-js/react-native';
 import { MissionDetailScreen } from '../../src/features/missions/MissionDetailScreen';
+import { isCoopMissionUnlocked } from '../../src/features/missions/coopMissionLogic';
 import { useUser } from '../../src/features/user/UserProvider';
 import { missionStatusFor } from '../../src/features/user/selectors';
 import { navigateMissionVerify } from '../../src/shared/constants/routes';
@@ -35,6 +37,7 @@ function Page() {
         <MissionDetailScreen
             mission={mission}
             status={missionStatusFor(state, mission.id)}
+            locked={isCoopMission(mission) && !isCoopMissionUnlocked(state, mission)}
             onPressVerify={() => navigateMissionVerify(navigation, mission.id)}
         />
     );

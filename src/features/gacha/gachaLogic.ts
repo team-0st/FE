@@ -1,4 +1,5 @@
 import { getIngredientById } from '@api/mock/ingredients';
+import { getAlmangRewardMessage } from '../user/almangPayoutCopy';
 import type { AppUserState } from '../user/types';
 import {
     GACHA_INGREDIENT_POOL,
@@ -25,7 +26,7 @@ function pickIngredientId(random: () => number): string {
     if (picked != null) {
         return picked;
     }
-    return GACHA_INGREDIENT_POOL[0] ?? 'herb';
+    return GACHA_INGREDIENT_POOL[0] ?? 'cabbage';
 }
 
 export function rollGachaReward(random: () => number = Math.random): GachaReward {
@@ -49,7 +50,7 @@ export function rollGachaReward(random: () => number = Math.random): GachaReward
     }
 }
 
-export function formatGachaRewardMessage(reward: GachaReward): string {
+export function formatGachaRewardMessage(reward: GachaReward, state?: AppUserState): string {
     switch (reward.type) {
         case 'FAIL':
             return '아쉽게도 꽝이에요. 다음에 다시 도전해 보세요!';
@@ -61,7 +62,9 @@ export function formatGachaRewardMessage(reward: GachaReward): string {
             return `${label} ${reward.amount}개를 받았어요!`;
         }
         case 'ALMANG_POINT':
-            return `알맹상점 포인트 ${reward.amount}P를 받았어요! (희소)`;
+            return state != null
+                ? getAlmangRewardMessage(state, reward.amount)
+                : `알맹상점 포인트 ${reward.amount}P를 받았어요! (희소)`;
     }
 }
 

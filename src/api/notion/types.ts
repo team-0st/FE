@@ -26,15 +26,49 @@ export type ShopDto = {
     imageUrl: string | null;
 };
 
+/** FE·mock용. BE status는 `{ checkedIn }` → 파사드에서 이 형태로 정규화 */
 export type CheckInResponse = {
     alreadyChecked: boolean;
     rewardedIngredient?: IngredientDto;
 };
 
-export type MissionVerifyResponse = {
-    missionId: number;
+/** BE `POST /api/v1/check-in` data */
+export type BeCheckInResponse = {
     rewardedIngredient: IngredientDto;
 };
+
+/** BE `GET /api/v1/check-in/status` data */
+export type BeCheckInStatusResponse = {
+    checkedIn: boolean;
+};
+
+export type RegisterUserResponse = {
+    userId: number;
+    onboardingCompleted: boolean;
+};
+
+export type MissionVerifyPendingResponse = {
+    completionId: number;
+    status: 'PENDING';
+};
+
+export type MissionVerifyApprovedResponse = {
+    completionId: number;
+    status: 'APPROVED';
+    rewardedIngredient: IngredientDto;
+};
+
+export type MissionCompletionItem = {
+    completionId: number;
+    missionId: number;
+    missionTitle: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    rewardedIngredient?: IngredientDto;
+    submittedAt: string;
+    reviewedAt?: string;
+};
+
+export type MissionVerifyResponse = MissionVerifyPendingResponse | MissionVerifyApprovedResponse;
 
 export type SoupCraftResponse = {
     soupId: number;
@@ -56,7 +90,25 @@ export type GachaResponse = {
 
 export type OnboardingCompleteResponse = {
     userId: number;
+    nickname: string;
+    phoneNumber: string;
     shopId: number;
+};
+
+export type UserIngredientResponse = {
+    ingredientId: number;
+    name: string;
+    type: IngredientCatalogType | string;
+    imageUrl: string | null;
+    quantity: number;
+};
+
+export type MissionSummaryDto = {
+    id: number;
+    title: string;
+    description: string | null;
+    imageUrl: string | null;
+    todayStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
 };
 
 export type ProfileResponse = {
@@ -82,19 +134,22 @@ export type EcoJamHistoryItem = {
     createdAt: string;
 };
 
+/** BE 실제 prefix는 `/api/v1`. 미구현(gacha/soup/profile 등)은 FE mock 유지 */
 export const API_PATHS = {
-    shops: '/api/shops',
-    onboardingComplete: '/api/onboarding/complete',
-    checkIn: '/api/check-in',
-    checkInStatus: '/api/check-in/status',
-    missions: '/api/missions',
-    missionDetail: (id: number) => `/api/missions/${id}`,
-    missionVerify: (id: number) => `/api/missions/${id}/verify`,
-    ingredients: '/api/ingredients',
+    usersRegister: '/api/v1/users/register',
+    shops: '/api/v1/shops',
+    onboardingComplete: '/api/v1/onboarding/complete',
+    checkIn: '/api/v1/check-in',
+    checkInStatus: '/api/v1/check-in/status',
+    missions: '/api/v1/missions',
+    missionDetail: (id: number) => `/api/v1/missions/${id}`,
+    missionVerify: (id: number) => `/api/v1/missions/${id}/verify`,
+    missionCompletions: '/api/v1/missions/completions',
+    ingredients: '/api/v1/ingredients',
     recipes: '/api/recipes',
     recipesHidden: '/api/recipes/hidden',
     soupCraft: '/api/soup/craft',
-    soupResult: (soupId: number) => `/api/soup/result/${soupId}`,
+    soupDetail: (soupId: number) => `/api/soup/${soupId}`,
     profile: '/api/profile',
     ecoJamHistory: '/api/eco-jam/history',
     gacha: '/api/gacha',

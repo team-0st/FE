@@ -1,44 +1,44 @@
-import { Txt } from '@toss/tds-react-native';
-import { Animated, StyleSheet, View } from 'react-native';
-import { guideEmoji, type GuideMood } from '../constants/guideCharacter';
+import type { ReactNode } from 'react';
+import { Animated, Image, StyleSheet, View } from 'react-native';
+import { BRAND_ASSET } from '../constants/brandAssets';
 import { useFloatAnimation } from '../hooks/useFloatAnimation';
 import { colors } from '../theme/colors';
 
 type SproutAvatarProps = {
-    mood?: GuideMood;
     size?: 'small' | 'medium' | 'large' | 'hero';
     animate?: boolean;
 };
 
-const SIZE_MAP = {
-    small: { box: 40, typo: 't4' as const },
-    medium: { box: 64, typo: 't2' as const },
-    large: { box: 88, typo: 't1' as const },
-    hero: { box: 112, typo: 't1' as const },
-};
+const PIXEL_SIZE = {
+    small: 32,
+    medium: 48,
+    large: 80,
+    hero: 140,
+} as const;
 
-export function SproutAvatar({ mood = 'default', size = 'medium', animate = false }: SproutAvatarProps) {
-    const spec = SIZE_MAP[size];
+export function SproutAvatar({ size = 'medium', animate = false }: SproutAvatarProps) {
     const floatStyle = useFloatAnimation(animate, size === 'hero' ? 10 : 8);
-    const circle = (
-        <View style={[styles.circle, styles.glow, { width: spec.box, height: spec.box, borderRadius: spec.box / 2 }]}>
-            <Txt typography={spec.typo}>{guideEmoji(mood)}</Txt>
-        </View>
+    const dim = PIXEL_SIZE[size];
+    const icon = (
+        <Image
+            source={BRAND_ASSET.heroSprout}
+            style={{ width: dim, height: dim }}
+            resizeMode="contain"
+            accessibilityLabel="새싹"
+        />
     );
     if (!animate) {
-        return circle;
+        return icon;
     }
-    return <Animated.View style={floatStyle}>{circle}</Animated.View>;
+    return <Animated.View style={floatStyle}>{icon}</Animated.View>;
+}
+
+// glow wrapper kept for GuideHero layout spacing
+export function SproutAvatarWrap({ children }: { children: ReactNode }) {
+    return <View style={styles.glow}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
-    circle: {
-        backgroundColor: colors.sproutTint,
-        borderWidth: 1,
-        borderColor: colors.border,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     glow: {
         shadowColor: colors.sprout,
         shadowOffset: { width: 0, height: 4 },
