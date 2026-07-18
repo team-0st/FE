@@ -3,22 +3,36 @@ import {
     formatIngredientReward,
     getMissionRewardIngredient,
 } from '@api/mock/ingredients';
-import { Button, Txt } from '@toss/tds-react-native';
+import { BottomCTA, Button, Top, Txt } from '@toss/tds-react-native';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { getMissionCompleteMessage } from '../../shared/constants/guideCopy';
-import { GuideHero } from '../../shared/ui/GuideHero';
-import { RewardIngredientBadge } from '../../shared/ui/RewardIngredientBadge';
+import { BRAND_ASSET } from '../../shared/constants/brandAssets';
+import { SHARE_REWARD_ALREADY_CLAIMED_MESSAGE, SHARE_REWARD_SUCCESS_MESSAGE } from '../../shared/constants/shareRewardPolicy';
+import { buildMissionShareMessage, shareZerostResult } from '../../shared/feedback/shareResult';
+import { useAppToast } from '../../shared/feedback/useAppToast';
 import { Screen } from '../../shared/ui/Screen';
+import { TdsHeroAsset } from '../../shared/ui/TdsHeroAsset';
 import { colors } from '../../shared/theme/colors';
+import { resolveShopName } from '../user/selectors';
 import { useUser } from '../user/UserProvider';
+import { MissionShareCard } from './MissionShareCard';
 
 type MissionResultScreenProps = {
     mission: Mission;
     onPressHome: () => void;
 };
 
+function formatShareDate(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}.${m}.${d}`;
+}
+
 export function MissionResultScreen({ mission, onPressHome }: MissionResultScreenProps) {
-    const { state } = useUser();
+    const { state, claimShareReward } = useUser();
+    const toast = useAppToast();
+    const [sharing, setSharing] = useState(false);
     const progress = state.missionProgress[mission.id];
     const isPending = progress?.status === 'pending_review';
     const rewardIngredient = getMissionRewardIngredient(
@@ -30,69 +44,170 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
             ? formatIngredientReward(rewardIngredient.id)
             : '랜덤 재료';
 
+    const practiceCount = useMemo(
+        () =>
+            Object.values(state.missionProgress).filter((item) => item.status === 'completed')
+                .length || 1,
+        [state.missionProgress],
+    );
+    const shopName = resolveShopName(state.shopId);
+    const dateLabel = formatShareDate(new Date());
+    const shareMessage = buildMissionShareMessage(mission.title, rewardLabel);
+
+    const handleShare = useCallback(async () => {
+        if (sharing) {
+            return;
+        }
+        setSharing(true);
+        try {
+            const shared = await shareZerostResult(shareMessage);
+            if (!shared) {
+                toast.show('공유를 취소했어요.');
+                return;
+            }
+            const reward = await claimShareReward();
+            if (reward.ok) {
+                toast.showSuccess(SHARE_REWARD_SUCCESS_MESSAGE(reward.ecoJamGranted));
+                return;
+            }
+            if (reward.reason === 'already_claimed_today') {
+                toast.show(SHARE_REWARD_ALREADY_CLAIMED_MESSAGE);
+                return;
+            }
+            toast.showSuccess('공유했어요!');
+        } catch {
+            toast.show('공유를 취소했어요.');
+        } finally {
+            setSharing(false);
+        }
+    }, [claimShareReward, shareMessage, sharing, toast]);
+
     return (
-        <Screen scrollable>
-            <View style={styles.body}>
-                <GuideHero
-                    message={
-                        isPending
-                            ? '인증 사진을 제출했어요.\n검수가 끝나면 재료를 받을 수 있어요.'
-                            : getMissionCompleteMessage(rewardLabel)
-                    }
-                    mood={isPending ? 'think' : 'happy'}
-                    align="start"
-                />
-                <View style={styles.card}>
-                    <Txt typography="t1">{mission.emoji}</Txt>
-                    <Txt typography="t5" fontWeight="bold" style={styles.title}>
-                        {mission.title}
-                    </Txt>
-                    {isPending ? (
-                        <Txt typography="t7" color="grey600" style={styles.note}>
-                            보통 몇 시간 안에 검수가 완료돼요. 마이페이지에서 상태를 확인할 수 있어요.
-                        </Txt>
-                    ) : null}
-                    {!isPending && rewardIngredient != null ? (
-                        <RewardIngredientBadge ingredient={rewardIngredient} />
-                    ) : null}
-                    {!isPending ? (
-                        <Txt typography="t7" color="grey600" style={styles.note}>
-                            재료는 제작 탭에서 스프를 끓일 때 사용해요.
-                        </Txt>
-                    ) : null}
+        <View style={styles.root}>
+            <Screen scrollable>
+                <Top title={<Top.TitleParagraph size={22}>미션 완료</Top.TitleParagraph>} />
+                <View style={styles.hero}>
+                    <TdsHeroAsset
+                        source={BRAND_ASSET.heroMission}
+                        accessibilityLabel="미션 인증"
+                    />
                 </View>
+                {isPending ? (
+                    <View style={styles.pendingBox}>
+                        <Txt typography="t5" fontWeight="bold" style={styles.pendingTitle}>
+                            {mission.title}
+                        </Txt>
+                        <Txt typography="t6" color="grey700" style={styles.pendingMessage}>
+                            인증 사진을 제출했어요.{'\n'}검수가 끝나면 재료를 받을 수 있어요.
+                        </Txt>
+                        <Txt typography="t7" color="grey600" style={styles.pendingMessage}>
+                            보통 몇 시간 안에 검수가 완료돼요.
+                        </Txt>
+                    </View>
+                ) : (
+                    <>
+                        <View style={styles.rewardBox}>
+                            <Txt typography="t7" color="grey600">
+                                획득 재료
+                            </Txt>
+                            <Txt typography="t4" fontWeight="bold" style={styles.rewardLabel}>
+                                {rewardLabel}
+                            </Txt>
+                        </View>
+                        <MissionShareCard
+                            missionTitle={mission.title}
+                            practiceCount={practiceCount}
+                            shopName={shopName}
+                            dateLabel={dateLabel}
+                            onPressShare={() => {
+                                void handleShare();
+                            }}
+                        />
+                    </>
+                )}
+            </Screen>
+            <View style={styles.footer}>
+                {!isPending ? (
+                    <BottomCTA.Double
+                        leftButton={
+                            <Button
+                                size="large"
+                                type="primary"
+                                style="weak"
+                                display="block"
+                                onPress={() => {
+                                    void handleShare();
+                                }}
+                            >
+                                공유하기
+                            </Button>
+                        }
+                        rightButton={
+                            <Button size="large" type="primary" display="block" onPress={onPressHome}>
+                                홈으로
+                            </Button>
+                        }
+                    />
+                ) : (
+                    <BottomCTA.Single
+                        size="large"
+                        type="primary"
+                        display="block"
+                        onPress={onPressHome}
+                    >
+                        홈으로
+                    </BottomCTA.Single>
+                )}
             </View>
-            <View style={styles.cta}>
-                <Button size="large" type="primary" display="block" onPress={onPressHome}>
-                    홈으로
-                </Button>
-            </View>
-        </Screen>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    body: {
+    root: {
         flex: 1,
-    },
-    card: {
-        marginTop: 8,
         backgroundColor: colors.surface,
-        borderRadius: 16,
+    },
+    pendingBox: {
+        marginTop: 16,
+        marginHorizontal: 20,
         padding: 24,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
+        backgroundColor: colors.surface,
+        gap: 12,
         alignItems: 'center',
     },
-    title: {
-        marginTop: 12,
-        marginBottom: 16,
+    hero: {
+        alignItems: 'center',
+        marginTop: 8,
+        marginBottom: 8,
     },
-    note: {
-        marginTop: 16,
+    rewardBox: {
+        marginHorizontal: 20,
+        marginTop: 8,
+        padding: 16,
+        borderRadius: 16,
+        backgroundColor: colors.heroTint,
+        alignItems: 'center',
+        gap: 4,
+    },
+    rewardLabel: {
         textAlign: 'center',
     },
-    cta: {
-        marginTop: 24,
+    pendingTitle: {
+        textAlign: 'center',
+    },
+    pendingMessage: {
+        textAlign: 'center',
+        lineHeight: 22,
+    },
+    footer: {
+        paddingHorizontal: 20,
+        paddingBottom: 16,
+        maxWidth: 400,
+        width: '100%',
+        alignSelf: 'center',
     },
 });
