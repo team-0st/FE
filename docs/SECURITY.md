@@ -63,7 +63,7 @@
 ## FE에서 한 조치 (이번)
 
 - 카카오맵 mock 주소 내 휴대전화 마스킹
-- TDS 샘플 로고 PNG 레포에서 제거 (`assets/figma-export/raw-unique`)
+- TDS 샘플·figma-export·일회성 스크립트는 레포에서 제거
 - API 활성 시 등록 실패 로컬 폴백(1001) 제거 · 리셋 후 재등록
 - 출석 `USER_NOT_FOUND` 등 에러 코드 분리
 
