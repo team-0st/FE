@@ -22,6 +22,8 @@ import {
 export type OnboardingProfilePayload = {
     nickname: string;
     phoneMasked: string | null;
+    /** BE용 `010XXXXXXXX` digits. 스킵 시 null */
+    phoneDigits: string | null;
     almangPayoutConsent: AlmangPayoutConsent;
     consentAt: string | null;
 };
@@ -93,6 +95,7 @@ export function OnboardingProfileScreen({
         onComplete({
             nickname: nick.nickname,
             phoneMasked: phoneResult.masked,
+            phoneDigits: phoneResult.digits,
             almangPayoutConsent: 'granted',
             consentAt: new Date().toISOString(),
         });
@@ -108,6 +111,7 @@ export function OnboardingProfileScreen({
         onComplete({
             nickname: nick.nickname,
             phoneMasked: null,
+            phoneDigits: null,
             almangPayoutConsent: 'declined',
             consentAt: null,
         });
@@ -188,6 +192,7 @@ export function OnboardingProfileScreen({
                     }}
                     keyboardType="phone-pad"
                     maxLength={8}
+                    help={ONBOARDING_PROFILE_GUIDE.phoneHelp}
                 />
                 <View style={styles.noticeBox}>
                     <Txt typography="t7" fontWeight="semibold">
