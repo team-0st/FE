@@ -14,6 +14,7 @@ export const ROUTES = {
     missions: '/missions',
     shop: '/shop',
     shopSelect: '/shop/select',
+    shopPartners: '/shop/partners',
     profile: '/profile',
 } as const;
 

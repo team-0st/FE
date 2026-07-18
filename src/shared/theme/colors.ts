@@ -7,7 +7,8 @@ export const colors = {
     accent: '#9B7ED8',
     success: '#00A870',
     sprout: '#2DB87A',
-    sproutTint: '#E8F8F0',
+    /** Figma 온보딩 새싹 원 배경 */
+    sproutTint: '#E8F7F0',
     cauldron: '#4A3B6B',
     textPrimary: '#191F28',
     textSecondary: '#6B7684',

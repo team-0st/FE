@@ -1,6 +1,7 @@
-import { Txt } from '@toss/tds-react-native';
+import { Asset, frameShape, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import type { Ingredient } from '@api/mock/ingredients';
+import { BrandEmojiImage } from './BrandEmojiImage';
 import { colors } from '../theme/colors';
 
 type RewardIngredientBadgeProps = {
@@ -10,7 +11,21 @@ type RewardIngredientBadgeProps = {
 export function RewardIngredientBadge({ ingredient }: RewardIngredientBadgeProps) {
     return (
         <View style={styles.badge}>
-            <Txt typography="t2">{ingredient.emoji}</Txt>
+            {ingredient.imageSource != null ? (
+                <BrandEmojiImage
+                    source={ingredient.imageSource}
+                    size={40}
+                    accessibilityLabel={ingredient.name}
+                />
+            ) : (
+                <Asset.Text
+                    frameShape={frameShape.CircleMedium}
+                    backgroundColor={colors.primaryLight}
+                    size={24}
+                >
+                    {ingredient.emoji}
+                </Asset.Text>
+            )}
             <Txt typography="t6" fontWeight="bold" style={styles.label}>
                 {ingredient.name}
             </Txt>

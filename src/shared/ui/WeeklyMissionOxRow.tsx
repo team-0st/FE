@@ -9,20 +9,42 @@ type WeeklyMissionOxRowProps = {
     state: AppUserState;
 };
 
+const WEEKDAY_LABELS = ['월', '화', '수', '목', '금'] as const;
+
+/** Figma 04: 월~금 · 미션 O/X n/5 */
 export function WeeklyMissionOxRow({ state }: WeeklyMissionOxRowProps) {
+    const doneCount = DAILY_MISSIONS.filter(
+        (mission) => missionStatusFor(state, mission.id) === 'completed',
+    ).length;
+
     return (
         <View style={styles.wrap}>
-            <Txt typography="t7" color="grey600">
-                이번 주 미션
-            </Txt>
+            <View style={styles.header}>
+                <Txt typography="t6" fontWeight="semibold">
+                    이번 주 미션
+                </Txt>
+                <Txt typography="t7" color="grey600">
+                    미션 O/X {doneCount}/{DAILY_MISSIONS.length}
+                </Txt>
+            </View>
             <View style={styles.row}>
-                {DAILY_MISSIONS.map((mission) => {
+                {DAILY_MISSIONS.map((mission, index) => {
                     const done = missionStatusFor(state, mission.id) === 'completed';
+                    const day = WEEKDAY_LABELS[index] ?? `${index + 1}`;
                     return (
-                        <View key={mission.id} style={[styles.cell, done ? styles.cellDone : styles.cellPending]}>
-                            <Txt typography="t6" fontWeight="bold" color={done ? 'green500' : 'grey500'}>
-                                {done ? 'O' : 'X'}
+                        <View key={mission.id} style={styles.cell}>
+                            <Txt typography="t7" color="grey500" style={styles.day}>
+                                {day}
                             </Txt>
+                            <View style={[styles.ox, done ? styles.oxDone : styles.oxPending]}>
+                                <Txt
+                                    typography="t6"
+                                    fontWeight="bold"
+                                    color={done ? 'green500' : 'grey500'}
+                                >
+                                    {done ? 'O' : 'X'}
+                                </Txt>
+                            </View>
                         </View>
                     );
                 })}
@@ -34,8 +56,18 @@ export function WeeklyMissionOxRow({ state }: WeeklyMissionOxRowProps) {
 const styles = StyleSheet.create({
     wrap: {
         width: '100%',
-        gap: 8,
-        marginBottom: 8,
+        gap: 10,
+        marginBottom: 4,
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     row: {
         flexDirection: 'row',
@@ -45,17 +77,25 @@ const styles = StyleSheet.create({
     cell: {
         flex: 1,
         alignItems: 'center',
+        gap: 6,
+    },
+    day: {
+        textAlign: 'center',
+    },
+    ox: {
+        width: '100%',
+        alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 10,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: colors.border,
-        backgroundColor: colors.surface,
     },
-    cellDone: {
+    oxDone: {
         backgroundColor: '#E8F5E9',
+        borderColor: '#C8E6C9',
     },
-    cellPending: {
+    oxPending: {
         backgroundColor: colors.surface,
     },
 });

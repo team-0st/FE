@@ -8,11 +8,12 @@ type MainTabShellProps = PropsWithChildren<{
     onPressTab: (route: string) => void;
 }>;
 
+/** Figma: 콘텐츠 위 · Tab Bar 하단 고정 */
 export function MainTabShell({ activeTab, onPressTab, children }: MainTabShellProps) {
     return (
         <View style={styles.root}>
-            <MainTabBar activeTab={activeTab} onPressTab={onPressTab} />
             <View style={styles.content}>{children}</View>
+            <MainTabBar activeTab={activeTab} onPressTab={onPressTab} />
         </View>
     );
 }

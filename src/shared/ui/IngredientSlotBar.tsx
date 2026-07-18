@@ -2,6 +2,7 @@ import { getIngredientById } from '@api/mock';
 import { BREW_SLOT_MAX, LEGENDARY_SLOT_COUNT, WEEKLY_SLOT_COUNT } from '@api/mock/recipes';
 import { Txt } from '@toss/tds-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { BrandEmojiImage } from './BrandEmojiImage';
 import { colors } from '../theme/colors';
 
 type IngredientSlotBarProps = {
@@ -41,7 +42,15 @@ export function IngredientSlotBar({ slots, onPressSlot }: IngredientSlotBarProps
                                 }
                             >
                                 {filled ? (
-                                    <Txt typography="t2">{ingredient.emoji}</Txt>
+                                    ingredient.imageSource != null ? (
+                                        <BrandEmojiImage
+                                            source={ingredient.imageSource}
+                                            size={36}
+                                            accessibilityLabel={ingredient.name}
+                                        />
+                                    ) : (
+                                        <Txt typography="t2">{ingredient.emoji}</Txt>
+                                    )
                                 ) : (
                                     <Txt typography="t4" color="grey400">
                                         □
