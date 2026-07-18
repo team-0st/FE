@@ -4,6 +4,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# BE 연동 등 — .env (gitignore) export
+if [[ -f "${ROOT}/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${ROOT}/.env"
+  set +a
+  echo "  [env] EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-"(empty)"}"
+fi
+
 APP_NAME="0st"
 SCHEME="intoss://${APP_NAME}"
 

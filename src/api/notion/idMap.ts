@@ -60,6 +60,6 @@ export function toIngredientDto(slug: string): IngredientDto | undefined {
         id: numericId,
         name: ingredient.name,
         type: ingredient.type,
-        imageUrl: ingredient.imageUrl,
+        imageUrl: null,
     };
 }
