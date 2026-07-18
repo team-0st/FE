@@ -17,6 +17,7 @@ import {
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { ScrollPreviewSection } from '../../shared/ui/ScrollPreviewSection';
+import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { useUser } from '../user/UserProvider';
 import { RecipeListRowShell } from './RecipeCompletedStamp';
 import { colors } from '../../shared/theme/colors';
@@ -65,6 +66,15 @@ function RecipeSection({
                     <RecipeListRowShell key={recipe.id} done={done}>
                         <ListRow
                             onPress={unlocked ? undefined : onLockedPress}
+                            left={
+                                <ListRow.Icon
+                                    name={
+                                        unlocked
+                                            ? TDS_ICON.soupBowl
+                                            : TDS_ICON.missionLock
+                                    }
+                                />
+                            }
                             contents={
                                 <ListRow.Texts
                                     type="2RowTypeA"
@@ -125,12 +135,12 @@ export function RecipesScreen() {
             </View>
             <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
                 <RecipeSection
-                    title="입문 스프"
+                    title="입문 레시피"
                     recipes={beginner}
                     completedRecipeIds={state.completedRecipeIds}
                 />
                 <RecipeSection
-                    title={`이번주 레시피 (${weekly.length})`}
+                    title={`이번 주 레시피 (${weekly.length})`}
                     recipes={weekly}
                     completedRecipeIds={state.completedRecipeIds}
                 />
