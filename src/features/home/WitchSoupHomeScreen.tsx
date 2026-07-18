@@ -1,13 +1,16 @@
+import { getShopById } from '@api/mock/shops';
 import { getIngredientById } from '@api/mock/ingredients';
 import { getTodayRecipeHint } from '@api/mock/recipes';
-import { Button, Txt } from '@toss/tds-react-native';
-import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { BottomCTA, Top, Txt } from '@toss/tds-react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import {
     CHECK_IN_ALREADY_MESSAGE,
     NETWORK_ERROR_MESSAGE,
 } from '../../shared/feedback/messages';
 import { useAppToast } from '../../shared/feedback/useAppToast';
+import { LocationConsentModal } from '../legal/LocationConsentModal';
+import { ShopDetailSheet } from '../shop/ShopDetailSheet';
 import { useUser } from '../user/UserProvider';
 import { isUserCheckedInToday } from '../user/selectors';
 import {
@@ -15,13 +18,15 @@ import {
     SOUP_WEEKLY_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
 import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
+import { CommunityGoalSection } from '../../shared/ui/CommunityGoalSection';
 import { HomeNudgeBanner } from '../../shared/ui/HomeNudgeBanner';
-import { StatCard } from '../../shared/ui/StatCard';
+import { NearbyShopsSection } from '../../shared/ui/NearbyShopsSection';
 import { WeeklyMissionOxRow } from '../../shared/ui/WeeklyMissionOxRow';
 import { colors } from '../../shared/theme/colors';
 
 type WitchSoupHomeScreenProps = {
     onPressMissions: () => void;
+    onPressPartnerShops: () => void;
 };
 
 function checkInDisplayValue(checkedIn: boolean, loading: boolean): string {
@@ -31,13 +36,21 @@ function checkInDisplayValue(checkedIn: boolean, loading: boolean): string {
     return checkedIn ? 'O' : 'X';
 }
 
-export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProps) {
-    const { state, checkInToday } = useUser();
+export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: WitchSoupHomeScreenProps) {
+    const { state, checkInToday, setLocationConsent } = useUser();
     const { showSuccess, showError, show } = useAppToast();
     const hint = getTodayRecipeHint();
     const checkedIn = isUserCheckedInToday(state);
     const [todayRewardLabel, setTodayRewardLabel] = useState<string | null>(null);
     const [checkInLoading, setCheckInLoading] = useState(false);
+    const [consentModalVisible, setConsentModalVisible] = useState(false);
+    const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+
+    const locationConsentGranted = state.locationConsent === 'granted';
+    const selectedShop = useMemo(
+        () => (selectedShopId != null ? getShopById(selectedShopId) : null),
+        [selectedShopId],
+    );
 
     const handleCheckIn = useCallback(async () => {
         if (checkedIn || checkInLoading) {
@@ -67,9 +80,7 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
         }
     }, [checkInLoading, checkInToday, checkedIn, show, showError, showSuccess]);
 
-    const checkInHint = checkedIn
-        ? (todayRewardLabel ?? '오늘의 재료를 받았어요')
-        : '탭하면 재료 1개';
+    const summaryLine = `오늘 출석 ${checkInDisplayValue(checkedIn, checkInLoading)}  ·  에코잼 ${state.ecoJam}잼  ·  알맹 ${state.totalPoints}P`;
 
     const weeklyNudge =
         state.weeklyMissionDone < state.weeklyMissionTotal
@@ -80,56 +91,56 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
 
     return (
         <View style={styles.root}>
-            <View style={styles.header}>
+            <ScrollView
+                style={styles.body}
+                contentContainerStyle={styles.bodyContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <Top
+                    title={<Top.TitleParagraph size={22}>제로스트</Top.TitleParagraph>}
+                    subtitle2={
+                        <Pressable
+                            onPress={() => {
+                                void handleCheckIn();
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel="오늘 출석하기"
+                        >
+                            <Top.SubtitleParagraph>{summaryLine}</Top.SubtitleParagraph>
+                            {!checkedIn ? (
+                                <Txt typography="t7" color="blue500" style={styles.checkInHint}>
+                                    {todayRewardLabel ?? '탭하면 재료 1개'}
+                                </Txt>
+                            ) : null}
+                        </Pressable>
+                    }
+                />
                 {weeklyNudge != null ? <HomeNudgeBanner message={weeklyNudge} /> : null}
-                <View style={styles.statRow}>
-                    <StatCard
-                        label="오늘 출석"
-                        value={checkInDisplayValue(checkedIn, checkInLoading)}
-                        hint={checkInHint}
-                        hintTone="action"
-                        onPress={() => {
-                            void handleCheckIn();
-                        }}
-                        accessibilityLabel="오늘 출석하기"
-                    />
-                    <StatCard label="에코잼" value={`${state.ecoJam}잼`} hintTone="info" />
-                    <StatCard label="알맹 포인트" value={`${state.totalPoints}P`} hintTone="info" />
-                </View>
+                <CommunityGoalSection />
                 <WeeklyMissionOxRow state={state} />
-            </View>
-            <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-                <View style={styles.stage}>
-                    <Txt typography="t1" style={styles.witch}>
-                        🐱‍👤
-                    </Txt>
-                    <Txt typography="t7" color="grey600">
-                        마녀의 주방
-                    </Txt>
-                    <View style={styles.pot}>
-                        <Txt typography="t1">🍲</Txt>
-                        <Txt typography="t7" color="grey500">
-                            휘리릭…
+                <NearbyShopsSection
+                    locationConsentGranted={locationConsentGranted}
+                    onPressViewAll={onPressPartnerShops}
+                    onPressRequestConsent={() => setConsentModalVisible(true)}
+                    onPressShop={setSelectedShopId}
+                />
+                <View style={styles.hintBox}>
+                    <View style={styles.hintTitleRow}>
+                        <Txt typography="t7" fontWeight="semibold" style={{ color: colors.primary }}>
+                            오늘의 레시피 힌트
                         </Txt>
+                        <ProbabilityInfoButton
+                            title={SOUP_WEEKLY_PROBABILITY_TITLE}
+                            lines={SOUP_WEEKLY_PROBABILITY_LINES}
+                        />
                     </View>
-                    <View style={styles.hintBox}>
-                        <View style={styles.hintTitleRow}>
-                            <Txt typography="t7" fontWeight="semibold" style={{ color: colors.primary }}>
-                                오늘의 레시피 힌트
-                            </Txt>
-                            <ProbabilityInfoButton
-                                title={SOUP_WEEKLY_PROBABILITY_TITLE}
-                                lines={SOUP_WEEKLY_PROBABILITY_LINES}
-                            />
-                        </View>
-                        <Txt typography="t6" color="grey700" style={styles.hintText}>
-                            {hint}
-                        </Txt>
-                    </View>
+                    <Txt typography="t6" color="grey700" style={styles.hintText}>
+                        {hint}
+                    </Txt>
                 </View>
             </ScrollView>
             <View style={styles.footer}>
-                <Button
+                <BottomCTA.Single
                     size="large"
                     type="primary"
                     display="block"
@@ -137,8 +148,31 @@ export function WitchSoupHomeScreen({ onPressMissions }: WitchSoupHomeScreenProp
                     accessibilityLabel="오늘 미션 하고 재료 받기"
                 >
                     오늘 미션 하고 재료 받기
-                </Button>
+                </BottomCTA.Single>
             </View>
+            <LocationConsentModal
+                visible={consentModalVisible}
+                onClose={() => setConsentModalVisible(false)}
+                onAgree={() => {
+                    void (async () => {
+                        await setLocationConsent('granted');
+                        setConsentModalVisible(false);
+                        showSuccess('위치 동의했어요. 가까운 상점을 보여드릴게요.');
+                    })();
+                }}
+                onDecline={() => {
+                    void (async () => {
+                        await setLocationConsent('declined');
+                        setConsentModalVisible(false);
+                        show('위치 동의 없이 상점 목록만 볼 수 있어요.');
+                    })();
+                }}
+            />
+            <ShopDetailSheet
+                shop={selectedShop ?? null}
+                visible={selectedShop != null}
+                onClose={() => setSelectedShopId(null)}
+            />
         </View>
     );
 }
@@ -148,50 +182,26 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
         paddingHorizontal: 20,
-        paddingBottom: 16,
+        paddingBottom: 8,
     },
-    header: {
+    body: {
+        flex: 1,
+    },
+    bodyContent: {
         paddingTop: 8,
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
-    },
-    statRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
         gap: 12,
-        width: '100%',
+        paddingBottom: 8,
     },
-    body: {
-        flex: 1,
-        width: '100%',
-        maxWidth: 400,
-        alignSelf: 'center',
+    checkInHint: {
+        marginTop: 4,
     },
     hintTitleRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-    },
-    stage: {
-        alignItems: 'center',
-        width: '100%',
-        paddingVertical: 12,
-        gap: 12,
-    },
-    witch: {
-        marginBottom: 4,
-    },
-    pot: {
-        width: 140,
-        height: 140,
-        borderRadius: 70,
-        backgroundColor: colors.primaryLight,
-        borderWidth: 2,
-        borderColor: colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
     },
     hintBox: {
         width: '100%',
@@ -211,6 +221,6 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
-        marginTop: 8,
+        marginTop: 4,
     },
 });
