@@ -1,4 +1,4 @@
-import type { Mission } from '@api/mock/types';
+import type { CoopMission, Mission } from '@api/mock/types';
 
 export const DAILY_MISSIONS: Mission[] = [
     {
@@ -78,7 +78,47 @@ export const SPECIAL_MISSIONS: Mission[] = [
     },
 ];
 
-export const ALL_MISSIONS: Mission[] = [...DAILY_MISSIONS, ...SPECIAL_MISSIONS];
+/** 공동 미션 — ⭐ 해금형 (파일럿: ⭐만 활성, 나머지 UI 잠금) */
+export const COOP_MISSIONS: CoopMission[] = [
+    {
+        kind: 'coop',
+        id: 'coop-photo-start',
+        difficulty: 1,
+        unlockAfter: null,
+        authType: 'photo',
+        title: '첫 실천 인증',
+        description: '텀블러·장바구니 등 제로 실천 사진 1장을 올려요.',
+        points: 30,
+        emoji: '📸',
+        authHint: '실천 사진 1장',
+    },
+    {
+        kind: 'coop',
+        id: 'coop-receipt',
+        difficulty: 2,
+        unlockAfter: 'coop-photo-start',
+        authType: 'receipt',
+        title: '제로웨이스트 영수증',
+        description: '리필·무포장 구매 영수증으로 인증해요.',
+        points: 40,
+        emoji: '🧾',
+        authHint: '영수증 사진 1장',
+    },
+    {
+        kind: 'coop',
+        id: 'coop-week-attendance',
+        difficulty: 3,
+        unlockAfter: 'coop-receipt',
+        authType: 'attendance_7d',
+        title: '7일 함께 실천',
+        description: '7일 출석하고 1·4·7일차에만 사진 인증해요.',
+        points: 60,
+        emoji: '🌱',
+        authHint: '7일 출석 + 1·4·7일 사진',
+    },
+];
+
+export const ALL_MISSIONS: Mission[] = [...DAILY_MISSIONS, ...SPECIAL_MISSIONS, ...COOP_MISSIONS];
 
 export function getMissionById(id: string): Mission | undefined {
     return ALL_MISSIONS.find((mission) => mission.id === id);

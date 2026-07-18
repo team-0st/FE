@@ -151,3 +151,92 @@ export function formatRecipeIngredients(recipe: Recipe): string {
 export function isPublicRecipe(recipe: Recipe): boolean {
     return recipe.kind === 'beginner' || recipe.kind === 'weekly';
 }
+
+function countIngredientNeeds(ingredientIds: string[]): Record<string, number> {
+    return ingredientIds.reduce<Record<string, number>>((acc, id) => {
+        acc[id] = (acc[id] ?? 0) + 1;
+        return acc;
+    }, {});
+}
+
+export function canAffordRecipe(inventory: Record<string, number>, recipe: Recipe): boolean {
+    const need = countIngredientNeeds(recipe.ingredientIds);
+    return Object.entries(need).every(([id, count]) => (inventory[id] ?? 0) >= count);
+}
+
+export function recipeToSlots(recipe: Recipe): (string | null)[] {
+    const slots: (string | null)[] = Array.from({ length: BREW_SLOT_MAX }, () => null);
+    for (let i = 0; i < recipe.ingredientIds.length; i += 1) {
+        slots[i] = recipe.ingredientIds[i] ?? null;
+    }
+    return slots;
+}
+
+const RECOMMEND_KIND_ORDER: Record<RecipeKind, number> = {
+    beginner: 0,
+    weekly: 1,
+    hidden: 2,
+    legendary: 3,
+};
+
+export function getAffordableRecipes(
+    inventory: Record<string, number>,
+    completedIds: string[],
+    weekKey = getIsoWeekKey(),
+): Recipe[] {
+    return getAllRecipes(weekKey)
+        .filter((recipe) => {
+            if (completedIds.includes(recipe.id)) {
+                return false;
+            }
+            if (recipe.kind === 'weekly' && recipe.weekKey !== weekKey) {
+                return false;
+            }
+            return canAffordRecipe(inventory, recipe);
+        })
+        .sort((a, b) => {
+            const kindDiff = RECOMMEND_KIND_ORDER[a.kind] - RECOMMEND_KIND_ORDER[b.kind];
+            if (kindDiff !== 0) {
+                return kindDiff;
+            }
+            return a.slotCount - b.slotCount;
+        });
+}
+
+/** 제작 화면 추천용 — 입문·이번주만 (히idden·전설 제외) */
+export function getRecommendedRecipes(
+    inventory: Record<string, number>,
+    completedIds: string[],
+    weekKey = getIsoWeekKey(),
+): Recipe[] {
+    return getAffordableRecipes(inventory, completedIds, weekKey).filter(
+        (recipe) => recipe.kind === 'beginner' || recipe.kind === 'weekly',
+    );
+}
+
+export function hasAffordableSecretRecipes(
+    inventory: Record<string, number>,
+    completedIds: string[],
+    weekKey = getIsoWeekKey(),
+): boolean {
+    return getAllRecipes(weekKey).some((recipe) => {
+        if (recipe.kind !== 'hidden' && recipe.kind !== 'legendary') {
+            return false;
+        }
+        if (completedIds.includes(recipe.id)) {
+            return false;
+        }
+        return canAffordRecipe(inventory, recipe);
+    });
+}
+
+export const RECOMMEND_SECRET_RECIPE_NOTICE =
+    '히든·전설 레시피는 추천에 나오지 않아요. 재료를 직접 넣어 조합해 보세요.';
+
+export function recommendationTitle(recipe: Recipe): string {
+    return recipe.name;
+}
+
+export function recommendationSubtitle(recipe: Recipe): string {
+    return `${formatRecipeIngredients(recipe)} · 탭하면 바로 넣어요`;
+}

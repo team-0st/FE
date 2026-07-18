@@ -1,25 +1,34 @@
 import type { IngredientCatalogType } from '../notion/types';
+import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
+import type { ImageSourcePropType } from 'react-native';
 
 export type Ingredient = {
     id: string;
     name: string;
     emoji: string;
     type: IngredientCatalogType;
-    imageUrl: string | null;
+    /** Figma export PNG — 있으면 ListRow left에 표시 */
+    imageSource: ImageSourcePropType | null;
 };
 
 /** 일반 7 + 히든 3 = 10종 (Notion Ingredients) */
 export const INGREDIENTS: Ingredient[] = [
-    { id: 'cabbage', name: '양배추', emoji: '🥬', type: 'COMMON', imageUrl: null },
-    { id: 'tomato', name: '토마토', emoji: '🍅', type: 'COMMON', imageUrl: null },
-    { id: 'onion', name: '양파', emoji: '🧅', type: 'COMMON', imageUrl: null },
-    { id: 'carrot', name: '당근', emoji: '🥕', type: 'COMMON', imageUrl: null },
-    { id: 'mushroom', name: '버섯', emoji: '🍄', type: 'COMMON', imageUrl: null },
-    { id: 'broccoli', name: '브로콜리', emoji: '🥦', type: 'COMMON', imageUrl: null },
-    { id: 'paprika', name: '파프리카', emoji: '🫑', type: 'COMMON', imageUrl: null },
-    { id: 'refill_crystal', name: '리필 크리스탈', emoji: '💎', type: 'HIDDEN', imageUrl: null },
-    { id: 'nature_sprout', name: '자연의 새싹', emoji: '🌱', type: 'HIDDEN', imageUrl: null },
-    { id: 'eco_star', name: '에코 스타', emoji: '⭐', type: 'HIDDEN', imageUrl: null },
+    { id: 'cabbage', name: '양배추', emoji: '🥬', type: 'COMMON', imageSource: BRAND_EMOJI.lettuce },
+    { id: 'tomato', name: '토마토', emoji: '🍅', type: 'COMMON', imageSource: null },
+    { id: 'onion', name: '양파', emoji: '🧅', type: 'COMMON', imageSource: null },
+    { id: 'carrot', name: '당근', emoji: '🥕', type: 'COMMON', imageSource: BRAND_EMOJI.carrot },
+    { id: 'mushroom', name: '버섯', emoji: '🍄', type: 'COMMON', imageSource: null },
+    { id: 'broccoli', name: '브로콜리', emoji: '🥦', type: 'COMMON', imageSource: null },
+    { id: 'paprika', name: '파프리카', emoji: '🫑', type: 'COMMON', imageSource: null },
+    { id: 'refill_crystal', name: '리필 크리스탈', emoji: '💎', type: 'HIDDEN', imageSource: null },
+    {
+        id: 'nature_sprout',
+        name: '자연의 새싹',
+        emoji: '🌱',
+        type: 'HIDDEN',
+        imageSource: BRAND_EMOJI.sprout,
+    },
+    { id: 'eco_star', name: '에코 스타', emoji: '⭐', type: 'HIDDEN', imageSource: null },
 ];
 
 export const COMMON_INGREDIENT_IDS = INGREDIENTS.filter((i) => i.type === 'COMMON').map((i) => i.id);
@@ -31,6 +40,9 @@ export const MISSION_REWARD_POOLS: Record<string, string[]> = {
     recycle: COMMON_INGREDIENT_IDS,
     transit: COMMON_INGREDIENT_IDS,
     'pickup-not-delivery': COMMON_INGREDIENT_IDS,
+    'coop-photo-start': COMMON_INGREDIENT_IDS,
+    'coop-receipt': COMMON_INGREDIENT_IDS,
+    'coop-week-attendance': ['nature_sprout', 'eco_star'],
 };
 
 /** 특별 미션 — 고정 히든 재료 (Notion) */
