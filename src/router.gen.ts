@@ -8,12 +8,13 @@ import { Route as _MissionsIdResultRoute } from '../pages/missions/[id]/result';
 import { Route as _MissionsIdVerifyRoute } from '../pages/missions/[id]/verify';
 import { Route as _MissionsIdRoute } from '../pages/missions/[id]';
 import { Route as _MissionsRoute } from '../pages/missions';
-import { Route as _OnboardingProfileRoute } from '../pages/onboarding/profile';
 import { Route as _OnboardingRoute } from '../pages/onboarding';
+import { Route as _OnboardingProfileRoute } from '../pages/onboarding/profile';
 import { Route as _OnboardingShopRoute } from '../pages/onboarding/shop';
 import { Route as _ProfileRoute } from '../pages/profile';
 import { Route as _RecipesRoute } from '../pages/recipes';
 import { Route as _ShopRoute } from '../pages/shop';
+import { Route as _ShopPartnersRoute } from '../pages/shop/partners';
 import { Route as _ShopSelectRoute } from '../pages/shop/select';
 import { Route as _SoupResultRoute } from '../pages/soup/result';
 
@@ -33,6 +34,7 @@ declare module '@granite-js/react-native' {
     '/profile': (typeof _ProfileRoute)['_inputType'];
     '/recipes': (typeof _RecipesRoute)['_inputType'];
     '/shop': (typeof _ShopRoute)['_inputType'];
+    '/shop/partners': (typeof _ShopPartnersRoute)['_inputType'];
     '/shop/select': (typeof _ShopSelectRoute)['_inputType'];
     '/soup/result': (typeof _SoupResultRoute)['_inputType'];
   }
@@ -52,6 +54,7 @@ declare module '@granite-js/react-native' {
     '/profile': (typeof _ProfileRoute)['_outputType'];
     '/recipes': (typeof _RecipesRoute)['_outputType'];
     '/shop': (typeof _ShopRoute)['_outputType'];
+    '/shop/partners': (typeof _ShopPartnersRoute)['_outputType'];
     '/shop/select': (typeof _ShopSelectRoute)['_outputType'];
     '/soup/result': (typeof _SoupResultRoute)['_outputType'];
   }
