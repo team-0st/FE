@@ -71,6 +71,7 @@ export async function loadUserState(): Promise<AppUserState> {
         userId: rest.userId ?? null,
         deviceId: rest.deviceId ?? null,
         phoneMasked: rest.phoneMasked ?? null,
+        phoneNumber: rest.phoneNumber ?? null,
         almangPayoutConsent: rest.almangPayoutConsent ?? DEFAULT_USER_STATE.almangPayoutConsent,
         almangConsentAt: rest.almangConsentAt ?? null,
         ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
@@ -79,6 +80,7 @@ export async function loadUserState(): Promise<AppUserState> {
         missionProgress: normalizeMissionProgress(missionProgress),
         ecoJamLedger: rest.ecoJamLedger ?? [],
         pendingRealRewards: rest.pendingRealRewards ?? [],
+        lastShareRewardDate: rest.lastShareRewardDate ?? null,
     };
 }
 

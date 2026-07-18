@@ -3,9 +3,14 @@ import type { Recipe } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
+import {
+    SHARE_REWARD_ECO_JAM_AMOUNT,
+    SHARE_REWARD_LEDGER_LABEL,
+} from '../../shared/constants/shareRewardPolicy';
 import type {
     AlmangPayoutConsent,
     AppUserState,
+    LocationConsent,
     MissionProgressStatus,
     PendingRealReward,
 } from './types';
@@ -38,6 +43,7 @@ export function saveOnboardingProfile(
     payload: {
         nickname: string;
         phoneMasked: string | null;
+        phoneNumber?: string | null;
         almangPayoutConsent: AlmangPayoutConsent;
         consentAt: string | null;
     },
@@ -46,6 +52,7 @@ export function saveOnboardingProfile(
         ...state,
         nickname: payload.nickname,
         phoneMasked: payload.phoneMasked,
+        phoneNumber: payload.phoneNumber ?? null,
         almangPayoutConsent: payload.almangPayoutConsent,
         almangConsentAt: payload.consentAt,
     };
@@ -65,6 +72,14 @@ export function resetOnboarding(_state: AppUserState): AppUserState {
 
 export function setShopId(state: AppUserState, shopId: string): AppUserState {
     return { ...state, shopId };
+}
+
+export function setLocationConsent(state: AppUserState, consent: LocationConsent): AppUserState {
+    return {
+        ...state,
+        locationConsent: consent,
+        locationConsentAt: new Date().toISOString(),
+    };
 }
 
 export function getMissionStatus(state: AppUserState, missionId: string): MissionProgressStatus {
@@ -227,4 +242,20 @@ export function spendEcoJam(state: AppUserState, amount: number, label: string):
     let next = { ...state, ecoJam: state.ecoJam - amount };
     next = appendEcoJamLedger(next, label, -amount);
     return next;
+}
+
+export type ShareRewardClaimResult =
+    | { ok: true; ecoJamGranted: number }
+    | { ok: false; reason: 'already_claimed_today' };
+
+export function claimShareReward(
+    state: AppUserState,
+    today = formatDateKey(new Date()),
+): { state: AppUserState; result: ShareRewardClaimResult } {
+    if (state.lastShareRewardDate === today) {
+        return { state, result: { ok: false, reason: 'already_claimed_today' } };
+    }
+    let next = addEcoJam(state, SHARE_REWARD_ECO_JAM_AMOUNT, SHARE_REWARD_LEDGER_LABEL);
+    next = { ...next, lastShareRewardDate: today };
+    return { state: next, result: { ok: true, ecoJamGranted: SHARE_REWARD_ECO_JAM_AMOUNT } };
 }

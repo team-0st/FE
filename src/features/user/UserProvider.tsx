@@ -9,10 +9,14 @@ import {
     type PropsWithChildren,
 } from 'react';
 import { postCheckIn, getCheckInStatus, type CheckInResult } from '@api/checkIn';
+import { isApiEnabled } from '@api/client';
+import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
+import { formatPhoneForApi, postOnboardingComplete } from '@api/onboarding';
 import { postRegisterUser } from '@api/users';
 import { getOrCreateDeviceId } from '../../shared/device/deviceId';
 import { postGacha } from '@api/gacha';
 import { postMissionVerify } from '@api/missions';
+import { shopNumericId } from '@api/notion/idMap';
 import type { Recipe } from '@api/mock/recipes';
 import {
     findMatchingRecipe,
@@ -28,7 +32,7 @@ import type { GachaPullResult } from '../gacha/gachaTypes';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
 import { loadUserState, saveUserState } from './userRepository';
-import type { AppUserState, AlmangPayoutConsent } from './types';
+import type { AppUserState, AlmangPayoutConsent, LocationConsent } from './types';
 import {
     addEcoJam,
     applyCheckInFromServer,
@@ -41,8 +45,10 @@ import {
     resetOnboarding as resetOnboardingState,
     saveOnboardingProfile as saveOnboardingProfileState,
     setShopId,
+    setLocationConsent as setLocationConsentState,
     submitMissionPendingReview,
     spendEcoJam,
+    claimShareReward as applyShareRewardState,
     formatDateKey,
 } from './userStateLogic';
 
@@ -54,11 +60,13 @@ type UserContextValue = {
     saveOnboardingProfile: (payload: {
         nickname: string;
         phoneMasked: string | null;
+        phoneDigits?: string | null;
         almangPayoutConsent: AlmangPayoutConsent;
         consentAt: string | null;
     }) => Promise<void>;
     resetOnboarding: () => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
+    setLocationConsent: (consent: LocationConsent) => Promise<void>;
     verifyMission: (missionId: string) => Promise<
         | { ok: true; pending: boolean; ingredientId?: string }
         | {
@@ -76,6 +84,10 @@ type UserContextValue = {
     >;
     pullGacha: () => Promise<GachaPullResult>;
     grantTestEcoJam: (amount: number) => Promise<void>;
+    claimShareReward: () => Promise<
+        | { ok: true; ecoJamGranted: number }
+        | { ok: false; reason: 'already_claimed_today' | 'share_cancelled' }
+    >;
 };
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -125,6 +137,19 @@ export function UserProvider({ children }: PropsWithChildren) {
             } catch {
                 // keep local state
             }
+            if (isApiEnabled()) {
+                try {
+                    const remoteIngredients = await getUserIngredients();
+                    if (remoteIngredients != null) {
+                        next = {
+                            ...next,
+                            ingredientInventory: inventoryFromUserIngredients(remoteIngredients),
+                        };
+                    }
+                } catch {
+                    // keep local inventory
+                }
+            }
             stateRef.current = next;
             setState(next);
             await saveUserState(next);
@@ -170,13 +195,36 @@ export function UserProvider({ children }: PropsWithChildren) {
                 }
             },
             finishOnboarding: async (shopId) => {
+                const current = stateRef.current;
+                const numericShopId = shopNumericId(shopId);
+                if (
+                    isApiEnabled() &&
+                    current.phoneNumber != null &&
+                    current.phoneNumber.length > 0 &&
+                    numericShopId != null
+                ) {
+                    try {
+                        await postOnboardingComplete({
+                            nickname: current.nickname,
+                            phoneNumber: current.phoneNumber,
+                            shopId: numericShopId,
+                        });
+                    } catch {
+                        // 로컬 온보딩은 완료 — BE 재시도는 추후
+                    }
+                }
                 await persist((prev) => finishOnboardingState(prev, shopId));
             },
             saveOnboardingProfile: async (payload) => {
+                const phoneNumber =
+                    payload.phoneDigits != null && payload.phoneDigits.length > 0
+                        ? formatPhoneForApi(payload.phoneDigits)
+                        : null;
                 await persist((prev) =>
                     saveOnboardingProfileState(prev, {
                         nickname: payload.nickname,
                         phoneMasked: payload.phoneMasked,
+                        phoneNumber,
                         almangPayoutConsent: payload.almangPayoutConsent,
                         consentAt: payload.consentAt,
                     }),
@@ -187,6 +235,9 @@ export function UserProvider({ children }: PropsWithChildren) {
             },
             selectShop: async (shopId) => {
                 await persist((prev) => setShopId(prev, shopId));
+            },
+            setLocationConsent: async (consent) => {
+                await persist((prev) => setLocationConsentState(prev, consent));
             },
             verifyMission: async (missionId) => {
                 try {
@@ -247,6 +298,16 @@ export function UserProvider({ children }: PropsWithChildren) {
                     reward: api.reward,
                     costEcoJam: GACHA_PULL_COST_ECO_JAM,
                 };
+            },
+            claimShareReward: async () => {
+                const { state: next, result } = applyShareRewardState(stateRef.current);
+                if (!result.ok) {
+                    return result;
+                }
+                stateRef.current = next;
+                setState(next);
+                await saveUserState(next);
+                return result;
             },
             brewSoup: async (slots) => {
                 const filled = getFilledIngredientIds(slots);
