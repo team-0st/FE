@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import {
     CHECK_IN_ALREADY_MESSAGE,
     NETWORK_ERROR_MESSAGE,
+    USER_NOT_FOUND_MESSAGE,
 } from '../../shared/feedback/messages';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { LocationConsentModal } from '../legal/LocationConsentModal';
@@ -72,6 +73,10 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
             }
             if (result.code === 'ALREADY_CHECKED_IN') {
                 show(CHECK_IN_ALREADY_MESSAGE);
+                return;
+            }
+            if (result.code === 'USER_NOT_FOUND') {
+                showError(USER_NOT_FOUND_MESSAGE);
                 return;
             }
             showError(NETWORK_ERROR_MESSAGE);

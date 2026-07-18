@@ -29,7 +29,7 @@ export type CheckInSuccessDto = {
 
 export type CheckInResult =
     | { ok: true; data: CheckInSuccessDto }
-    | { ok: false; code: 'ALREADY_CHECKED_IN' | 'NETWORK_ERROR' };
+    | { ok: false; code: 'ALREADY_CHECKED_IN' | 'USER_NOT_FOUND' | 'NETWORK_ERROR' };
 
 function toIngredientDto(raw: IngredientDto): IngredientDto {
     return {
@@ -68,6 +68,9 @@ export async function postCheckIn(ctx: CheckInRequestContext): Promise<CheckInRe
     } catch (error) {
         if (error instanceof ApiClientError && error.code === 'ALREADY_CHECKED_IN') {
             return { ok: false, code: 'ALREADY_CHECKED_IN' };
+        }
+        if (error instanceof ApiClientError && error.code === 'USER_NOT_FOUND') {
+            return { ok: false, code: 'USER_NOT_FOUND' };
         }
         return { ok: false, code: 'NETWORK_ERROR' };
     }

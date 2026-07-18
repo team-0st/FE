@@ -56,7 +56,8 @@ type UserContextValue = {
     isReady: boolean;
     state: AppUserState;
     checkInToday: () => Promise<CheckInResult>;
-    finishOnboarding: (shopId: string) => Promise<void>;
+    /** API 활성 시 BE 온보딩 실패하면 ok:false (로컬 완료하지 않음) */
+    finishOnboarding: (shopId: string) => Promise<{ ok: true } | { ok: false; code: 'SYNC_FAILED' | 'NOT_READY' }>;
     saveOnboardingProfile: (payload: {
         nickname: string;
         phoneMasked: string | null;
@@ -101,6 +102,34 @@ export function UserProvider({ children }: PropsWithChildren) {
         stateRef.current = state;
     }, [state]);
 
+    const ensureRegistered = useCallback(async (base: AppUserState): Promise<AppUserState> => {
+        const deviceId = await getOrCreateDeviceId();
+        if (base.userId != null) {
+            if (base.deviceId == null) {
+                return { ...base, deviceId };
+            }
+            return base;
+        }
+        try {
+            const registered = await postRegisterUser();
+            return applyRegisterUser(base, {
+                userId: registered.userId,
+                deviceId,
+                onboardingCompleted: registered.onboardingCompleted,
+            });
+        } catch {
+            if (isApiEnabled()) {
+                // 실서버 모드: 가짜 userId(1001)로 진행하지 않음
+                return { ...base, deviceId, userId: null };
+            }
+            return applyRegisterUser(base, {
+                userId: 1001,
+                deviceId,
+                onboardingCompleted: base.onboardingCompleted,
+            });
+        }
+    }, []);
+
     useEffect(() => {
         let mounted = true;
         (async () => {
@@ -108,26 +137,7 @@ export function UserProvider({ children }: PropsWithChildren) {
             if (!mounted) {
                 return;
             }
-            let next = loaded;
-            const deviceId = await getOrCreateDeviceId();
-            if (next.userId == null) {
-                try {
-                    const registered = await postRegisterUser();
-                    next = applyRegisterUser(next, {
-                        userId: registered.userId,
-                        deviceId,
-                        onboardingCompleted: registered.onboardingCompleted,
-                    });
-                } catch {
-                    next = applyRegisterUser(next, {
-                        userId: 1001,
-                        deviceId,
-                        onboardingCompleted: next.onboardingCompleted,
-                    });
-                }
-            } else if (next.deviceId == null) {
-                next = { ...next, deviceId };
-            }
+            let next = await ensureRegistered(loaded);
             try {
                 const today = formatDateKey(new Date());
                 const status = await getCheckInStatus(next.lastCheckInDate, today);
@@ -137,7 +147,7 @@ export function UserProvider({ children }: PropsWithChildren) {
             } catch {
                 // keep local state
             }
-            if (isApiEnabled()) {
+            if (isApiEnabled() && next.userId != null) {
                 try {
                     const remoteIngredients = await getUserIngredients();
                     if (remoteIngredients != null) {
@@ -160,7 +170,7 @@ export function UserProvider({ children }: PropsWithChildren) {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [ensureRegistered]);
 
     const persist = useCallback(async (updater: (prev: AppUserState) => AppUserState) => {
         const next = updater(stateRef.current);
@@ -195,7 +205,16 @@ export function UserProvider({ children }: PropsWithChildren) {
                 }
             },
             finishOnboarding: async (shopId) => {
-                const current = stateRef.current;
+                let current = stateRef.current;
+                if (isApiEnabled() && current.userId == null) {
+                    current = await ensureRegistered(current);
+                    stateRef.current = current;
+                    setState(current);
+                    await saveUserState(current);
+                    if (current.userId == null) {
+                        return { ok: false, code: 'NOT_READY' };
+                    }
+                }
                 const numericShopId = shopNumericId(shopId);
                 if (
                     isApiEnabled() &&
@@ -210,10 +229,11 @@ export function UserProvider({ children }: PropsWithChildren) {
                             shopId: numericShopId,
                         });
                     } catch {
-                        // 로컬 온보딩은 완료 — BE 재시도는 추후
+                        return { ok: false, code: 'SYNC_FAILED' };
                     }
                 }
                 await persist((prev) => finishOnboardingState(prev, shopId));
+                return { ok: true };
             },
             saveOnboardingProfile: async (payload) => {
                 const phoneNumber =
@@ -231,7 +251,14 @@ export function UserProvider({ children }: PropsWithChildren) {
                 );
             },
             resetOnboarding: async () => {
-                await persist((prev) => resetOnboardingState(prev));
+                const cleared = resetOnboardingState(stateRef.current);
+                stateRef.current = cleared;
+                setState(cleared);
+                await saveUserState(cleared);
+                const registered = await ensureRegistered(cleared);
+                stateRef.current = registered;
+                setState(registered);
+                await saveUserState(registered);
             },
             selectShop: async (shopId) => {
                 await persist((prev) => setShopId(prev, shopId));
@@ -335,7 +362,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                 return { ok: true, recipe, craft };
             },
         }),
-        [isReady, state, persist],
+        [isReady, state, persist, ensureRegistered],
     );
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
