@@ -12,7 +12,7 @@ import {
     recommendationTitle,
 } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
-import { BottomCTA, Button, ListRow, Top, Txt } from '@toss/tds-react-native';
+import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import {
@@ -275,7 +275,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                 )}
             </ScrollView>
             <View style={styles.cta}>
-                <BottomCTA.Single
+                <Button
                     size="large"
                     type="primary"
                     display="block"
@@ -285,7 +285,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                     accessibilityLabel="스프 만들기"
                 >
                     스프 만들기
-                </BottomCTA.Single>
+                </Button>
             </View>
         </View>
     );
@@ -348,9 +348,9 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         paddingHorizontal: 20,
         paddingTop: 8,
-        paddingBottom: 16,
+        paddingBottom: 8,
         backgroundColor: colors.background,
-        borderTopWidth: 1,
+        borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: colors.border,
     },
 });

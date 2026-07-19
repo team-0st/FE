@@ -30,8 +30,8 @@ export const GACHA_REWARD_LABEL: Record<GachaRewardType, string> = {
     FAIL: '꽝',
     ECO_JAM: '에코잼',
     INGREDIENT: '재료',
-    ALMANG_POINT: '알맹상점 포인트',
+    ALMANG_POINT: '알맹상점 포인트(매장)',
 };
 
 export const GACHA_PROBABILITY_HINT =
-    '꽝 35% · 에코잼 30% · 재료 28% · 알맹 포인트 7% (희소)';
+    '꽝 35% · 에코잼 30% · 재료 28% · 알맹P 7%(매장 · 현금화 없음)';

@@ -127,9 +127,9 @@ const styles = StyleSheet.create({
         borderColor: colors.primary,
     },
     rewardReal: {
-        backgroundColor: '#FFF8E7',
+        backgroundColor: colors.warningBg,
         borderWidth: 1,
-        borderColor: '#FFB800',
+        borderColor: colors.warningBorder,
     },
     rewardMiss: {
         backgroundColor: colors.surface,

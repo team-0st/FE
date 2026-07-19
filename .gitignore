@@ -23,6 +23,7 @@ design/apps-in-toss/*.zip
 .screenshot-urls.txt
 
 # Local-only tooling / dumps (do not commit)
+.firecrawl/
 scripts/figma-*.js
 scripts/build-ppt-*.py
 scripts/generate-*.mjs

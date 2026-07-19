@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
 import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
+import { HOME_DECOR } from '../../shared/constants/homeDecorAssets';
 import { getSoupImageSource } from '../../shared/constants/soupAssets';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { formatLedgerDelta } from '../user/ecoJamLedger';
@@ -12,6 +13,7 @@ import { listIngredientStock } from '../user/ingredientInventory';
 import { useUser } from '../user/UserProvider';
 import { resolveShopName } from '../user/selectors';
 import { shouldShowAlmangPayoutBanner } from '../user/almangPayoutCopy';
+import { ALMANG_COMPLIANCE, ALMANG_UI_COPY } from '../../shared/constants/almangComplianceCopy';
 import {
     ProfileIngredientRow,
     ProfileLedgerRow,
@@ -82,7 +84,7 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
             </View>
             <View style={styles.row}>
                 <Pressable
-                    style={styles.card}
+                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                     onPress={() => setDetailModal('ecoJam')}
                     accessibilityRole="button"
                     accessibilityLabel={`에코잼 ${state.ecoJam}, 내역 보기`}
@@ -99,9 +101,12 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     <Txt typography="t4" fontWeight="bold">
                         {state.ecoJam}
                     </Txt>
+                    <Txt typography="t7" color="blue500">
+                        내역 보기
+                    </Txt>
                 </Pressable>
                 <Pressable
-                    style={styles.card}
+                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                     onPress={() => setDetailModal('almang')}
                     accessibilityRole="button"
                     accessibilityLabel={`알맹 포인트 ${state.totalPoints}P, 내역 보기`}
@@ -120,12 +125,15 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     </Txt>
                     {state.almangPayoutConsent === 'declined' ? (
                         <Txt typography="t7" color="grey600">
-                            지급 대기
+                            매장 연동 대기
                         </Txt>
                     ) : null}
+                    <Txt typography="t7" color="blue500">
+                        내역 보기
+                    </Txt>
                 </Pressable>
                 <Pressable
-                    style={styles.card}
+                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                     onPress={() => setDetailModal('soups')}
                     accessibilityRole="button"
                     accessibilityLabel={`완성 스프 ${completed}개, 목록 보기`}
@@ -142,15 +150,24 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     <Txt typography="t4" fontWeight="bold">
                         {completed}개
                     </Txt>
+                    <Txt typography="t7" color="blue500">
+                        목록 보기
+                    </Txt>
                 </Pressable>
             </View>
             {shouldShowAlmangPayoutBanner(state) ? (
                 <View style={styles.payoutBanner}>
                     <Txt typography="t6" fontWeight="semibold">
-                        알맹 포인트 지급 안내
+                        {ALMANG_UI_COPY.bannerTitle}
                     </Txt>
                     <Txt typography="t7" color="grey700">
-                        {'포인트는 적립됐어요.\n지급받으려면 알맹상점에 방문해 주세요.\n전화번호 동의 후 매장에서 본인 확인을 거쳐 드려요.'}
+                        {ALMANG_UI_COPY.bannerBody}
+                    </Txt>
+                </View>
+            ) : state.totalPoints > 0 ? (
+                <View style={styles.payoutBanner}>
+                    <Txt typography="t7" color="grey700">
+                        {ALMANG_COMPLIANCE.noCashInApp}
                     </Txt>
                 </View>
             ) : null}
@@ -173,6 +190,14 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
             ) : null}
             <ProfileListSection
                 title="보유 재료"
+                titleAccessory={
+                    <BrandEmojiImage
+                        source={HOME_DECOR.bannerVeggies}
+                        size={36}
+                        containerStyle={styles.ingredientTitleArt}
+                        accessibilityLabel=""
+                    />
+                }
                 hint={
                     ownedCount > 0
                         ? `보유 중 ${ownedCount}종 · 제작 탭에서 스프에 사용해요`
@@ -202,14 +227,6 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     />
                 ))}
             </ProfileListSection>
-            <View style={styles.cardWide}>
-                <Txt typography="t7" color="grey600">
-                    이번 주 미션
-                </Txt>
-                <Txt typography="t5" fontWeight="bold">
-                    {state.weeklyMissionDone}/{state.weeklyMissionTotal}
-                </Txt>
-            </View>
             <Txt
                 typography="t6"
                 color="blue500"
@@ -308,9 +325,17 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.border,
     },
+    cardPressed: {
+        opacity: 0.85,
+        borderColor: colors.primary,
+    },
     cardIcon: {
         marginRight: 0,
         marginBottom: 2,
+    },
+    ingredientTitleArt: {
+        marginRight: 0,
+        opacity: 0.9,
     },
     section: {
         width: '100%',
@@ -322,9 +347,9 @@ const styles = StyleSheet.create({
     pendingCard: {
         padding: 12,
         borderRadius: 12,
-        backgroundColor: '#FFF8E7',
+        backgroundColor: colors.warningBg,
         borderWidth: 1,
-        borderColor: '#FFB800',
+        borderColor: colors.warningBorder,
         marginBottom: 8,
         gap: 4,
     },
@@ -333,20 +358,10 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         padding: 14,
         borderRadius: 12,
-        backgroundColor: '#FFF8E7',
+        backgroundColor: colors.warningBg,
         borderWidth: 1,
-        borderColor: '#FFB800',
+        borderColor: colors.warningBorder,
         gap: 6,
-    },
-    cardWide: {
-        width: '100%',
-        backgroundColor: colors.surface,
-        borderRadius: 16,
-        padding: 20,
-        alignItems: 'center',
-        gap: 4,
-        borderWidth: 1,
-        borderColor: colors.border,
     },
     restartOnboarding: {
         marginTop: 24,

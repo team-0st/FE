@@ -1,6 +1,6 @@
 import { getIngredientById } from '@api/mock/ingredients';
-import { BottomCTA, Button, Txt } from '@toss/tds-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { Button, Top, Txt } from '@toss/tds-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Platform, StyleSheet, Vibration, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import {
@@ -165,8 +165,18 @@ type StageArtProps = {
     accessibilityLabel: string;
 };
 
+/**
+ * 스테이지 높이는 STAGE_SIZE로 고정, 가로는 원본 비율 유지.
+ * (정사각 contain이면 여백 많은 에셋이 더 작게 보여 보상마다 높이가 들쭉날쭉해짐)
+ */
 function StageArt({ source, phaseKey, accessibilityLabel }: StageArtProps) {
     const uriSource = toBrandImageSource(source);
+    const [aspectRatio, setAspectRatio] = useState(1);
+
+    useEffect(() => {
+        setAspectRatio(1);
+    }, [phaseKey]);
+
     if (uriSource == null) {
         return <View style={styles.stageSlot} />;
     }
@@ -175,8 +185,14 @@ function StageArt({ source, phaseKey, accessibilityLabel }: StageArtProps) {
             <Image
                 key={phaseKey}
                 source={uriSource}
-                style={styles.stageImage}
+                style={[styles.stageImage, { aspectRatio }]}
                 resizeMode="contain"
+                onLoad={(event) => {
+                    const { width, height } = event.nativeEvent.source;
+                    if (width > 0 && height > 0) {
+                        setAspectRatio(width / height);
+                    }
+                }}
                 accessibilityLabel={accessibilityLabel}
             />
         </View>
@@ -277,9 +293,9 @@ export function GachaScreen() {
         <View style={styles.root}>
             <View style={styles.header}>
                 <View style={styles.titleRow}>
-                    <Txt typography="t3" fontWeight="bold" style={styles.title}>
-                        가챠
-                    </Txt>
+                    <View style={styles.titleBlock}>
+                        <Top title={<Top.TitleParagraph size={22}>가챠</Top.TitleParagraph>} />
+                    </View>
                     <View style={styles.chips}>
                         <BalanceChip
                             source={BRAND_EMOJI.ecoJam}
@@ -326,7 +342,7 @@ export function GachaScreen() {
                         />
                     ) : null}
                 </View>
-                <BottomCTA.Single
+                <Button
                     size="large"
                     type="primary"
                     display="block"
@@ -334,7 +350,7 @@ export function GachaScreen() {
                     onPress={() => void onPressPull()}
                 >
                     {isBusy ? '뽑는 중…' : pullLabel}
-                </BottomCTA.Single>
+                </Button>
                 {__DEV__ ? (
                     <Button
                         size="medium"
@@ -365,7 +381,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     header: {
-        paddingTop: 8,
+        paddingTop: 0,
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
@@ -377,14 +393,15 @@ const styles = StyleSheet.create({
         gap: 12,
         minHeight: 44,
     },
-    title: {
-        flexShrink: 0,
+    titleBlock: {
+        flex: 1,
+        minWidth: 0,
     },
     chips: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        flexShrink: 1,
+        flexShrink: 0,
     },
     chip: {
         flexDirection: 'row',
@@ -419,21 +436,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 12,
-        backgroundColor: colors.heroTint,
-        borderRadius: 16,
         gap: 12,
         minHeight: STAGE_SIZE + 56,
     },
     stageSlot: {
-        width: STAGE_SIZE,
+        width: '100%',
         height: STAGE_SIZE,
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
     },
     stageImage: {
-        width: STAGE_SIZE,
         height: STAGE_SIZE,
+        maxWidth: '100%',
     },
     potHint: {
         textAlign: 'center',
@@ -445,7 +460,7 @@ const styles = StyleSheet.create({
         maxWidth: 400,
         alignSelf: 'center',
         gap: 10,
-        paddingBottom: 16,
+        paddingBottom: 8,
     },
     shareRow: {
         height: SHARE_ROW_HEIGHT,

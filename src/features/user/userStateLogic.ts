@@ -47,6 +47,7 @@ export function saveOnboardingProfile(
         phoneNumber?: string | null;
         almangPayoutConsent: AlmangPayoutConsent;
         consentAt: string | null;
+        privacyConsentAt: string;
     },
 ): AppUserState {
     return {
@@ -56,6 +57,7 @@ export function saveOnboardingProfile(
         phoneNumber: payload.phoneNumber ?? null,
         almangPayoutConsent: payload.almangPayoutConsent,
         almangConsentAt: payload.consentAt,
+        privacyConsentAt: payload.privacyConsentAt,
     };
 }
 

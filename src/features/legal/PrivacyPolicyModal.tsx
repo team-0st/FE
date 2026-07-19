@@ -10,21 +10,29 @@ import { PrivacyPolicyContent } from './PrivacyPolicyContent';
 type PrivacyPolicyModalProps = {
     visible: boolean;
     onClose: () => void;
-    /** true면 「확인했어요」로 전문 확인 처리 (온보딩 동의 전) */
-    requireAcknowledge?: boolean;
-    onAcknowledge?: () => void;
+    /**
+     * consent: 필수/선택 각각 동의 가능 (온보딩)
+     * read: 열람만 (마이 등)
+     */
+    mode?: 'read' | 'consent';
+    requiredAgreed?: boolean;
+    optionalAgreed?: boolean;
+    onAgreeRequired?: () => void;
+    onAgreeOptional?: () => void;
+    onDeclineOptional?: () => void;
 };
 
 export function PrivacyPolicyModal({
     visible,
     onClose,
-    requireAcknowledge = false,
-    onAcknowledge,
+    mode = 'read',
+    requiredAgreed = false,
+    optionalAgreed = false,
+    onAgreeRequired,
+    onAgreeOptional,
+    onDeclineOptional,
 }: PrivacyPolicyModalProps) {
-    const handleAcknowledge = () => {
-        onAcknowledge?.();
-        onClose();
-    };
+    const isConsent = mode === 'consent';
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -34,21 +42,31 @@ export function PrivacyPolicyModal({
                         {PRIVACY_POLICY_META.title}
                     </Txt>
                     <ScrollView style={styles.scroll} showsVerticalScrollIndicator>
-                        <PrivacyPolicyContent />
+                        <PrivacyPolicyContent
+                            consentActions={
+                                isConsent
+                                    ? {
+                                          requiredAgreed,
+                                          optionalAgreed,
+                                          onAgreeRequired: () => onAgreeRequired?.(),
+                                          onAgreeOptional: () => onAgreeOptional?.(),
+                                          onDeclineOptional: () => {
+                                              onDeclineOptional?.();
+                                          },
+                                      }
+                                    : undefined
+                            }
+                        />
                     </ScrollView>
-                    {requireAcknowledge ? (
-                        <Button size="large" type="primary" display="block" onPress={handleAcknowledge}>
-                            {PRIVACY_POLICY_LABELS.confirmRead}
-                        </Button>
-                    ) : (
-                        <Button size="large" type="dark" style="weak" display="block" onPress={onClose}>
-                            {PRIVACY_POLICY_LABELS.close}
-                        </Button>
-                    )}
-                    {requireAcknowledge ? (
+                    <Button size="large" type="dark" style="weak" display="block" onPress={onClose}>
+                        {isConsent && requiredAgreed
+                            ? PRIVACY_POLICY_LABELS.confirmRead
+                            : PRIVACY_POLICY_LABELS.close}
+                    </Button>
+                    {isConsent ? (
                         <Pressable onPress={onClose} accessibilityRole="button">
                             <Txt typography="t7" color="grey600" style={styles.cancel}>
-                                닫기
+                                {requiredAgreed ? '동의 화면으로' : '닫기'}
                             </Txt>
                         </Pressable>
                     ) : null}

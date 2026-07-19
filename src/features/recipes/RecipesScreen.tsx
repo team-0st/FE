@@ -3,6 +3,7 @@ import {
     getBeginnerRecipes,
     getHiddenRecipes,
     getLegendaryRecipes,
+    getTodayRecipeHint,
     getWeeklyRecipes,
 } from '@api/mock/recipes';
 import type { Recipe } from '@api/mock/recipeTypes';
@@ -46,7 +47,7 @@ function recipeSoupThumbSize(windowWidth: number): number {
 type RecipeTabId = 'today' | 'beginner' | 'hidden' | 'legendary';
 
 const RECIPE_TABS: { id: RecipeTabId; label: string }[] = [
-    { id: 'today', label: '이번주 레시피' },
+    { id: 'today', label: '이번 주 레시피' },
     { id: 'beginner', label: '입문' },
     { id: 'hidden', label: '히든' },
     { id: 'legendary', label: '전설' },
@@ -208,6 +209,14 @@ export function RecipesScreen() {
                         </Top.SubtitleParagraph>
                     }
                 />
+                <View style={styles.todayHint} accessibilityRole="text">
+                    <Txt typography="t7" color="grey500" fontWeight="semibold">
+                        오늘의 레시피 힌트
+                    </Txt>
+                    <Txt typography="t7" color="grey700" style={styles.todayHintText}>
+                        {getTodayRecipeHint()}
+                    </Txt>
+                </View>
                 <View style={styles.tabs}>
                     {RECIPE_TABS.map((item) => {
                         const selected = tab === item.id;
@@ -273,7 +282,7 @@ export function RecipesScreen() {
                     <View style={styles.note}>
                         <Txt typography="t7" color="grey600" style={styles.noteText}>
                             {
-                                '입문·이번주 레시피는 재료 조합이 공개돼요.\n히든·전설은 완성 후에만 확인할 수 있어요.\n모든 레시피는 한 번만 만들 수 있어요.'
+                                '입문·이번 주 레시피는 재료 조합이 공개돼요.\n히든·전설은 완성 후에만 확인할 수 있어요.\n모든 레시피는 한 번만 만들 수 있어요.'
                             }
                         </Txt>
                     </View>
@@ -313,6 +322,14 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
+    },
+    todayHint: {
+        marginTop: 2,
+        marginBottom: 6,
+        gap: 2,
+    },
+    todayHintText: {
+        lineHeight: 18,
     },
     tabs: {
         flexDirection: 'row',

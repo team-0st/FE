@@ -13,25 +13,22 @@ export function getHomeGuideMessage(state: AppUserState): string {
 }
 
 export const ONBOARDING_GUIDE = {
-    intro: '안녕하세요.\n저는 새싹이에요.\n함께 제로웨이스트 실천,\n천천히 시작해 볼까요?',
+    intro: '안녕하세요!\n우리는 제로랑 스티예요.\n지구를 아끼는 제로웨이스트,\n함께 천천히 시작해 볼까요?',
 } as const;
 
 export const ONBOARDING_PROFILE_GUIDE = {
     nicknameTitle: '닉네임을 입력해 주세요',
     nicknameSubtitle: '앱에서 사용할 이름이에요.\n실명은 필요하지 않아요.',
     nicknamePlaceholder: '예) 펭귄탐험가',
-    phoneTitle: '휴대전화번호를 입력해 주세요',
-    /** Figma 02 — 본문 / Help text 분리 */
-    phoneSubtitle: '알맹상점 포인트 지급에 사용해요.\n010 번호만 입력할 수 있어요.',
+    privacyTitle: '필수 개인정보 동의',
+    phoneTitle: '선택 · 휴대전화번호',
     phoneHelp: '나중에 입력해도 괜찮아요.',
-    phoneBodyPlaceholder: '12345678',
-    phoneConsentCheckbox:
-        '[필수] 개인정보 처리방침 전문을 확인했으며, 휴대전화번호 수집·이용에 동의해요.',
+    phonePlaceholder: '01012345678',
     skipModalTitle: '나중에 입력해도 괜찮아요',
     skipModalBody:
-        '알맹상점 포인트는 게임에서 쌓일 수 있어요.\n지급을 받으려면 알맹상점에 직접 방문해 주세요.\n매장에서 본인 확인 후 지급해 드려요.',
+        '알맹 포인트는 앱에 적립될 수 있어요.\n앱에서 현금으로 바꾸거나 환불할 수 없고,\n매장에서 이용하려면 알맹상점에 직접 방문해 주세요.',
     payoutHint:
-        '동의하지 않으면 포인트는 적립되지만 지급받을 수 없어요.\n지급은 알맹상점 방문이 필요해요.',
+        '동의하지 않아도 앱 이용·적립은 가능해요.\n매장에서 쓰려면 알맹상점 방문이 필요해요.\n앱 내 현금 교환·환불·출금은 없어요.',
 } as const;
 
 /** Figma 03 온보딩 - 샵선택 */

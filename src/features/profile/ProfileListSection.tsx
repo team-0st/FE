@@ -61,6 +61,7 @@ type ProfileListSectionProps = {
     children: ReactNode;
     expandedChildren: ReactNode;
     itemCount: number;
+    titleAccessory?: ReactNode;
 };
 
 export function ProfileListSection({
@@ -71,6 +72,7 @@ export function ProfileListSection({
     children,
     expandedChildren,
     itemCount,
+    titleAccessory,
 }: ProfileListSectionProps) {
     const [expanded, setExpanded] = useState(false);
     const showExpand = itemCount > PREVIEW_VISIBLE_ROWS;
@@ -78,9 +80,12 @@ export function ProfileListSection({
     return (
         <View style={styles.section}>
             <View style={styles.titleRow}>
-                <Txt typography="t5" fontWeight="semibold">
-                    {title}
-                </Txt>
+                <View style={styles.titleLeft}>
+                    <Txt typography="t5" fontWeight="semibold">
+                        {title}
+                    </Txt>
+                    {titleAccessory}
+                </View>
                 {showExpand ? (
                     <Txt
                         typography="t7"
@@ -253,6 +258,12 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 8,
         gap: 8,
+    },
+    titleLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        flexShrink: 1,
     },
     hint: {
         marginBottom: 8,

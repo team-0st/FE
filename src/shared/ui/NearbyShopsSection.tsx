@@ -1,5 +1,5 @@
 import { getMapShops, MOCK_USER_LOCATION } from '@api/mock/shops';
-import { Button, ListHeader, ListRow, Txt } from '@toss/tds-react-native';
+import { Button, ListRow, Txt } from '@toss/tds-react-native';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { TDS_ICON } from '../constants/tdsAssets';
@@ -9,11 +9,16 @@ import {
     getNearbyShops,
     LOCATION_CONSENT_DENIED_LIST_HINT,
     LOCATION_CONSENT_NOTICE,
-    MAP_SHOPS_SCOPE_HINT,
     STRAIGHT_LINE_DISTANCE_HINT,
 } from '../../features/shop/nearbyShopLogic';
+import { ProbabilityInfoButton } from './ProbabilityInfoButton';
 
 const HOME_NEARBY_LIMIT = 2;
+
+const NEARBY_DISTANCE_INFO_LINES = [
+    '가장 가까운 상점이에요.',
+    ...STRAIGHT_LINE_DISTANCE_HINT.split('\n').map((line) => line.trim()).filter(Boolean),
+];
 
 type NearbyShopsSectionProps = {
     locationConsentGranted: boolean;
@@ -41,16 +46,19 @@ export function NearbyShopsSection({
 
     return (
         <View style={styles.section}>
-            <ListHeader
-                title={
-                    <ListHeader.TitleParagraph typography="t5" fontWeight="semibold">
-                        내 주변 상점
-                    </ListHeader.TitleParagraph>
-                }
-                lower={
-                    <ListHeader.DescriptionParagraph>{MAP_SHOPS_SCOPE_HINT}</ListHeader.DescriptionParagraph>
-                }
-            />
+            <View style={styles.titleRow}>
+                <Txt typography="t5" fontWeight="semibold" color="grey900">
+                    내 주변 상점
+                </Txt>
+                {locationConsentGranted ? (
+                    <ProbabilityInfoButton
+                        title="거리 안내"
+                        lines={NEARBY_DISTANCE_INFO_LINES}
+                        footnote={null}
+                        accessibilitySuffix="보기"
+                    />
+                ) : null}
+            </View>
             {!locationConsentGranted ? (
                 <>
                     <Txt typography="t7" color="grey600" style={styles.notice}>
@@ -64,16 +72,12 @@ export function NearbyShopsSection({
                     </Button>
                 </>
             ) : (
-                <>
-                    <Txt typography="t7" color="grey600" style={styles.notice}>
-                        가장 가까운 상점이에요. {STRAIGHT_LINE_DISTANCE_HINT}
-                    </Txt>
-                    <View style={styles.listCard}>
-                        {nearbyShops.map((shop) => {
-                            const distanceLabel = Number.isFinite(shop.distanceMeters)
-                                ? formatStraightLineDistance(shop.distanceMeters)
-                                : null;
-                            return (
+                <View style={styles.listCard}>
+                    {nearbyShops.map((shop) => {
+                        const distanceLabel = Number.isFinite(shop.distanceMeters)
+                            ? formatStraightLineDistance(shop.distanceMeters)
+                            : null;
+                        return (
                             <ListRow
                                 key={shop.id}
                                 onPress={() => onPressShop(shop.id)}
@@ -101,10 +105,9 @@ export function NearbyShopsSection({
                                     ) : undefined
                                 }
                             />
-                            );
-                        })}
-                    </View>
-                </>
+                        );
+                    })}
+                </View>
             )}
             <Pressable onPress={onPressViewAll} accessibilityRole="button" accessibilityLabel="주변 상점 전체 보기">
                 <Txt typography="t7" color="blue500" style={styles.viewAll}>
@@ -120,8 +123,14 @@ const styles = StyleSheet.create({
         width: '100%',
         gap: 8,
     },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingVertical: 4,
+    },
     notice: {
-        lineHeight: 18,
+        lineHeight: 20,
     },
     listCard: {
         width: '100%',
@@ -133,6 +142,7 @@ const styles = StyleSheet.create({
     },
     deniedHint: {
         textAlign: 'center',
+        lineHeight: 20,
     },
     viewAll: {
         textAlign: 'center',

@@ -16,6 +16,7 @@ import { postRegisterUser } from '@api/users';
 import { getOrCreateDeviceId } from '../../shared/device/deviceId';
 import { postGacha } from '@api/gacha';
 import { postMissionVerify } from '@api/missions';
+import { DAILY_MISSIONS } from '@api/mock/missions';
 import { shopNumericId } from '@api/notion/idMap';
 import type { Recipe } from '@api/mock/recipes';
 import {
@@ -65,6 +66,7 @@ type UserContextValue = {
         phoneDigits?: string | null;
         almangPayoutConsent: AlmangPayoutConsent;
         consentAt: string | null;
+        privacyConsentAt: string;
     }) => Promise<void>;
     resetOnboarding: () => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
@@ -139,6 +141,14 @@ export function UserProvider({ children }: PropsWithChildren) {
                 return;
             }
             let next = await ensureRegistered(loaded);
+            // 이번 주 미션 칸 수 = DAILY_MISSIONS(월~일 7)
+            if (next.weeklyMissionTotal !== DAILY_MISSIONS.length) {
+                next = {
+                    ...next,
+                    weeklyMissionTotal: DAILY_MISSIONS.length,
+                    weeklyMissionDone: Math.min(next.weeklyMissionDone, DAILY_MISSIONS.length),
+                };
+            }
             try {
                 const today = formatDateKey(new Date());
                 const status = await getCheckInStatus(next.lastCheckInDate, today);
@@ -248,6 +258,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                         phoneNumber,
                         almangPayoutConsent: payload.almangPayoutConsent,
                         consentAt: payload.consentAt,
+                        privacyConsentAt: payload.privacyConsentAt,
                     }),
                 );
             },

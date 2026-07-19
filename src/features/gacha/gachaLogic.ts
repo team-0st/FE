@@ -64,7 +64,7 @@ export function formatGachaRewardMessage(reward: GachaReward, state?: AppUserSta
         case 'ALMANG_POINT':
             return state != null
                 ? getAlmangRewardMessage(state, reward.amount)
-                : `알맹상점 포인트 ${reward.amount}P를 받았어요! (희소)`;
+                : `알맹상점 포인트 ${reward.amount}P가 적립됐어요. 매장에서 이용할 수 있어요.`;
     }
 }
 

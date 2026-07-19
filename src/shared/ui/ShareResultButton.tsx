@@ -41,9 +41,9 @@ export function ShareResultButton({
             return label;
         }
         if (rewardAvailable) {
-            return `공유하고 에코잼 ${SHARE_REWARD_ECO_JAM_AMOUNT}개 받기`;
+            return `친구에게 공유하고 에코잼 ${SHARE_REWARD_ECO_JAM_AMOUNT}개 받기`;
         }
-        return '결과 공유하기';
+        return '친구에게 결과 공유하기';
     }, [label, rewardAvailable]);
 
     const onPress = useCallback(async () => {

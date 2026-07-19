@@ -29,11 +29,16 @@ export const MAIN_TABS: TabItem[] = [
 type MainTabBarProps = {
     activeTab: MainTabId;
     onPressTab: (route: string) => void;
+    /** 홈 인디케이터 등 하단 safe area */
+    bottomInset?: number;
 };
 
-export function MainTabBar({ activeTab, onPressTab }: MainTabBarProps) {
+export function MainTabBar({ activeTab, onPressTab, bottomInset = 0 }: MainTabBarProps) {
     return (
-        <View style={styles.bar} accessibilityRole="tablist">
+        <View
+            style={[styles.bar, { paddingBottom: Math.max(12, bottomInset) }]}
+            accessibilityRole="tablist"
+        >
             {MAIN_TABS.map((tab) => {
                 const active = tab.id === activeTab;
                 const tint = active ? colors.primary : colors.textSecondary;
@@ -78,7 +83,6 @@ const styles = StyleSheet.create({
         borderTopColor: colors.border,
         backgroundColor: colors.tabBar,
         paddingTop: 8,
-        paddingBottom: 12,
         paddingHorizontal: 2,
     },
     item: {

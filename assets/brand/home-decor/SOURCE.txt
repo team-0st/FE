@@ -1,0 +1,11 @@
+home_hero <- 대표 캐릭터.png
+stamp_pending <- 스템프(미완료).png
+stamp_progress <- 스템프(진행중, 검수중).png
+stamp_done <- 스템프(완료).png
+progress_wait <- 게이지1.png (상단 캐릭터 crop)
+progress_mid <- 게이지4.png (새싹 crop)
+progress_excited <- 게이지3.png
+banner_veggies <- 안내 배너 재료 그림.png
+bg_pattern <- 배경.png
+deco_sparkle <- 버튼 주변 장식.png (미니 장식 crop)
+건너뜀: 게이지2.png (게이지3과 역할 중복)
