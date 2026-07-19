@@ -1,4 +1,4 @@
-import { INGREDIENTS } from '@api/mock';
+import { INGREDIENTS, getIngredientById } from '@api/mock';
 import {
     BREW_SLOT_MAX,
     findMatchingRecipe,
@@ -11,23 +11,23 @@ import {
     recommendationSubtitle,
     recommendationTitle,
 } from '@api/mock/recipes';
+import type { SoupCraftResponse } from '@api/notion/types';
 import { BottomCTA, Button, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { getBrewFailureMessage } from '../../shared/feedback/messages';
-import { useAppToast } from '../../shared/feedback/useAppToast';
-import { useUser } from '../user/UserProvider';
-import { IngredientSlotBar } from '../../shared/ui/IngredientSlotBar';
-import type { SoupCraftResponse } from '@api/notion/types';
 import {
     SOUP_BREW_PROBABILITY_LINES,
     SOUP_BREW_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
+import { TDS_ICON } from '../../shared/constants/tdsAssets';
+import { getBrewFailureMessage } from '../../shared/feedback/messages';
+import { useAppToast } from '../../shared/feedback/useAppToast';
+import { BrandListRowImage } from '../../shared/ui/BrandListRowImage';
+import { IngredientSlotBar } from '../../shared/ui/IngredientSlotBar';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { ScrollPreviewSection } from '../../shared/ui/ScrollPreviewSection';
-import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
-import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { colors } from '../../shared/theme/colors';
+import { useUser } from '../user/UserProvider';
 
 type IngredientsScreenProps = {
     onSoupMade: (recipeId: string, craft: SoupCraftResponse) => void;
@@ -169,11 +169,19 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                             itemCount={recommendedRecipes.length}
                             hint="보유 재료로 만들 수 있는 입문·이번주 조합이에요."
                         >
-                            {recommendedRecipes.map((recipe) => (
+                            {recommendedRecipes.map((recipe) => {
+                                const firstIngredient = getIngredientById(recipe.ingredientIds[0] ?? '');
+                                return (
                                 <ListRow
                                     key={recipe.id}
                                     onPress={() => handleApplyRecommendation(recipe.id)}
-                                    left={<ListRow.Icon name={TDS_ICON.soupBowl} />}
+                                    left={
+                                        firstIngredient?.imageSource != null ? (
+                                            <BrandListRowImage source={firstIngredient.imageSource} />
+                                        ) : (
+                                            <ListRow.Icon name={TDS_ICON.soupBowl} />
+                                        )
+                                    }
                                     contents={
                                         <ListRow.Texts
                                             type="2RowTypeA"
@@ -190,7 +198,8 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                         />
                                     }
                                 />
-                            ))}
+                                );
+                            })}
                         </ScrollPreviewSection>
                     )}
                 </View>
@@ -233,11 +242,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                     onPress={disabled ? undefined : () => handlePressIngredient(item.id)}
                                     left={
                                         item.imageSource != null ? (
-                                            <BrandEmojiImage
-                                                source={item.imageSource}
-                                                size={30}
-                                                accessibilityLabel={item.name}
-                                            />
+                                            <BrandListRowImage source={item.imageSource} />
                                         ) : undefined
                                     }
                                     contents={
@@ -246,7 +251,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                             top={
                                                 item.imageSource != null
                                                     ? item.name
-                                                    : `${item.emoji} ${item.name}`
+                                                    : item.name
                                             }
                                             topProps={{ fontWeight: 'bold' }}
                                             bottom={disabled ? '슬롯에 모두 사용 중' : `보유 ${available}개`}

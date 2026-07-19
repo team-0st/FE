@@ -5,6 +5,7 @@ import { ONBOARDING_GUIDE } from '../../shared/constants/guideCopy';
 import { useFloatAnimation } from '../../shared/hooks/useFloatAnimation';
 import { colors } from '../../shared/theme/colors';
 import { Screen } from '../../shared/ui/Screen';
+import { toBrandImageSource } from '../../shared/ui/toBrandImageSource';
 
 type OnboardingScreenProps = {
     onPressStart: () => void;
@@ -13,18 +14,21 @@ type OnboardingScreenProps = {
 /** Figma `01 온보딩 - 시작` (WSJgAg2xe1eSESfkzaWzXV / 26:3476) */
 export function OnboardingScreen({ onPressStart }: OnboardingScreenProps) {
     const floatStyle = useFloatAnimation(true, 10);
+    const heroSource = toBrandImageSource(BRAND_ASSET.mascotCarrot);
 
     return (
         <Screen>
             <View style={styles.root}>
                 <View style={styles.stage}>
                     <Animated.View style={floatStyle}>
-                        <Image
-                            source={BRAND_ASSET.heroSprout}
-                            style={styles.hero}
-                            resizeMode="contain"
-                            accessibilityLabel="새싹"
-                        />
+                        {heroSource != null ? (
+                            <Image
+                                source={heroSource}
+                                style={styles.hero}
+                                resizeMode="contain"
+                                accessibilityLabel="제로스트 당근"
+                            />
+                        ) : null}
                     </Animated.View>
                     <Txt typography="t4" fontWeight="medium" color="grey800" style={styles.message}>
                         {ONBOARDING_GUIDE.intro}
