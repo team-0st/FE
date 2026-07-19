@@ -58,7 +58,7 @@ export function formatGachaRewardMessage(reward: GachaReward, state?: AppUserSta
             return `에코잼 ${reward.amount}개를 받았어요!`;
         case 'INGREDIENT': {
             const item = getIngredientById(reward.ingredientId);
-            const label = item != null ? `${item.emoji} ${item.name}` : '재료';
+            const label = item != null ? item.name : '재료';
             return `${label} ${reward.amount}개를 받았어요!`;
         }
         case 'ALMANG_POINT':

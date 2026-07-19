@@ -1,4 +1,4 @@
-import { Button } from '@toss/tds-react-native';
+import { Button, TextButton } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
     SHARE_REWARD_ALREADY_CLAIMED_MESSAGE,
@@ -15,12 +15,18 @@ type ShareResultButtonProps = {
     label?: string;
     /** false면 공유만 (보상 없음) */
     rewardEnabled?: boolean;
+    /**
+     * `block`: BottomCTA 안 큰 버튼 (기본)
+     * `text`: TDS TextButton — 가챠 등 보조 액션용
+     */
+    presentation?: 'block' | 'text';
 };
 
 export function ShareResultButton({
     message,
     label,
     rewardEnabled = true,
+    presentation = 'block',
 }: ShareResultButtonProps) {
     const toast = useAppToast();
     const { state, claimShareReward } = useUser();
@@ -71,6 +77,20 @@ export function ShareResultButton({
             setSharing(false);
         }
     }, [claimShareReward, message, rewardEnabled, sharing, toast]);
+
+    if (presentation === 'text') {
+        return (
+            <TextButton
+                typography="t6"
+                fontWeight="semibold"
+                variant="underline"
+                disabled={sharing}
+                onPress={() => void onPress()}
+            >
+                {buttonLabel}
+            </TextButton>
+        );
+    }
 
     return (
         <Button
