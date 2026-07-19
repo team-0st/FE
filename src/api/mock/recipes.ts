@@ -143,7 +143,7 @@ export function formatRecipeIngredients(recipe: Recipe): string {
     return recipe.ingredientIds
         .map((id) => {
             const item = getIngredientById(id);
-            return item != null ? `${item.emoji} ${item.name}` : id;
+            return item != null ? item.name : id;
         })
         .join(' + ');
 }
