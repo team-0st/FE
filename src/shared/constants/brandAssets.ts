@@ -1,40 +1,68 @@
+import { brandUriSource } from './brandImageUris';
+
 /**
- * Figma `제로스트 TDS 초안` (WSJgAg2xe1eSESfkzaWzXV) export.
- *
- * 주의: `download_assets` rawImages 는 TDS ListRow/Logo 샘플
- * (삼성 로고·해님·토스 S·파란 플레이스홀더) 뿐이라 앱에 쓰지 않음.
- * 화면 비주얼은 이모지 TEXT / Card 프레임 스크린샷 export.
+ * 재료·마스코트·가챠·공유카드: Granite용 data-uri (`brandImageUris.ts`).
  */
 export const BRAND_ASSET = {
-    /** 01 온보딩 · 홈 새싹 */
-    heroSprout: require('../../../assets/brand/hero-sprout.png'),
-    /** 06 가챠 idle */
-    heroGacha: require('../../../assets/brand/hero-gacha.png'),
-    /** 11 스프 결과 */
-    heroSoup: require('../../../assets/brand/hero-soup.png'),
-    /** 12 미션 결과 히어로 */
-    heroMission: require('../../../assets/brand/hero-mission.png'),
-    /** 06-1 C 축하 */
-    heroParty: require('../../../assets/brand/hero-party.png'),
-    /** 06-1 A · Pulling */
-    gachaPulling: require('../../../assets/brand/gacha-pulling-art.png'),
-    /** 06-1 B · Reveal */
-    gachaReveal: require('../../../assets/brand/gacha-reveal-art.png'),
-    /** 06-1 C · Result card */
-    gachaResult: require('../../../assets/brand/gacha-result-art.png'),
-    /** 12 SNS PhotoPlaceholder */
-    shareCardPhoto: require('../../../assets/brand/share-card-photo-bg.png'),
+    heroSprout: brandUriSource('mascotCarrot'),
+    mascotCarrot: brandUriSource('mascotCarrot'),
+    heroGacha: brandUriSource('heroGacha'),
+    heroSoup: brandUriSource('heroSoup'),
+    heroMission: brandUriSource('heroMission'),
+    heroParty: brandUriSource('heroParty'),
+    gachaPulling: brandUriSource('gachaPulling'),
+    gachaBangA: brandUriSource('gachaBangA'),
+    gachaBangB: brandUriSource('gachaBangB'),
+    gachaBangC: brandUriSource('gachaBangC'),
+    gachaFail1: brandUriSource('gachaFail1'),
+    gachaFail2: brandUriSource('gachaFail2'),
+    gachaFail3: brandUriSource('gachaFail3'),
+    gachaFail4: brandUriSource('gachaFail4'),
+    gachaFail5: brandUriSource('gachaFail5'),
+    gachaFail7: brandUriSource('gachaFail7'),
+    gachaFail8: brandUriSource('gachaFail8'),
+    shareCardPhoto: brandUriSource('shareCardPhoto'),
 } as const;
 
-/** Figma 단독 이모지 노드 스크린샷 (재료·히어로 조각) */
+/** 당첨 시 빵 연출 — 희귀도별 고정 (랜덤 아님) */
+export const GACHA_BANG_BY_TIER = {
+    common: BRAND_ASSET.gachaBangA,
+    hidden: BRAND_ASSET.gachaBangB,
+    rare: BRAND_ASSET.gachaBangC,
+} as const;
+
+/** 꽝 결과 아트 — 뽑을 때마다 랜덤 1장 */
+export const GACHA_FAIL_ASSETS = [
+    BRAND_ASSET.gachaFail1,
+    BRAND_ASSET.gachaFail2,
+    BRAND_ASSET.gachaFail3,
+    BRAND_ASSET.gachaFail4,
+    BRAND_ASSET.gachaFail5,
+    BRAND_ASSET.gachaFail7,
+    BRAND_ASSET.gachaFail8,
+] as const;
+
+/** 재료·히든 아이템 (Granite `{ uri: data:... }` ) */
 export const BRAND_EMOJI = {
-    sprout: require('../../../assets/brand/emoji/sprout.png'),
-    gift: require('../../../assets/brand/emoji/gift.png'),
-    soup: require('../../../assets/brand/emoji/soup.png'),
-    camera: require('../../../assets/brand/emoji/camera.png'),
-    carrot: require('../../../assets/brand/emoji/carrot.png'),
-    lettuce: require('../../../assets/brand/emoji/lettuce.png'),
-    party: require('../../../assets/brand/emoji/party.png'),
+    sprout: brandUriSource('sprout'),
+    gift: brandUriSource('gift'),
+    soup: brandUriSource('soup'),
+    camera: brandUriSource('camera'),
+    carrot: brandUriSource('carrot'),
+    tomato: brandUriSource('tomato'),
+    onion: brandUriSource('onion'),
+    mushroom: brandUriSource('mushroom'),
+    broccoli: brandUriSource('broccoli'),
+    paprika: brandUriSource('paprika'),
+    lettuce: brandUriSource('lettuce'),
+    ecoStar: brandUriSource('eco_star'),
+    refillCrystal: brandUriSource('refill_crystal'),
+    party: brandUriSource('party'),
+    ecoJam: brandUriSource('eco_jam'),
+    /** 에코잼 당첨 결과(빵 이후)용 — 이펙트 포함 */
+    ecoJamReveal: brandUriSource('eco_jam_reveal'),
+    almangPoint: brandUriSource('almang_point'),
+    completedSoups: brandUriSource('completed_soups'),
 } as const;
 
 export type BrandAssetKey = keyof typeof BRAND_ASSET;

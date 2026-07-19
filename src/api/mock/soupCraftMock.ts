@@ -1,7 +1,7 @@
 import type { Recipe } from './recipeTypes';
 import type { RecipeCatalogType, SoupCraftResponse, RewardCatalogType } from '../notion/types';
 
-const TRASH_REWARD_LABELS = ['쓰레기 봉투', '빈 냄비', '투명 스프'] as const;
+const TRASH_REWARD_LABELS = ['아쉬운 한 그릇', '덜 익은 스프', '다시 끓여봐요'] as const;
 
 function catalogTypeFor(recipe: Recipe): RecipeCatalogType {
     if (recipe.kind === 'hidden') {

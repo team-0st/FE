@@ -1,17 +1,25 @@
+import { findRecipeInCatalog } from '@api/mock/recipeCatalog';
 import { Top, Txt } from '@toss/tds-react-native';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
+import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
+import { HOME_DECOR } from '../../shared/constants/homeDecorAssets';
+import { getSoupImageSource } from '../../shared/constants/soupAssets';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { formatLedgerDelta } from '../user/ecoJamLedger';
 import { listIngredientStock } from '../user/ingredientInventory';
 import { useUser } from '../user/UserProvider';
 import { resolveShopName } from '../user/selectors';
 import { shouldShowAlmangPayoutBanner } from '../user/almangPayoutCopy';
+import { ALMANG_COMPLIANCE, ALMANG_UI_COPY } from '../../shared/constants/almangComplianceCopy';
 import {
     ProfileIngredientRow,
     ProfileLedgerRow,
+    ProfileListModal,
     ProfileListSection,
+    ProfileSoupRow,
 } from './ProfileListSection';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
@@ -21,6 +29,8 @@ type ProfileScreenProps = {
     onPressRestartOnboarding?: () => void;
 };
 
+type DetailModal = 'ecoJam' | 'almang' | 'soups' | null;
+
 function formatLedgerTime(iso: string): string {
     const d = new Date(iso);
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -29,18 +39,30 @@ function formatLedgerTime(iso: string): string {
 export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: ProfileScreenProps) {
     const { state } = useUser();
     const [privacyVisible, setPrivacyVisible] = useState(false);
+    const [detailModal, setDetailModal] = useState<DetailModal>(null);
     const shopName = resolveShopName(state.shopId);
     const completed = state.completedRecipeIds.length;
     const ingredientRows = listIngredientStock(state.ingredientInventory);
     const ownedCount = ingredientRows.filter((row) => row.count > 0).length;
-    const ledgerEntries = state.ecoJamLedger;
+    const ecoJamEntries = state.ecoJamLedger;
+    const almangEntries = state.almangPointsLedger;
+
+    const completedSoups = useMemo(
+        () =>
+            state.completedRecipeIds.map((id) => {
+                const recipe = findRecipeInCatalog(id);
+                return {
+                    id,
+                    name: recipe?.name ?? '완성한 스프',
+                    imageSource: getSoupImageSource(id),
+                };
+            }),
+        [state.completedRecipeIds],
+    );
 
     return (
         <Screen scrollable>
-            <Top
-                title={<Top.TitleParagraph size={22}>마이</Top.TitleParagraph>}
-                subtitle2={<Top.SubtitleParagraph>에코잼 · 스프 · 재료를 한곳에서 확인해요.</Top.SubtitleParagraph>}
-            />
+            <Top title={<Top.TitleParagraph size={22}>마이</Top.TitleParagraph>} />
             <View style={styles.hero}>
                 <Txt typography="t2" fontWeight="bold">
                     {state.nickname}
@@ -61,17 +83,40 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 ) : null}
             </View>
             <View style={styles.row}>
-                <View style={styles.card}>
-                    <Txt typography="t3">🫙</Txt>
+                <Pressable
+                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+                    onPress={() => setDetailModal('ecoJam')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`에코잼 ${state.ecoJam}, 내역 보기`}
+                >
+                    <BrandEmojiImage
+                        source={BRAND_EMOJI.ecoJam}
+                        size={48}
+                        containerStyle={styles.cardIcon}
+                        accessibilityLabel="에코잼"
+                    />
                     <Txt typography="t7" color="grey600">
                         에코잼
                     </Txt>
                     <Txt typography="t4" fontWeight="bold">
                         {state.ecoJam}
                     </Txt>
-                </View>
-                <View style={styles.card}>
-                    <Txt typography="t3">🌰</Txt>
+                    <Txt typography="t7" color="blue500">
+                        내역 보기
+                    </Txt>
+                </Pressable>
+                <Pressable
+                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+                    onPress={() => setDetailModal('almang')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`알맹 포인트 ${state.totalPoints}P, 내역 보기`}
+                >
+                    <BrandEmojiImage
+                        source={BRAND_EMOJI.almangPoint}
+                        size={48}
+                        containerStyle={styles.cardIcon}
+                        accessibilityLabel="알맹 포인트"
+                    />
                     <Txt typography="t7" color="grey600">
                         알맹 포인트
                     </Txt>
@@ -80,28 +125,49 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     </Txt>
                     {state.almangPayoutConsent === 'declined' ? (
                         <Txt typography="t7" color="grey600">
-                            지급 대기
+                            매장 연동 대기
                         </Txt>
                     ) : null}
-                </View>
-                <View style={styles.card}>
-                    <Txt typography="t3">🍲</Txt>
+                    <Txt typography="t7" color="blue500">
+                        내역 보기
+                    </Txt>
+                </Pressable>
+                <Pressable
+                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+                    onPress={() => setDetailModal('soups')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`완성 스프 ${completed}개, 목록 보기`}
+                >
+                    <BrandEmojiImage
+                        source={BRAND_EMOJI.completedSoups}
+                        size={48}
+                        containerStyle={styles.cardIcon}
+                        accessibilityLabel="완성 스프"
+                    />
                     <Txt typography="t7" color="grey600">
                         완성 스프
                     </Txt>
                     <Txt typography="t4" fontWeight="bold">
                         {completed}개
                     </Txt>
-                </View>
+                    <Txt typography="t7" color="blue500">
+                        목록 보기
+                    </Txt>
+                </Pressable>
             </View>
             {shouldShowAlmangPayoutBanner(state) ? (
                 <View style={styles.payoutBanner}>
                     <Txt typography="t6" fontWeight="semibold">
-                        알맹 포인트 지급 안내
+                        {ALMANG_UI_COPY.bannerTitle}
                     </Txt>
                     <Txt typography="t7" color="grey700">
-                        포인트는 적립됐지만, 지급을 받으려면 알맹상점에 직접 방문해 주세요. 전화번호
-                        동의 후 매장에서 본인 확인을 거쳐 지급해 드려요.
+                        {ALMANG_UI_COPY.bannerBody}
+                    </Txt>
+                </View>
+            ) : state.totalPoints > 0 ? (
+                <View style={styles.payoutBanner}>
+                    <Txt typography="t7" color="grey700">
+                        {ALMANG_COMPLIANCE.noCashInApp}
                     </Txt>
                 </View>
             ) : null}
@@ -123,33 +189,15 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 </View>
             ) : null}
             <ProfileListSection
-                title="에코잼 내역"
-                emptyMessage="아직 내역이 없어요."
-                expandLabel="크게 보기"
-                itemCount={ledgerEntries.length}
-                expandedChildren={ledgerEntries.map((entry) => (
-                    <ProfileLedgerRow
-                        key={entry.id}
-                        label={entry.label}
-                        time={formatLedgerTime(entry.at)}
-                        deltaLabel={formatLedgerDelta(entry.delta)}
-                        deltaPositive={entry.delta >= 0}
-                        large
-                    />
-                ))}
-            >
-                {ledgerEntries.map((entry) => (
-                    <ProfileLedgerRow
-                        key={entry.id}
-                        label={entry.label}
-                        time={formatLedgerTime(entry.at)}
-                        deltaLabel={formatLedgerDelta(entry.delta)}
-                        deltaPositive={entry.delta >= 0}
-                    />
-                ))}
-            </ProfileListSection>
-            <ProfileListSection
                 title="보유 재료"
+                titleAccessory={
+                    <BrandEmojiImage
+                        source={HOME_DECOR.bannerVeggies}
+                        size={36}
+                        containerStyle={styles.ingredientTitleArt}
+                        accessibilityLabel=""
+                    />
+                }
                 hint={
                     ownedCount > 0
                         ? `보유 중 ${ownedCount}종 · 제작 탭에서 스프에 사용해요`
@@ -161,10 +209,10 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 expandedChildren={ingredientRows.map((item) => (
                     <ProfileIngredientRow
                         key={item.id}
-                        emoji={item.emoji}
                         name={item.name}
                         countLabel={`${item.count}개`}
                         hasStock={item.count > 0}
+                        imageSource={item.imageSource}
                         large
                     />
                 ))}
@@ -172,21 +220,13 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 {ingredientRows.map((item) => (
                     <ProfileIngredientRow
                         key={item.id}
-                        emoji={item.emoji}
                         name={item.name}
                         countLabel={item.count > 0 ? `${item.count}개` : '0개'}
                         hasStock={item.count > 0}
+                        imageSource={item.imageSource}
                     />
                 ))}
             </ProfileListSection>
-            <View style={styles.cardWide}>
-                <Txt typography="t7" color="grey600">
-                    이번 주 미션
-                </Txt>
-                <Txt typography="t5" fontWeight="bold">
-                    {state.weeklyMissionDone}/{state.weeklyMissionTotal}
-                </Txt>
-            </View>
             <Txt
                 typography="t6"
                 color="blue500"
@@ -210,6 +250,53 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 </Txt>
             ) : null}
             <PrivacyPolicyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
+            <ProfileListModal
+                visible={detailModal === 'ecoJam'}
+                title="에코잼 내역"
+                emptyMessage="아직 내역이 없어요."
+                itemCount={ecoJamEntries.length}
+                onClose={() => setDetailModal(null)}
+            >
+                {ecoJamEntries.map((entry) => (
+                    <ProfileLedgerRow
+                        key={entry.id}
+                        label={entry.label}
+                        time={formatLedgerTime(entry.at)}
+                        deltaLabel={formatLedgerDelta(entry.delta)}
+                        deltaPositive={entry.delta >= 0}
+                        large
+                    />
+                ))}
+            </ProfileListModal>
+            <ProfileListModal
+                visible={detailModal === 'almang'}
+                title="알맹 포인트 내역"
+                emptyMessage="아직 내역이 없어요."
+                itemCount={almangEntries.length}
+                onClose={() => setDetailModal(null)}
+            >
+                {almangEntries.map((entry) => (
+                    <ProfileLedgerRow
+                        key={entry.id}
+                        label={entry.label}
+                        time={formatLedgerTime(entry.at)}
+                        deltaLabel={`${formatLedgerDelta(entry.delta)}P`}
+                        deltaPositive={entry.delta >= 0}
+                        large
+                    />
+                ))}
+            </ProfileListModal>
+            <ProfileListModal
+                visible={detailModal === 'soups'}
+                title="완성 스프"
+                emptyMessage="아직 완성한 스프가 없어요."
+                itemCount={completedSoups.length}
+                onClose={() => setDetailModal(null)}
+            >
+                {completedSoups.map((soup) => (
+                    <ProfileSoupRow key={soup.id} name={soup.name} imageSource={soup.imageSource} />
+                ))}
+            </ProfileListModal>
         </Screen>
     );
 }
@@ -234,9 +321,21 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 16,
         alignItems: 'center',
-        gap: 4,
+        gap: 6,
         borderWidth: 1,
         borderColor: colors.border,
+    },
+    cardPressed: {
+        opacity: 0.85,
+        borderColor: colors.primary,
+    },
+    cardIcon: {
+        marginRight: 0,
+        marginBottom: 2,
+    },
+    ingredientTitleArt: {
+        marginRight: 0,
+        opacity: 0.9,
     },
     section: {
         width: '100%',
@@ -248,9 +347,9 @@ const styles = StyleSheet.create({
     pendingCard: {
         padding: 12,
         borderRadius: 12,
-        backgroundColor: '#FFF8E7',
+        backgroundColor: colors.warningBg,
         borderWidth: 1,
-        borderColor: '#FFB800',
+        borderColor: colors.warningBorder,
         marginBottom: 8,
         gap: 4,
     },
@@ -259,20 +358,10 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         padding: 14,
         borderRadius: 12,
-        backgroundColor: '#FFF8E7',
+        backgroundColor: colors.warningBg,
         borderWidth: 1,
-        borderColor: '#FFB800',
+        borderColor: colors.warningBorder,
         gap: 6,
-    },
-    cardWide: {
-        width: '100%',
-        backgroundColor: colors.surface,
-        borderRadius: 16,
-        padding: 20,
-        alignItems: 'center',
-        gap: 4,
-        borderWidth: 1,
-        borderColor: colors.border,
     },
     restartOnboarding: {
         marginTop: 24,

@@ -26,6 +26,7 @@ export function useFloatAnimation(enabled = true, distance = 8) {
         animation.start();
         return () => {
             animation.stop();
+            translateY.stopAnimation();
         };
     }, [distance, enabled, translateY]);
     return { transform: [{ translateY }] };

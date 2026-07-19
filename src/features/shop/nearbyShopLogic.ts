@@ -59,7 +59,7 @@ export function formatStraightLineDistance(meters: number): string {
 }
 
 export const STRAIGHT_LINE_DISTANCE_HINT =
-    '거리는 직선 기준이에요. 실제 도보·차량 거리와 다를 수 있어요.';
+    '거리는 직선 기준이에요.\n실제 도보·차량 거리와 다를 수 있어요.';
 
 export function getNearbyShops(
     shops: Shop[],
@@ -88,7 +88,7 @@ export const LOCATION_CONSENT_NOTICE =
     '위치 동의 후 가까운 제로·재사용 상점과 직선 거리를 볼 수 있어요. 동의하지 않아도 목록은 확인할 수 있어요.';
 
 export const LOCATION_CONSENT_DENIED_LIST_HINT =
-    '거리 정보 없이 주변 상점만 보여드려요. 포인트는 제휴 샵에서만 적립돼요.';
+    '거리 정보 없이 주변 상점만 보여드려요. 알맹 포인트는 제휴 매장에서만 이용해요.';
 
 export const MAP_SHOPS_SCOPE_HINT =
-    '제로웨이스트 샵·샵앤샵·재사용 매장·제웨 숙소를 함께 보여줘요. 포인트 연동은 제휴 샵만 해당돼요.';
+    '제로웨이스트 샵·샵앤샵·재사용 매장·제웨 숙소를 함께 보여줘요. 알맹 포인트 연동은 제휴 샵만 해당되며, 앱 내 현금 교환은 없어요.';

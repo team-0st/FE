@@ -33,7 +33,7 @@ export function HomeScreen({ onPressMissions, onPressMission, onPressShop }: Hom
         if (result.ok) {
             const ingredient = getIngredientById(result.data.ingredientId);
             if (ingredient != null) {
-                setTodayRewardLabel(`${ingredient.emoji} ${ingredient.name}`);
+                setTodayRewardLabel(ingredient.name);
             }
         }
     }, [checkInToday, checkedIn]);
@@ -49,7 +49,6 @@ export function HomeScreen({ onPressMissions, onPressMission, onPressShop }: Hom
                     totalPoints={state.totalPoints}
                     weeklyMissionDone={state.weeklyMissionDone}
                     weeklyMissionTotal={state.weeklyMissionTotal}
-                    shopEmoji={shop?.emoji ?? '🏪'}
                     shopName={shopName}
                     shopDescription={shop?.description ?? '샵 선택 필요'}
                 />

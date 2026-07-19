@@ -74,11 +74,13 @@ export async function loadUserState(): Promise<AppUserState> {
         phoneNumber: rest.phoneNumber ?? null,
         almangPayoutConsent: rest.almangPayoutConsent ?? DEFAULT_USER_STATE.almangPayoutConsent,
         almangConsentAt: rest.almangConsentAt ?? null,
+        privacyConsentAt: rest.privacyConsentAt ?? null,
         ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
         ingredientInventory: normalizeIngredientInventory(rest.ingredientInventory),
         completedRecipeIds,
         missionProgress: normalizeMissionProgress(missionProgress),
         ecoJamLedger: rest.ecoJamLedger ?? [],
+        almangPointsLedger: rest.almangPointsLedger ?? [],
         pendingRealRewards: rest.pendingRealRewards ?? [],
         lastShareRewardDate: rest.lastShareRewardDate ?? null,
     };

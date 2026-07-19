@@ -9,8 +9,12 @@ export type PhoneValidationResult =
 const NICKNAME_MIN = 2;
 const NICKNAME_MAX = 12;
 
-/** 휴대전화 앞자리 고정 (알맹 포인트·본인 확인) */
+/** 국내 휴대전화 전체 자리 (예: 01012345678) */
+export const PHONE_DIGITS_LENGTH = 11;
+
+/** @deprecated 입력란 prefix 고정 제거 — 하위 호환용 */
 export const PHONE_PREFIX = '010';
+/** @deprecated PHONE_DIGITS_LENGTH 사용 */
 export const PHONE_BODY_LENGTH = 8;
 
 export function validateNickname(raw: string): NicknameValidationResult {
@@ -27,12 +31,14 @@ export function validateNickname(raw: string): NicknameValidationResult {
     return { ok: true, nickname };
 }
 
+/** 숫자만 남기고 최대 11자리 */
+export function normalizePhoneDigits(raw: string): string {
+    return raw.replace(/\D/g, '').slice(0, PHONE_DIGITS_LENGTH);
+}
+
+/** @deprecated normalizePhoneDigits 사용 */
 export function normalizePhoneBody(raw: string): string {
-    let digits = raw.replace(/\D/g, '');
-    if (digits.startsWith(PHONE_PREFIX)) {
-        digits = digits.slice(PHONE_PREFIX.length);
-    }
-    return digits.slice(0, PHONE_BODY_LENGTH);
+    return normalizePhoneDigits(raw);
 }
 
 export function maskPhone(digits: string): string {
@@ -44,15 +50,17 @@ export function maskPhone(digits: string): string {
     return `${head}-****-${tail}`;
 }
 
-export function validatePhoneBody(body: string): PhoneValidationResult {
-    const normalized = normalizePhoneBody(body);
-    if (normalized.length === 0) {
+export function validatePhoneBody(raw: string): PhoneValidationResult {
+    const digits = normalizePhoneDigits(raw);
+    if (digits.length === 0) {
         return { ok: false, message: '전화번호를 입력해 주세요.' };
     }
-    if (normalized.length !== PHONE_BODY_LENGTH) {
-        return { ok: false, message: '전화번호 8자리를 입력해 주세요.' };
+    if (digits.length !== PHONE_DIGITS_LENGTH) {
+        return { ok: false, message: '휴대전화번호 11자리를 입력해 주세요.' };
     }
-    const digits = `${PHONE_PREFIX}${normalized}`;
+    if (!/^01[016789]\d{8}$/.test(digits)) {
+        return { ok: false, message: '올바른 휴대전화번호를 입력해 주세요.' };
+    }
     return { ok: true, digits, masked: maskPhone(digits) };
 }
 

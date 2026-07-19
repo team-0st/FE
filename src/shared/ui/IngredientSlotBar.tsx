@@ -49,7 +49,9 @@ export function IngredientSlotBar({ slots, onPressSlot }: IngredientSlotBarProps
                                             accessibilityLabel={ingredient.name}
                                         />
                                     ) : (
-                                        <Txt typography="t2">{ingredient.emoji}</Txt>
+                                        <Txt typography="t7" color="grey600">
+                                            {ingredient.name}
+                                        </Txt>
                                     )
                                 ) : (
                                     <Txt typography="t4" color="grey400">

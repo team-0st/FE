@@ -11,23 +11,24 @@ import {
     recommendationSubtitle,
     recommendationTitle,
 } from '@api/mock/recipes';
-import { BottomCTA, Button, ListRow, Top, Txt } from '@toss/tds-react-native';
+import type { SoupCraftResponse } from '@api/notion/types';
+import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { getBrewFailureMessage } from '../../shared/feedback/messages';
-import { useAppToast } from '../../shared/feedback/useAppToast';
-import { useUser } from '../user/UserProvider';
-import { IngredientSlotBar } from '../../shared/ui/IngredientSlotBar';
-import type { SoupCraftResponse } from '@api/notion/types';
 import {
     SOUP_BREW_PROBABILITY_LINES,
     SOUP_BREW_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
+import { getSoupImageSource, hasSoupImage } from '../../shared/constants/soupAssets';
+import { TDS_ICON } from '../../shared/constants/tdsAssets';
+import { getBrewFailureMessage } from '../../shared/feedback/messages';
+import { useAppToast } from '../../shared/feedback/useAppToast';
+import { BrandListRowImage } from '../../shared/ui/BrandListRowImage';
+import { IngredientSlotBar } from '../../shared/ui/IngredientSlotBar';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { ScrollPreviewSection } from '../../shared/ui/ScrollPreviewSection';
-import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
-import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { colors } from '../../shared/theme/colors';
+import { useUser } from '../user/UserProvider';
 
 type IngredientsScreenProps = {
     onSoupMade: (recipeId: string, craft: SoupCraftResponse) => void;
@@ -133,7 +134,9 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                 <Top
                     title={<Top.TitleParagraph size={22}>제작</Top.TitleParagraph>}
                     subtitle2={
-                        <Top.SubtitleParagraph>재료를 골라 냄비에 넣어 스프를 만들어요.</Top.SubtitleParagraph>
+                        <Top.SubtitleParagraph>
+                            {'재료를 골라 냄비에 넣어요.\n스프를 만들어 보세요.'}
+                        </Top.SubtitleParagraph>
                     }
                 />
                 <IngredientSlotBar slots={slots} onPressSlot={handlePressSlot} />
@@ -161,19 +164,26 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                     ) : null}
                     {recommendedRecipes.length === 0 ? (
                         <Txt typography="t7" color="grey600">
-                            지금 만들 수 있는 입문·이번주 조합이 없어요. 미션으로 재료를 모아 보세요.
+                            {'지금 만들 수 있는 입문·이번주 조합이 없어요.\n미션으로 재료를 모아 보세요.'}
                         </Txt>
                     ) : (
                         <ScrollPreviewSection
                             title="추천 조합"
                             itemCount={recommendedRecipes.length}
-                            hint="보유 재료로 만들 수 있는 입문·이번주 조합이에요."
+                            hint={'보유 재료로 만들 수 있는\n입문·이번주 조합이에요.'}
                         >
-                            {recommendedRecipes.map((recipe) => (
+                            {recommendedRecipes.map((recipe) => {
+                                return (
                                 <ListRow
                                     key={recipe.id}
                                     onPress={() => handleApplyRecommendation(recipe.id)}
-                                    left={<ListRow.Icon name={TDS_ICON.soupBowl} />}
+                                    left={
+                                        hasSoupImage(recipe.id) ? (
+                                            <BrandListRowImage source={getSoupImageSource(recipe.id)} />
+                                        ) : (
+                                            <ListRow.Icon name={TDS_ICON.soupBowl} />
+                                        )
+                                    }
                                     contents={
                                         <ListRow.Texts
                                             type="2RowTypeA"
@@ -190,7 +200,8 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                         />
                                     }
                                 />
-                            ))}
+                                );
+                            })}
                         </ScrollPreviewSection>
                     )}
                 </View>
@@ -233,11 +244,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                     onPress={disabled ? undefined : () => handlePressIngredient(item.id)}
                                     left={
                                         item.imageSource != null ? (
-                                            <BrandEmojiImage
-                                                source={item.imageSource}
-                                                size={30}
-                                                accessibilityLabel={item.name}
-                                            />
+                                            <BrandListRowImage source={item.imageSource} />
                                         ) : undefined
                                     }
                                     contents={
@@ -246,7 +253,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                             top={
                                                 item.imageSource != null
                                                     ? item.name
-                                                    : `${item.emoji} ${item.name}`
+                                                    : item.name
                                             }
                                             topProps={{ fontWeight: 'bold' }}
                                             bottom={disabled ? '슬롯에 모두 사용 중' : `보유 ${available}개`}
@@ -268,7 +275,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                 )}
             </ScrollView>
             <View style={styles.cta}>
-                <BottomCTA.Single
+                <Button
                     size="large"
                     type="primary"
                     display="block"
@@ -278,7 +285,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                     accessibilityLabel="스프 만들기"
                 >
                     스프 만들기
-                </BottomCTA.Single>
+                </Button>
             </View>
         </View>
     );
@@ -341,9 +348,9 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         paddingHorizontal: 20,
         paddingTop: 8,
-        paddingBottom: 16,
+        paddingBottom: 8,
         backgroundColor: colors.background,
-        borderTopWidth: 1,
+        borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: colors.border,
     },
 });

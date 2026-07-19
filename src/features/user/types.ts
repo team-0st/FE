@@ -9,12 +9,14 @@ export type MissionProgress = {
     rewardIngredientId?: string;
 };
 
-export type EcoJamLedgerEntry = {
+export type PointsLedgerEntry = {
     id: string;
     at: string;
     label: string;
     delta: number;
 };
+
+export type EcoJamLedgerEntry = PointsLedgerEntry;
 
 export type PendingRealReward = {
     id: string;
@@ -24,7 +26,7 @@ export type PendingRealReward = {
     status: 'pending_contact';
 };
 
-/** 알맹 포인트 매장 지급용 개인정보 동의 */
+/** 알맹상점 매장 포인트 연동용 개인정보 동의 (앱 내 현금 지급 아님) */
 export type AlmangPayoutConsent = 'granted' | 'declined';
 
 /** 주변 제휴 상점 안내용 위치정보 동의 */
@@ -40,6 +42,8 @@ export type AppUserState = {
     phoneNumber: string | null;
     almangPayoutConsent: AlmangPayoutConsent;
     almangConsentAt: string | null;
+    /** 서비스 개인정보 처리방침·필수 수집 동의 시각 */
+    privacyConsentAt: string | null;
     locationConsent: LocationConsent | null;
     locationConsentAt: string | null;
     shopId: string | null;
@@ -51,7 +55,8 @@ export type AppUserState = {
     ingredientInventory: Record<string, number>;
     completedRecipeIds: string[];
     missionProgress: Record<string, MissionProgress>;
-    ecoJamLedger: EcoJamLedgerEntry[];
+    ecoJamLedger: PointsLedgerEntry[];
+    almangPointsLedger: PointsLedgerEntry[];
     pendingRealRewards: PendingRealReward[];
     /** SNS 공유 리워드 — 하루 1회 (YYYY-MM-DD) */
     lastShareRewardDate: string | null;

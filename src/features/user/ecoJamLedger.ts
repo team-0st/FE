@@ -1,4 +1,4 @@
-import type { AppUserState, EcoJamLedgerEntry } from './types';
+import type { AppUserState, PointsLedgerEntry } from './types';
 
 const LEDGER_MAX = 30;
 
@@ -10,7 +10,7 @@ export function appendEcoJamLedger(
     if (delta === 0) {
         return state;
     }
-    const entry: EcoJamLedgerEntry = {
+    const entry: PointsLedgerEntry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         at: new Date().toISOString(),
         label,

@@ -14,7 +14,7 @@ export function LoginScreen({ onPressBack }: LoginScreenProps) {
                     토스 로그인
                 </Txt>
                 <Txt typography="t6" color="grey600">
-                    BE 연동 후 사용할 화면이에요.
+                    {'곧 토스 로그인으로 이어질 예정이에요.\n지금은 홈으로 돌아가 주세요.'}
                 </Txt>
                 <Button size="large" type="primary" onPress={onPressBack}>
                     홈으로

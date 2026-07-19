@@ -9,7 +9,6 @@ type HomeHeroProps = {
     totalPoints: number;
     weeklyMissionDone: number;
     weeklyMissionTotal: number;
-    shopEmoji: string;
     shopName: string;
     shopDescription: string;
 };
@@ -19,7 +18,6 @@ export function HomeHero({
     totalPoints,
     weeklyMissionDone,
     weeklyMissionTotal,
-    shopEmoji,
     shopName,
     shopDescription,
 }: HomeHeroProps) {
@@ -36,7 +34,6 @@ export function HomeHero({
                 {`알맹 ${totalPoints}P · 이번 주 미션 ${weeklyMissionDone}/${weeklyMissionTotal}`}
             </Txt>
             <View style={styles.shopBadge}>
-                <Txt typography="t1">{shopEmoji}</Txt>
                 <Txt typography="t6" fontWeight="semibold" style={styles.shopLabel}>
                     {shopName}
                 </Txt>

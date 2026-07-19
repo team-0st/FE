@@ -13,7 +13,7 @@ export function isCoopMissionUnlocked(state: AppUserState, mission: CoopMission)
 }
 
 export function coopDifficultyLabel(difficulty: 1 | 2 | 3): string {
-    return '⭐'.repeat(difficulty);
+    return `난이도 ${difficulty}`;
 }
 
 export function coopUnlockHint(mission: CoopMission): string | null {

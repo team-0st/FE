@@ -1,12 +1,57 @@
 import { Button, ListRow, Txt } from '@toss/tds-react-native';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import type { ImageSourcePropType } from 'react-native';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { colors } from '../../shared/theme/colors';
+import { BrandListRowImage } from '../../shared/ui/BrandListRowImage';
 import { SCROLL_PREVIEW_HINT } from '../../shared/ui/ScrollPreviewSection';
 
 const PREVIEW_ROW_HEIGHT = 64;
 const PREVIEW_VISIBLE_ROWS = 3;
+
+type ProfileListModalProps = {
+    visible: boolean;
+    title: string;
+    emptyMessage: string;
+    itemCount: number;
+    onClose: () => void;
+    children: ReactNode;
+};
+
+/** 카드 탭 등으로 여는 전체 목록 모달 */
+export function ProfileListModal({
+    visible,
+    title,
+    emptyMessage,
+    itemCount,
+    onClose,
+    children,
+}: ProfileListModalProps) {
+    return (
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+            <Pressable style={styles.overlay} onPress={onClose}>
+                <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+                    <Txt typography="t4" fontWeight="bold" style={styles.sheetTitle}>
+                        {title}
+                    </Txt>
+                    {itemCount === 0 ? (
+                        <Txt typography="t7" color="grey600">
+                            {emptyMessage}
+                        </Txt>
+                    ) : (
+                        <ScrollView style={styles.expandedScroll} showsVerticalScrollIndicator>
+                            {children}
+                        </ScrollView>
+                    )}
+                    <Button size="medium" type="primary" display="block" onPress={onClose}>
+                        닫기
+                    </Button>
+                </View>
+            </Pressable>
+        </Modal>
+    );
+}
 
 type ProfileListSectionProps = {
     title: string;
@@ -16,6 +61,7 @@ type ProfileListSectionProps = {
     children: ReactNode;
     expandedChildren: ReactNode;
     itemCount: number;
+    titleAccessory?: ReactNode;
 };
 
 export function ProfileListSection({
@@ -26,6 +72,7 @@ export function ProfileListSection({
     children,
     expandedChildren,
     itemCount,
+    titleAccessory,
 }: ProfileListSectionProps) {
     const [expanded, setExpanded] = useState(false);
     const showExpand = itemCount > PREVIEW_VISIBLE_ROWS;
@@ -33,9 +80,12 @@ export function ProfileListSection({
     return (
         <View style={styles.section}>
             <View style={styles.titleRow}>
-                <Txt typography="t5" fontWeight="semibold">
-                    {title}
-                </Txt>
+                <View style={styles.titleLeft}>
+                    <Txt typography="t5" fontWeight="semibold">
+                        {title}
+                    </Txt>
+                    {titleAccessory}
+                </View>
                 {showExpand ? (
                     <Txt
                         typography="t7"
@@ -73,21 +123,15 @@ export function ProfileListSection({
                     {SCROLL_PREVIEW_HINT}
                 </Txt>
             ) : null}
-            <Modal visible={expanded} transparent animationType="fade" onRequestClose={() => setExpanded(false)}>
-                <Pressable style={styles.overlay} onPress={() => setExpanded(false)}>
-                    <View style={styles.sheet} onStartShouldSetResponder={() => true}>
-                        <Txt typography="t4" fontWeight="bold" style={styles.sheetTitle}>
-                            {title}
-                        </Txt>
-                        <ScrollView style={styles.expandedScroll} showsVerticalScrollIndicator>
-                            {expandedChildren}
-                        </ScrollView>
-                        <Button size="medium" type="primary" display="block" onPress={() => setExpanded(false)}>
-                            닫기
-                        </Button>
-                    </View>
-                </Pressable>
-            </Modal>
+            <ProfileListModal
+                visible={expanded}
+                title={title}
+                emptyMessage={emptyMessage}
+                itemCount={itemCount}
+                onClose={() => setExpanded(false)}
+            >
+                {expandedChildren}
+            </ProfileListModal>
         </View>
     );
 }
@@ -137,27 +181,52 @@ export function ProfileLedgerRow({
     );
 }
 
+type ProfileSoupRowProps = {
+    name: string;
+    imageSource?: ImageSourcePropType | null;
+};
+
+export function ProfileSoupRow({ name, imageSource = null }: ProfileSoupRowProps) {
+    return (
+        <ListRow
+            left={imageSource != null ? <BrandListRowImage source={imageSource} /> : undefined}
+            contents={
+                <ListRow.Texts
+                    type="1RowTypeA"
+                    top={name}
+                    topProps={{ fontWeight: 'bold', typography: 't5' }}
+                />
+            }
+        />
+    );
+}
+
 type ProfileIngredientRowProps = {
-    emoji: string;
     name: string;
     countLabel: string;
     hasStock: boolean;
     large?: boolean;
+    imageSource?: ImageSourcePropType | null;
 };
 
 export function ProfileIngredientRow({
-    emoji,
     name,
     countLabel,
     hasStock,
     large = false,
+    imageSource = null,
 }: ProfileIngredientRowProps) {
     return (
         <ListRow
+            left={
+                imageSource != null ? (
+                    <BrandListRowImage source={imageSource} />
+                ) : undefined
+            }
             contents={
                 <ListRow.Texts
                     type="2RowTypeA"
-                    top={`${emoji} ${name}`}
+                    top={name}
                     topProps={{ fontWeight: 'bold', typography: large ? 't5' : undefined }}
                     bottom={hasStock ? '제작 탭에서 사용 가능' : '보유 없음'}
                     bottomProps={large ? { typography: 't6' } : undefined}
@@ -189,6 +258,12 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 8,
         gap: 8,
+    },
+    titleLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        flexShrink: 1,
     },
     hint: {
         marginBottom: 8,

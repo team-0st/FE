@@ -15,9 +15,8 @@ type TabItem = {
 };
 
 /**
- * Figma `05 제작` Tab Bar 슬롯:
- * 홈=icon-home-mono · 제작=icon-diamond-mono · 가챠=icon-shopping-bag-mono
- * · 레시피=icon-food-mono (Figma graph-up → 의미 맞춤) · 마이=icon-line-three-mono
+ * 메인 탭 아이콘:
+ * 홈=home · 제작=food(스프) · 가챠=gift · 레시피=document · 마이=user
  */
 export const MAIN_TABS: TabItem[] = [
     { id: 'home', label: '홈', iconName: TDS_ICON.tabHome, route: ROUTES.home },
@@ -30,18 +29,28 @@ export const MAIN_TABS: TabItem[] = [
 type MainTabBarProps = {
     activeTab: MainTabId;
     onPressTab: (route: string) => void;
+    /** 홈 인디케이터 등 하단 safe area */
+    bottomInset?: number;
 };
 
-export function MainTabBar({ activeTab, onPressTab }: MainTabBarProps) {
+export function MainTabBar({ activeTab, onPressTab, bottomInset = 0 }: MainTabBarProps) {
     return (
-        <View style={styles.bar} accessibilityRole="tablist">
+        <View
+            style={[styles.bar, { paddingBottom: Math.max(12, bottomInset) }]}
+            accessibilityRole="tablist"
+        >
             {MAIN_TABS.map((tab) => {
                 const active = tab.id === activeTab;
                 const tint = active ? colors.primary : colors.textSecondary;
                 return (
                     <Pressable
                         key={tab.id}
-                        onPress={() => onPressTab(tab.route)}
+                        onPress={() => {
+                            if (active) {
+                                return;
+                            }
+                            onPressTab(tab.route);
+                        }}
                         style={styles.item}
                         accessibilityRole="tab"
                         accessibilityState={{ selected: active }}
@@ -74,7 +83,6 @@ const styles = StyleSheet.create({
         borderTopColor: colors.border,
         backgroundColor: colors.tabBar,
         paddingTop: 8,
-        paddingBottom: 12,
         paddingHorizontal: 2,
     },
     item: {

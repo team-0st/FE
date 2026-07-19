@@ -31,7 +31,7 @@ export function ShopSelectScreen({ initialShopId, onPressComplete, onboarding = 
                     subtitle2={
                         onboarding ? (
                             <Top.SubtitleParagraph>
-                                파일럿 단골 샵은 {PILOT_SHOP_DISPLAY_NAME}이에요.
+                                단골 샵은 {PILOT_SHOP_DISPLAY_NAME}이에요.
                             </Top.SubtitleParagraph>
                         ) : undefined
                     }

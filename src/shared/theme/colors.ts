@@ -17,4 +17,13 @@ export const colors = {
     tabBar: '#FFFFFF',
     slotEmpty: '#F0ECF5',
     slotFilled: '#DDD0F0',
+    /** 미션 스탬프 · 완료 */
+    statusDoneBg: '#E8F5E9',
+    statusDoneBorder: '#C8E6C9',
+    /** 미션 스탬프 · 진행/검수 */
+    statusProgressBg: '#FFF8E1',
+    statusProgressBorder: '#FFE082',
+    /** 알림·대기 배너 */
+    warningBg: '#FFF8E7',
+    warningBorder: '#FFB800',
 } as const;

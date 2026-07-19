@@ -7,13 +7,16 @@ import { colors } from '../theme/colors';
 type ProbabilityInfoButtonProps = {
     title: string;
     lines: string[];
-    footnote?: string;
+    footnote?: string | null;
+    /** 접근성 버튼 라벨 접미사. 기본: 안내 */
+    accessibilitySuffix?: string;
 };
 
 export function ProbabilityInfoButton({
     title,
     lines,
     footnote = PROBABILITY_FOOTNOTE,
+    accessibilitySuffix = '안내',
 }: ProbabilityInfoButtonProps) {
     const [open, setOpen] = useState(false);
 
@@ -23,11 +26,11 @@ export function ProbabilityInfoButton({
                 onPress={() => setOpen(true)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${title} 확률 안내`}
+                accessibilityLabel={`${title} ${accessibilitySuffix}`}
                 style={styles.infoButton}
             >
                 <Txt typography="t7" color="grey500" fontWeight="bold" style={styles.infoGlyph}>
-                    i
+                    !
                 </Txt>
             </Pressable>
             <Modal
@@ -46,9 +49,11 @@ export function ProbabilityInfoButton({
                                 · {line}
                             </Txt>
                         ))}
-                        <Txt typography="t7" color="grey500" style={styles.footnote}>
-                            {footnote}
-                        </Txt>
+                        {footnote != null && footnote.length > 0 ? (
+                            <Txt typography="t7" color="grey500" style={styles.footnote}>
+                                {footnote}
+                            </Txt>
+                        ) : null}
                         <Button
                             size="medium"
                             type="dark"

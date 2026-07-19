@@ -21,5 +21,15 @@ yarn-error.log
 design/apps-in-toss/*.fig
 design/apps-in-toss/*.zip
 .screenshot-urls.txt
-# Do not redistribute TDS sample brand logos
-assets/figma-export/raw-unique/*.png
+
+# Local-only tooling / dumps (do not commit)
+.firecrawl/
+scripts/figma-*.js
+scripts/build-ppt-*.py
+scripts/generate-*.mjs
+scripts/generate_*.py
+scripts/parse-kakao-*.mjs
+scripts/update-ppt-*.py
+scripts/ship.sh
+assets/figma-export/
+assets/apps-in-toss-console/

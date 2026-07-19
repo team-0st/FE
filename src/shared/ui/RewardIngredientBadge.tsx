@@ -18,13 +18,12 @@ export function RewardIngredientBadge({ ingredient }: RewardIngredientBadgeProps
                     accessibilityLabel={ingredient.name}
                 />
             ) : (
-                <Asset.Text
+                <Asset.Icon
+                    name="icon-food-mono"
                     frameShape={frameShape.CircleMedium}
                     backgroundColor={colors.primaryLight}
-                    size={24}
-                >
-                    {ingredient.emoji}
-                </Asset.Text>
+                    accessibilityLabel={ingredient.name}
+                />
             )}
             <Txt typography="t6" fontWeight="bold" style={styles.label}>
                 {ingredient.name}

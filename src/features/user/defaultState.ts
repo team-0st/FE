@@ -10,12 +10,13 @@ export const DEFAULT_USER_STATE: AppUserState = {
     phoneNumber: null,
     almangPayoutConsent: 'declined',
     almangConsentAt: null,
+    privacyConsentAt: null,
     locationConsent: null,
     locationConsentAt: null,
     shopId: null,
     lastCheckInDate: null,
     weeklyMissionDone: 0,
-    weeklyMissionTotal: 5,
+    weeklyMissionTotal: 6,
     totalPoints: 0,
     ecoJam: ECO_JAM_STARTING_BALANCE,
     ingredientInventory: {
@@ -28,6 +29,7 @@ export const DEFAULT_USER_STATE: AppUserState = {
     completedRecipeIds: [],
     missionProgress: {},
     ecoJamLedger: [],
+    almangPointsLedger: [],
     pendingRealRewards: [],
     lastShareRewardDate: null,
 };

@@ -23,6 +23,7 @@ export type IngredientStockRow = {
     name: string;
     emoji: string;
     count: number;
+    imageSource: (typeof INGREDIENTS)[number]['imageSource'];
 };
 
 /** 마이·제작 등 UI용 — 전체 재료 + 보유 개수 */
@@ -32,5 +33,6 @@ export function listIngredientStock(inventory: Record<string, number>): Ingredie
         name: item.name,
         emoji: item.emoji,
         count: inventory[item.id] ?? 0,
+        imageSource: item.imageSource,
     }));
 }

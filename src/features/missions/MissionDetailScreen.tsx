@@ -1,6 +1,6 @@
 import type { Mission } from '@api/mock';
 import { isCoopMission } from '@api/mock/types';
-import { Button, Top, Txt } from '@toss/tds-react-native';
+import { Asset, Button, frameShape, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
 import type { MissionProgressStatus } from '../user/types';
@@ -9,10 +9,12 @@ import {
     MISSION_REWARD_PROBABILITY_LINES,
     MISSION_REWARD_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
-import { formatMissionPoolHint } from '@api/mock/ingredients';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { RandomMissionRewardBadge } from '../../shared/ui/RandomMissionRewardBadge';
 import { Screen } from '../../shared/ui/Screen';
+import { TDS_ICON } from '../../shared/constants/tdsAssets';
+import { colors } from '../../shared/theme/colors';
+import { coopDifficultyLabel } from './coopMissionLogic';
 
 type MissionDetailScreenProps = {
     mission: Mission;
@@ -33,7 +35,12 @@ export function MissionDetailScreen({
     return (
         <Screen scrollable>
             <View style={styles.hero}>
-                <Txt typography="t1">{mission.emoji}</Txt>
+                <Asset.Icon
+                    name={TDS_ICON.missionCamera}
+                    frameShape={frameShape.CircleLarge}
+                    backgroundColor={colors.primaryLight}
+                    accessibilityLabel={mission.title}
+                />
                 <Top
                     title={<Top.TitleParagraph size={22}>{mission.title}</Top.TitleParagraph>}
                     subtitle2={<Top.SubtitleParagraph>{mission.description}</Top.SubtitleParagraph>}
@@ -41,7 +48,7 @@ export function MissionDetailScreen({
             </View>
             {isCoop ? (
                 <Txt typography="t7" color="grey600" style={styles.coopBadge}>
-                    공동 미션 {'⭐'.repeat(mission.difficulty)}
+                    공동 미션 · {coopDifficultyLabel(mission.difficulty)}
                 </Txt>
             ) : null}
             {locked ? (
@@ -62,10 +69,10 @@ export function MissionDetailScreen({
                     <RandomMissionRewardBadge />
                     <View style={styles.poolHint}>
                         <Txt typography="t7" color="grey600">
-                            풀 후보: {formatMissionPoolHint(mission.id)}
+                            완료하면 재료 풀에서 1종을 받아요.
                         </Txt>
                         <ProbabilityInfoRow
-                            label="지급 확률"
+                            label="지급 안내"
                             title={MISSION_REWARD_PROBABILITY_TITLE}
                             lines={MISSION_REWARD_PROBABILITY_LINES}
                         />
@@ -75,8 +82,8 @@ export function MissionDetailScreen({
                             {mission.authType === 'receipt'
                                 ? '영수증 사진으로 인증해요.'
                                 : mission.authType === 'attendance_7d'
-                                  ? '7일 출석 후 1·4·7일차에 사진을 올려요. (파일럿 UI)'
-                                  : '사진 업로드 후 검수가 끝나면 재료를 받아요.'}
+                                  ? '7일 출석 후\n1·4·7일차에 사진을 올려요.'
+                                  : '사진 업로드 후\n검수가 끝나면 재료를 받아요.'}
                         </Txt>
                     </View>
                 </>

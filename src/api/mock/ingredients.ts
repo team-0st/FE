@@ -14,13 +14,19 @@ export type Ingredient = {
 /** 일반 7 + 히든 3 = 10종 (Notion Ingredients) */
 export const INGREDIENTS: Ingredient[] = [
     { id: 'cabbage', name: '양배추', emoji: '🥬', type: 'COMMON', imageSource: BRAND_EMOJI.lettuce },
-    { id: 'tomato', name: '토마토', emoji: '🍅', type: 'COMMON', imageSource: null },
-    { id: 'onion', name: '양파', emoji: '🧅', type: 'COMMON', imageSource: null },
+    { id: 'tomato', name: '토마토', emoji: '🍅', type: 'COMMON', imageSource: BRAND_EMOJI.tomato },
+    { id: 'onion', name: '양파', emoji: '🧅', type: 'COMMON', imageSource: BRAND_EMOJI.onion },
     { id: 'carrot', name: '당근', emoji: '🥕', type: 'COMMON', imageSource: BRAND_EMOJI.carrot },
-    { id: 'mushroom', name: '버섯', emoji: '🍄', type: 'COMMON', imageSource: null },
-    { id: 'broccoli', name: '브로콜리', emoji: '🥦', type: 'COMMON', imageSource: null },
-    { id: 'paprika', name: '파프리카', emoji: '🫑', type: 'COMMON', imageSource: null },
-    { id: 'refill_crystal', name: '리필 크리스탈', emoji: '💎', type: 'HIDDEN', imageSource: null },
+    { id: 'mushroom', name: '버섯', emoji: '🍄', type: 'COMMON', imageSource: BRAND_EMOJI.mushroom },
+    { id: 'broccoli', name: '브로콜리', emoji: '🥦', type: 'COMMON', imageSource: BRAND_EMOJI.broccoli },
+    { id: 'paprika', name: '파프리카', emoji: '🫑', type: 'COMMON', imageSource: BRAND_EMOJI.paprika },
+    {
+        id: 'refill_crystal',
+        name: '리필 크리스탈',
+        emoji: '💎',
+        type: 'HIDDEN',
+        imageSource: BRAND_EMOJI.refillCrystal,
+    },
     {
         id: 'nature_sprout',
         name: '자연의 새싹',
@@ -28,7 +34,7 @@ export const INGREDIENTS: Ingredient[] = [
         type: 'HIDDEN',
         imageSource: BRAND_EMOJI.sprout,
     },
-    { id: 'eco_star', name: '에코 스타', emoji: '⭐', type: 'HIDDEN', imageSource: null },
+    { id: 'eco_star', name: '에코 스타', emoji: '⭐', type: 'HIDDEN', imageSource: BRAND_EMOJI.ecoStar },
 ];
 
 export const COMMON_INGREDIENT_IDS = INGREDIENTS.filter((i) => i.type === 'COMMON').map((i) => i.id);
@@ -105,18 +111,18 @@ export function formatIngredientReward(ingredientId: string): string {
     if (ingredient == null) {
         return '재료';
     }
-    return `${ingredient.emoji} ${ingredient.name}`;
+    return ingredient.name;
 }
 
 export function formatMissionPoolHint(missionId: string): string {
     const fixed = MISSION_FIXED_REWARDS[missionId];
     if (fixed != null) {
-        return getIngredientById(fixed)?.emoji ?? '재료';
+        return getIngredientById(fixed)?.name ?? '재료';
     }
     const pool = getMissionRewardPool(missionId);
     const labels = pool
         .slice(0, 4)
-        .map((id) => getIngredientById(id)?.emoji)
-        .filter((e): e is string => e != null);
-    return labels.length > 0 ? `${labels.join(' ')} …` : '일반 재료 풀';
+        .map((id) => getIngredientById(id)?.name)
+        .filter((name): name is string => name != null);
+    return labels.length > 0 ? `${labels.join(' · ')} …` : '일반 재료 풀';
 }

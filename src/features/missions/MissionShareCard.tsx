@@ -4,6 +4,7 @@ import { BRAND_ASSET } from '../../shared/constants/brandAssets';
 import { SHARE_REWARD_ECO_JAM_AMOUNT } from '../../shared/constants/shareRewardPolicy';
 import { ZEROST_SHARE_HASHTAG } from '../../shared/feedback/shareResult';
 import { colors } from '../../shared/theme/colors';
+import { toBrandImageSource } from '../../shared/ui/toBrandImageSource';
 
 const TODAY_PRACTICE_HASHTAG = '#오늘의실천';
 
@@ -17,7 +18,7 @@ type MissionShareCardProps = {
 
 function pineTreeEquivalent(count: number): string {
     const trees = Math.max(0.1, Math.round((count / 60) * 10) / 10);
-    return `소나무 ${trees}그루가 1년간 하는 일과 같아요 🌲`;
+    return `소나무 ${trees}그루가 1년간 하는 일과 같아요`;
 }
 
 /** Figma `12 미션결과 - SNS 인증카드(안)` (193:204) */
@@ -28,10 +29,11 @@ export function MissionShareCard({
     dateLabel,
     onPressShare,
 }: MissionShareCardProps) {
+    const photoSource = toBrandImageSource(BRAND_ASSET.shareCardPhoto);
     return (
         <View style={styles.polaroid}>
             <ImageBackground
-                source={BRAND_ASSET.shareCardPhoto}
+                source={photoSource ?? undefined}
                 style={styles.photo}
                 imageStyle={styles.photoImage}
             >
@@ -59,7 +61,7 @@ export function MissionShareCard({
                 </Pressable>
 
                 <Txt typography="t7" color="white" style={styles.photoPlaceholder}>
-                    사용자 인증 사진 자리
+                    인증 사진
                 </Txt>
 
                 <View style={styles.dataGlass}>
@@ -95,7 +97,7 @@ export function MissionShareCard({
                                 참여 샵
                             </Txt>
                             <Txt typography="t7" fontWeight="semibold" color="white" numberOfLines={1}>
-                                📍 {shopName}
+                                {shopName}
                             </Txt>
                         </View>
                     </View>

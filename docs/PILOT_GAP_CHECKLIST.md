@@ -53,7 +53,7 @@
 | 가챠·스프·재료 일러스트 | ✅ | TDS Asset — gift / food / Text+이모지 |
 | 재료 이미지 (전체) | ⚠️ | 이모지 + `Asset.Text` (Kit PNG 대기) |
 | Figma TDS 와이어 | ✅ | v4 + `docs/TDS_FIGMA_MAPPING.md` |
-| 콘솔 스크린샷 | ✅ | `assets/apps-in-toss-console/` |
+| 콘솔 스크린샷 | ⚠️ | 로컬/콘솔 업로드용 (레포 미포함) |
 
 ---
 

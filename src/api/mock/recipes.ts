@@ -111,11 +111,20 @@ export function findMatchingRecipe(
 export function getTodayRecipeHint(weekKey = getIsoWeekKey()): string {
     const weekly = getWeeklyRecipes(weekKey);
     if (weekly.length === 0) {
-        return '미션으로 재료를 모아 스프를 끓여 보세요.';
+        return '미션으로 재료를 모아\n스프를 끓여 보세요.';
     }
     const index = new Date().getDay() % weekly.length;
     const recipe = weekly[index];
-    return recipe?.hintDrip ?? recipe?.hint ?? '이번 주 힌트를 확인해 보세요.';
+    const raw = recipe?.hintDrip ?? recipe?.hint ?? '오늘의 힌트를 확인해 보세요.';
+    return formatRecipeHintLines(raw);
+}
+
+/** 힌트 문장을 읽기 쉽게 줄바꿈 (느낌표·물음표·마침표 뒤) */
+export function formatRecipeHintLines(hint: string): string {
+    return hint
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/([!?。.])\s+/g, '$1\n');
 }
 
 export function isValidBrewFillCount(count: number): boolean {
@@ -143,7 +152,7 @@ export function formatRecipeIngredients(recipe: Recipe): string {
     return recipe.ingredientIds
         .map((id) => {
             const item = getIngredientById(id);
-            return item != null ? `${item.emoji} ${item.name}` : id;
+            return item != null ? item.name : id;
         })
         .join(' + ');
 }
