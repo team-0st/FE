@@ -13,16 +13,11 @@ function escapeForHtmlJson(value: string): string {
     return JSON.stringify(value);
 }
 
-function shopPinSvg(emoji: string, fillColor: string): string {
-    const safeEmoji = emoji
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+function shopPinSvg(fillColor: string): string {
     return (
         '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46" aria-hidden="true">' +
         `<path d="M18 1C9.16 1 2 8.16 2 17c0 11.5 16 27 16 27s16-15.5 16-27C34 8.16 26.84 1 18 1z" fill="${fillColor}" stroke="#ffffff" stroke-width="2"/>` +
-        `<text x="18" y="21" text-anchor="middle" font-size="14">${safeEmoji}</text>` +
+        '<circle cx="18" cy="17" r="6" fill="#ffffff"/>' +
         '</svg>'
     );
 }
@@ -46,7 +41,7 @@ export function buildPartnerMapHtml(
     const userPinColor = '#E53935';
     const shopsWithPins: MapShopPinWithHtml[] = shops.map((shop) => ({
         ...shop,
-        pinHtml: shopPinSvg(shop.emoji, shopPinColor),
+        pinHtml: shopPinSvg(shopPinColor),
     }));
     const shopsJson = JSON.stringify(shopsWithPins);
     const userJson =

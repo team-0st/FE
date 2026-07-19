@@ -36,7 +36,6 @@ export function ShopDetailSheet({ shop, visible, onClose }: ShopDetailSheetProps
                         <Image source={{ uri: shop.imageUrl }} style={styles.photo} resizeMode="cover" />
                     ) : (
                         <View style={styles.photoPlaceholder}>
-                            <Txt typography="t1">{shop.emoji}</Txt>
                             <Txt typography="t7" color="grey500">
                                 상점 사진 준비 중
                             </Txt>

@@ -1,9 +1,10 @@
-import { Badge, Txt } from '@toss/tds-react-native';
+import { Asset, Badge, frameShape, Txt } from '@toss/tds-react-native';
 import type { Mission } from '@api/mock';
 import { formatMissionIngredientReward } from '@api/mock/ingredients';
 import { missionStatusLabel } from '@api/mock/missions';
 import type { MissionProgressStatus } from '../../features/user/types';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { TDS_ICON } from '../constants/tdsAssets';
 import { colors } from '../theme/colors';
 
 type MissionCardProps = {
@@ -17,7 +18,12 @@ export function MissionCard({ mission, status, onPress }: MissionCardProps) {
 
     return (
         <Pressable onPress={onPress} style={styles.card}>
-            <Txt typography="t1">{mission.emoji}</Txt>
+            <Asset.Icon
+                name={TDS_ICON.missionRow}
+                frameShape={frameShape.CircleSmall}
+                backgroundColor={colors.primaryLight}
+                accessibilityLabel={mission.title}
+            />
             <Txt typography="t6" fontWeight="bold" numberOfLines={2} style={styles.title}>
                 {mission.title}
             </Txt>

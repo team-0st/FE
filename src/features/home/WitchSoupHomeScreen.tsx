@@ -63,7 +63,7 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
             if (result.ok) {
                 const ingredient = getIngredientById(result.data.ingredientId);
                 if (ingredient != null) {
-                    const label = `${ingredient.emoji} ${ingredient.name}`;
+                    const label = ingredient.name;
                     setTodayRewardLabel(label);
                     showSuccess(`${ingredient.name} 재료를 받았어요.`);
                 } else {

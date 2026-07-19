@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
 import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
+import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { colors } from '../../shared/theme/colors';
 
 type ShopScreenProps = {
@@ -31,7 +32,6 @@ export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
                         compact
                     />
                     <View style={styles.card}>
-                        <Txt typography="t1">{shop.emoji}</Txt>
                         <Txt typography="t4" fontWeight="bold" style={styles.name}>
                             {shop.name}
                         </Txt>
@@ -57,10 +57,11 @@ export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
             {pointShops.map((item) => (
                 <ListRow
                     key={item.id}
+                    left={<ListRow.Icon name={TDS_ICON.shopStore} />}
                     contents={
                         <ListRow.Texts
                             type="2RowTypeA"
-                            top={`${item.emoji} ${item.name}`}
+                            top={item.name}
                             topProps={{ fontWeight: 'bold' }}
                             bottom={item.description}
                         />

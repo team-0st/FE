@@ -78,7 +78,7 @@ export const SPECIAL_MISSIONS: Mission[] = [
     },
 ];
 
-/** 공동 미션 — ⭐ 해금형 (파일럿: ⭐만 활성, 나머지 UI 잠금) */
+/** 공동 미션 — 난이도 순 해금형 (파일럿: 난이도 1만 활성, 나머지 UI 잠금) */
 export const COOP_MISSIONS: CoopMission[] = [
     {
         kind: 'coop',

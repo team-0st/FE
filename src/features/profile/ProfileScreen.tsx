@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
+import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { formatLedgerDelta } from '../user/ecoJamLedger';
 import { listIngredientStock } from '../user/ingredientInventory';
 import { useUser } from '../user/UserProvider';
@@ -62,7 +64,11 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
             </View>
             <View style={styles.row}>
                 <View style={styles.card}>
-                    <Txt typography="t3">🫙</Txt>
+                    <BrandEmojiImage
+                        source={BRAND_EMOJI.ecoJam}
+                        size={28}
+                        accessibilityLabel="에코잼"
+                    />
                     <Txt typography="t7" color="grey600">
                         에코잼
                     </Txt>
@@ -71,7 +77,11 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     </Txt>
                 </View>
                 <View style={styles.card}>
-                    <Txt typography="t3">🌰</Txt>
+                    <BrandEmojiImage
+                        source={BRAND_EMOJI.almangPoint}
+                        size={28}
+                        accessibilityLabel="알맹 포인트"
+                    />
                     <Txt typography="t7" color="grey600">
                         알맹 포인트
                     </Txt>
@@ -85,7 +95,11 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     ) : null}
                 </View>
                 <View style={styles.card}>
-                    <Txt typography="t3">🍲</Txt>
+                    <BrandEmojiImage
+                        source={BRAND_EMOJI.soup}
+                        size={28}
+                        accessibilityLabel="완성 스프"
+                    />
                     <Txt typography="t7" color="grey600">
                         완성 스프
                     </Txt>
@@ -161,10 +175,10 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 expandedChildren={ingredientRows.map((item) => (
                     <ProfileIngredientRow
                         key={item.id}
-                        emoji={item.emoji}
                         name={item.name}
                         countLabel={`${item.count}개`}
                         hasStock={item.count > 0}
+                        imageSource={item.imageSource}
                         large
                     />
                 ))}
@@ -172,10 +186,10 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 {ingredientRows.map((item) => (
                     <ProfileIngredientRow
                         key={item.id}
-                        emoji={item.emoji}
                         name={item.name}
                         countLabel={item.count > 0 ? `${item.count}개` : '0개'}
                         hasStock={item.count > 0}
+                        imageSource={item.imageSource}
                     />
                 ))}
             </ProfileListSection>

@@ -17,7 +17,7 @@ type MissionShareCardProps = {
 
 function pineTreeEquivalent(count: number): string {
     const trees = Math.max(0.1, Math.round((count / 60) * 10) / 10);
-    return `소나무 ${trees}그루가 1년간 하는 일과 같아요 🌲`;
+    return `소나무 ${trees}그루가 1년간 하는 일과 같아요`;
 }
 
 /** Figma `12 미션결과 - SNS 인증카드(안)` (193:204) */
@@ -95,7 +95,7 @@ export function MissionShareCard({
                                 참여 샵
                             </Txt>
                             <Txt typography="t7" fontWeight="semibold" color="white" numberOfLines={1}>
-                                📍 {shopName}
+                                {shopName}
                             </Txt>
                         </View>
                     </View>

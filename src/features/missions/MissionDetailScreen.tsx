@@ -1,6 +1,6 @@
 import type { Mission } from '@api/mock';
 import { isCoopMission } from '@api/mock/types';
-import { Button, Top, Txt } from '@toss/tds-react-native';
+import { Asset, Button, frameShape, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
 import type { MissionProgressStatus } from '../user/types';
@@ -13,6 +13,9 @@ import { formatMissionPoolHint } from '@api/mock/ingredients';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { RandomMissionRewardBadge } from '../../shared/ui/RandomMissionRewardBadge';
 import { Screen } from '../../shared/ui/Screen';
+import { TDS_ICON } from '../../shared/constants/tdsAssets';
+import { colors } from '../../shared/theme/colors';
+import { coopDifficultyLabel } from './coopMissionLogic';
 
 type MissionDetailScreenProps = {
     mission: Mission;
@@ -33,7 +36,12 @@ export function MissionDetailScreen({
     return (
         <Screen scrollable>
             <View style={styles.hero}>
-                <Txt typography="t1">{mission.emoji}</Txt>
+                <Asset.Icon
+                    name={TDS_ICON.missionCamera}
+                    frameShape={frameShape.CircleLarge}
+                    backgroundColor={colors.primaryLight}
+                    accessibilityLabel={mission.title}
+                />
                 <Top
                     title={<Top.TitleParagraph size={22}>{mission.title}</Top.TitleParagraph>}
                     subtitle2={<Top.SubtitleParagraph>{mission.description}</Top.SubtitleParagraph>}
@@ -41,7 +49,7 @@ export function MissionDetailScreen({
             </View>
             {isCoop ? (
                 <Txt typography="t7" color="grey600" style={styles.coopBadge}>
-                    공동 미션 {'⭐'.repeat(mission.difficulty)}
+                    공동 미션 · {coopDifficultyLabel(mission.difficulty)}
                 </Txt>
             ) : null}
             {locked ? (

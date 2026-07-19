@@ -1,8 +1,10 @@
 import { Button, ListRow, Txt } from '@toss/tds-react-native';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import type { ImageSourcePropType } from 'react-native';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { colors } from '../../shared/theme/colors';
+import { BrandListRowImage } from '../../shared/ui/BrandListRowImage';
 import { SCROLL_PREVIEW_HINT } from '../../shared/ui/ScrollPreviewSection';
 
 const PREVIEW_ROW_HEIGHT = 64;
@@ -138,26 +140,31 @@ export function ProfileLedgerRow({
 }
 
 type ProfileIngredientRowProps = {
-    emoji: string;
     name: string;
     countLabel: string;
     hasStock: boolean;
     large?: boolean;
+    imageSource?: ImageSourcePropType | null;
 };
 
 export function ProfileIngredientRow({
-    emoji,
     name,
     countLabel,
     hasStock,
     large = false,
+    imageSource = null,
 }: ProfileIngredientRowProps) {
     return (
         <ListRow
+            left={
+                imageSource != null ? (
+                    <BrandListRowImage source={imageSource} />
+                ) : undefined
+            }
             contents={
                 <ListRow.Texts
                     type="2RowTypeA"
-                    top={`${emoji} ${name}`}
+                    top={name}
                     topProps={{ fontWeight: 'bold', typography: large ? 't5' : undefined }}
                     bottom={hasStock ? '제작 탭에서 사용 가능' : '보유 없음'}
                     bottomProps={large ? { typography: 't6' } : undefined}

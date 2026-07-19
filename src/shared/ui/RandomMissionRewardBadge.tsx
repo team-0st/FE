@@ -1,12 +1,18 @@
 import { MISSION_RANDOM_REWARD_LABEL } from '@api/mock/ingredients';
-import { Txt } from '@toss/tds-react-native';
+import { Asset, frameShape, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
+import { TDS_ICON } from '../constants/tdsAssets';
 import { colors } from '../theme/colors';
 
 export function RandomMissionRewardBadge() {
     return (
         <View style={styles.badge}>
-            <Txt typography="t3">🎲</Txt>
+            <Asset.Icon
+                name={TDS_ICON.gachaGift}
+                frameShape={frameShape.CircleMedium}
+                backgroundColor={colors.surface}
+                accessibilityLabel="랜덤 재료 보상"
+            />
             <Txt typography="t6" fontWeight="bold">
                 {MISSION_RANDOM_REWARD_LABEL}
             </Txt>

@@ -125,7 +125,7 @@ export function MissionsListScreen({ onPressMission, onPressBack }: MissionsList
                 }
                 lower={
                     <ListHeader.DescriptionParagraph>
-                        ⭐부터 차례로 해금돼요. 파일럿에서는 ⭐ 미션부터 시작해요.
+                        난이도 1부터 차례로 해금돼요. 파일럿에서는 난이도 1 미션부터 시작해요.
                     </ListHeader.DescriptionParagraph>
                 }
             />
@@ -141,7 +141,7 @@ export function MissionsListScreen({ onPressMission, onPressBack }: MissionsList
                         rightOverride={
                             unlocked
                                 ? `${coopDifficultyLabel(mission.difficulty)} · ${formatMissionIngredientReward(mission.id)}`
-                                : `🔒 ${coopDifficultyLabel(mission.difficulty)}`
+                                : `잠금 · ${coopDifficultyLabel(mission.difficulty)}`
                         }
                         onPress={() => handleCoopPress(mission)}
                     />
