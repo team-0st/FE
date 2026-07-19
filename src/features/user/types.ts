@@ -9,12 +9,14 @@ export type MissionProgress = {
     rewardIngredientId?: string;
 };
 
-export type EcoJamLedgerEntry = {
+export type PointsLedgerEntry = {
     id: string;
     at: string;
     label: string;
     delta: number;
 };
+
+export type EcoJamLedgerEntry = PointsLedgerEntry;
 
 export type PendingRealReward = {
     id: string;
@@ -51,7 +53,8 @@ export type AppUserState = {
     ingredientInventory: Record<string, number>;
     completedRecipeIds: string[];
     missionProgress: Record<string, MissionProgress>;
-    ecoJamLedger: EcoJamLedgerEntry[];
+    ecoJamLedger: PointsLedgerEntry[];
+    almangPointsLedger: PointsLedgerEntry[];
     pendingRealRewards: PendingRealReward[];
     /** SNS 공유 리워드 — 하루 1회 (YYYY-MM-DD) */
     lastShareRewardDate: string | null;

@@ -30,6 +30,7 @@ import { GACHA_PULL_COST_ECO_JAM } from '../gacha/gachaConfig';
 import { applyGachaReward } from '../gacha/gachaLogic';
 import type { GachaPullResult } from '../gacha/gachaTypes';
 import { appendEcoJamLedger } from './ecoJamLedger';
+import { appendAlmangPointsLedger } from './almangPointsLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
 import { loadUserState, saveUserState } from './userRepository';
 import type { AppUserState, AlmangPayoutConsent, LocationConsent } from './types';
@@ -316,6 +317,9 @@ export function UserProvider({ children }: PropsWithChildren) {
                 let next = applyGachaReward(spent, api.reward);
                 if (api.reward.type === 'ECO_JAM') {
                     next = appendEcoJamLedger(next, '가챠 보상', api.reward.amount);
+                }
+                if (api.reward.type === 'ALMANG_POINT') {
+                    next = appendAlmangPointsLedger(next, '가챠 보상', api.reward.amount);
                 }
                 stateRef.current = next;
                 setState(next);

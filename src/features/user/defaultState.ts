@@ -28,6 +28,7 @@ export const DEFAULT_USER_STATE: AppUserState = {
     completedRecipeIds: [],
     missionProgress: {},
     ecoJamLedger: [],
+    almangPointsLedger: [],
     pendingRealRewards: [],
     lastShareRewardDate: null,
 };

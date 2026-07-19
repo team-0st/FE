@@ -1,9 +1,11 @@
+import { findRecipeInCatalog } from '@api/mock/recipeCatalog';
 import { Top, Txt } from '@toss/tds-react-native';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
 import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
+import { getSoupImageSource } from '../../shared/constants/soupAssets';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { formatLedgerDelta } from '../user/ecoJamLedger';
 import { listIngredientStock } from '../user/ingredientInventory';
@@ -13,7 +15,9 @@ import { shouldShowAlmangPayoutBanner } from '../user/almangPayoutCopy';
 import {
     ProfileIngredientRow,
     ProfileLedgerRow,
+    ProfileListModal,
     ProfileListSection,
+    ProfileSoupRow,
 } from './ProfileListSection';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
@@ -23,6 +27,8 @@ type ProfileScreenProps = {
     onPressRestartOnboarding?: () => void;
 };
 
+type DetailModal = 'ecoJam' | 'almang' | 'soups' | null;
+
 function formatLedgerTime(iso: string): string {
     const d = new Date(iso);
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -31,18 +37,30 @@ function formatLedgerTime(iso: string): string {
 export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: ProfileScreenProps) {
     const { state } = useUser();
     const [privacyVisible, setPrivacyVisible] = useState(false);
+    const [detailModal, setDetailModal] = useState<DetailModal>(null);
     const shopName = resolveShopName(state.shopId);
     const completed = state.completedRecipeIds.length;
     const ingredientRows = listIngredientStock(state.ingredientInventory);
     const ownedCount = ingredientRows.filter((row) => row.count > 0).length;
-    const ledgerEntries = state.ecoJamLedger;
+    const ecoJamEntries = state.ecoJamLedger;
+    const almangEntries = state.almangPointsLedger;
+
+    const completedSoups = useMemo(
+        () =>
+            state.completedRecipeIds.map((id) => {
+                const recipe = findRecipeInCatalog(id);
+                return {
+                    id,
+                    name: recipe?.name ?? '완성한 스프',
+                    imageSource: getSoupImageSource(id),
+                };
+            }),
+        [state.completedRecipeIds],
+    );
 
     return (
         <Screen scrollable>
-            <Top
-                title={<Top.TitleParagraph size={22}>마이</Top.TitleParagraph>}
-                subtitle2={<Top.SubtitleParagraph>에코잼 · 스프 · 재료를 한곳에서 확인해요.</Top.SubtitleParagraph>}
-            />
+            <Top title={<Top.TitleParagraph size={22}>마이</Top.TitleParagraph>} />
             <View style={styles.hero}>
                 <Txt typography="t2" fontWeight="bold">
                     {state.nickname}
@@ -63,10 +81,16 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 ) : null}
             </View>
             <View style={styles.row}>
-                <View style={styles.card}>
+                <Pressable
+                    style={styles.card}
+                    onPress={() => setDetailModal('ecoJam')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`에코잼 ${state.ecoJam}, 내역 보기`}
+                >
                     <BrandEmojiImage
                         source={BRAND_EMOJI.ecoJam}
-                        size={28}
+                        size={48}
+                        containerStyle={styles.cardIcon}
                         accessibilityLabel="에코잼"
                     />
                     <Txt typography="t7" color="grey600">
@@ -75,11 +99,17 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     <Txt typography="t4" fontWeight="bold">
                         {state.ecoJam}
                     </Txt>
-                </View>
-                <View style={styles.card}>
+                </Pressable>
+                <Pressable
+                    style={styles.card}
+                    onPress={() => setDetailModal('almang')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`알맹 포인트 ${state.totalPoints}P, 내역 보기`}
+                >
                     <BrandEmojiImage
                         source={BRAND_EMOJI.almangPoint}
-                        size={28}
+                        size={48}
+                        containerStyle={styles.cardIcon}
                         accessibilityLabel="알맹 포인트"
                     />
                     <Txt typography="t7" color="grey600">
@@ -93,11 +123,17 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                             지급 대기
                         </Txt>
                     ) : null}
-                </View>
-                <View style={styles.card}>
+                </Pressable>
+                <Pressable
+                    style={styles.card}
+                    onPress={() => setDetailModal('soups')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`완성 스프 ${completed}개, 목록 보기`}
+                >
                     <BrandEmojiImage
-                        source={BRAND_EMOJI.soup}
-                        size={28}
+                        source={BRAND_EMOJI.completedSoups}
+                        size={48}
+                        containerStyle={styles.cardIcon}
                         accessibilityLabel="완성 스프"
                     />
                     <Txt typography="t7" color="grey600">
@@ -106,7 +142,7 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     <Txt typography="t4" fontWeight="bold">
                         {completed}개
                     </Txt>
-                </View>
+                </Pressable>
             </View>
             {shouldShowAlmangPayoutBanner(state) ? (
                 <View style={styles.payoutBanner}>
@@ -114,8 +150,7 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                         알맹 포인트 지급 안내
                     </Txt>
                     <Txt typography="t7" color="grey700">
-                        포인트는 적립됐지만, 지급을 받으려면 알맹상점에 직접 방문해 주세요. 전화번호
-                        동의 후 매장에서 본인 확인을 거쳐 지급해 드려요.
+                        {'포인트는 적립됐어요.\n지급받으려면 알맹상점에 방문해 주세요.\n전화번호 동의 후 매장에서 본인 확인을 거쳐 드려요.'}
                     </Txt>
                 </View>
             ) : null}
@@ -136,32 +171,6 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     ))}
                 </View>
             ) : null}
-            <ProfileListSection
-                title="에코잼 내역"
-                emptyMessage="아직 내역이 없어요."
-                expandLabel="크게 보기"
-                itemCount={ledgerEntries.length}
-                expandedChildren={ledgerEntries.map((entry) => (
-                    <ProfileLedgerRow
-                        key={entry.id}
-                        label={entry.label}
-                        time={formatLedgerTime(entry.at)}
-                        deltaLabel={formatLedgerDelta(entry.delta)}
-                        deltaPositive={entry.delta >= 0}
-                        large
-                    />
-                ))}
-            >
-                {ledgerEntries.map((entry) => (
-                    <ProfileLedgerRow
-                        key={entry.id}
-                        label={entry.label}
-                        time={formatLedgerTime(entry.at)}
-                        deltaLabel={formatLedgerDelta(entry.delta)}
-                        deltaPositive={entry.delta >= 0}
-                    />
-                ))}
-            </ProfileListSection>
             <ProfileListSection
                 title="보유 재료"
                 hint={
@@ -224,6 +233,53 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 </Txt>
             ) : null}
             <PrivacyPolicyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
+            <ProfileListModal
+                visible={detailModal === 'ecoJam'}
+                title="에코잼 내역"
+                emptyMessage="아직 내역이 없어요."
+                itemCount={ecoJamEntries.length}
+                onClose={() => setDetailModal(null)}
+            >
+                {ecoJamEntries.map((entry) => (
+                    <ProfileLedgerRow
+                        key={entry.id}
+                        label={entry.label}
+                        time={formatLedgerTime(entry.at)}
+                        deltaLabel={formatLedgerDelta(entry.delta)}
+                        deltaPositive={entry.delta >= 0}
+                        large
+                    />
+                ))}
+            </ProfileListModal>
+            <ProfileListModal
+                visible={detailModal === 'almang'}
+                title="알맹 포인트 내역"
+                emptyMessage="아직 내역이 없어요."
+                itemCount={almangEntries.length}
+                onClose={() => setDetailModal(null)}
+            >
+                {almangEntries.map((entry) => (
+                    <ProfileLedgerRow
+                        key={entry.id}
+                        label={entry.label}
+                        time={formatLedgerTime(entry.at)}
+                        deltaLabel={`${formatLedgerDelta(entry.delta)}P`}
+                        deltaPositive={entry.delta >= 0}
+                        large
+                    />
+                ))}
+            </ProfileListModal>
+            <ProfileListModal
+                visible={detailModal === 'soups'}
+                title="완성 스프"
+                emptyMessage="아직 완성한 스프가 없어요."
+                itemCount={completedSoups.length}
+                onClose={() => setDetailModal(null)}
+            >
+                {completedSoups.map((soup) => (
+                    <ProfileSoupRow key={soup.id} name={soup.name} imageSource={soup.imageSource} />
+                ))}
+            </ProfileListModal>
         </Screen>
     );
 }
@@ -248,9 +304,13 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 16,
         alignItems: 'center',
-        gap: 4,
+        gap: 6,
         borderWidth: 1,
         borderColor: colors.border,
+    },
+    cardIcon: {
+        marginRight: 0,
+        marginBottom: 2,
     },
     section: {
         width: '100%',

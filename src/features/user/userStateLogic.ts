@@ -2,6 +2,7 @@ import type { CheckInSuccessDto } from '@api/checkIn';
 import type { Recipe } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { appendEcoJamLedger } from './ecoJamLedger';
+import { appendAlmangPointsLedger } from './almangPointsLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
 import {
     SHARE_REWARD_ECO_JAM_AMOUNT,
@@ -221,7 +222,9 @@ export function completeRecipe(
         };
     }
     if (craft.rewardType === 'ALMANG_POINT' && (craft.rewardAmount ?? 0) > 0) {
-        next = { ...next, totalPoints: next.totalPoints + (craft.rewardAmount ?? 0) };
+        const gain = craft.rewardAmount ?? 0;
+        next = { ...next, totalPoints: next.totalPoints + gain };
+        next = appendAlmangPointsLedger(next, `${recipe.name} 보상`, gain);
     }
     return next;
 }

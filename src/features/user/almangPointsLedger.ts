@@ -2,7 +2,7 @@ import type { AppUserState, PointsLedgerEntry } from './types';
 
 const LEDGER_MAX = 30;
 
-export function appendEcoJamLedger(
+export function appendAlmangPointsLedger(
     state: AppUserState,
     label: string,
     delta: number,
@@ -16,10 +16,6 @@ export function appendEcoJamLedger(
         label,
         delta,
     };
-    const nextLedger = [entry, ...state.ecoJamLedger].slice(0, LEDGER_MAX);
-    return { ...state, ecoJamLedger: nextLedger };
-}
-
-export function formatLedgerDelta(delta: number): string {
-    return delta > 0 ? `+${delta}` : `${delta}`;
+    const nextLedger = [entry, ...state.almangPointsLedger].slice(0, LEDGER_MAX);
+    return { ...state, almangPointsLedger: nextLedger };
 }

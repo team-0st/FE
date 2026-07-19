@@ -10,6 +10,49 @@ import { SCROLL_PREVIEW_HINT } from '../../shared/ui/ScrollPreviewSection';
 const PREVIEW_ROW_HEIGHT = 64;
 const PREVIEW_VISIBLE_ROWS = 3;
 
+type ProfileListModalProps = {
+    visible: boolean;
+    title: string;
+    emptyMessage: string;
+    itemCount: number;
+    onClose: () => void;
+    children: ReactNode;
+};
+
+/** 카드 탭 등으로 여는 전체 목록 모달 */
+export function ProfileListModal({
+    visible,
+    title,
+    emptyMessage,
+    itemCount,
+    onClose,
+    children,
+}: ProfileListModalProps) {
+    return (
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+            <Pressable style={styles.overlay} onPress={onClose}>
+                <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+                    <Txt typography="t4" fontWeight="bold" style={styles.sheetTitle}>
+                        {title}
+                    </Txt>
+                    {itemCount === 0 ? (
+                        <Txt typography="t7" color="grey600">
+                            {emptyMessage}
+                        </Txt>
+                    ) : (
+                        <ScrollView style={styles.expandedScroll} showsVerticalScrollIndicator>
+                            {children}
+                        </ScrollView>
+                    )}
+                    <Button size="medium" type="primary" display="block" onPress={onClose}>
+                        닫기
+                    </Button>
+                </View>
+            </Pressable>
+        </Modal>
+    );
+}
+
 type ProfileListSectionProps = {
     title: string;
     hint?: string;
@@ -75,21 +118,15 @@ export function ProfileListSection({
                     {SCROLL_PREVIEW_HINT}
                 </Txt>
             ) : null}
-            <Modal visible={expanded} transparent animationType="fade" onRequestClose={() => setExpanded(false)}>
-                <Pressable style={styles.overlay} onPress={() => setExpanded(false)}>
-                    <View style={styles.sheet} onStartShouldSetResponder={() => true}>
-                        <Txt typography="t4" fontWeight="bold" style={styles.sheetTitle}>
-                            {title}
-                        </Txt>
-                        <ScrollView style={styles.expandedScroll} showsVerticalScrollIndicator>
-                            {expandedChildren}
-                        </ScrollView>
-                        <Button size="medium" type="primary" display="block" onPress={() => setExpanded(false)}>
-                            닫기
-                        </Button>
-                    </View>
-                </Pressable>
-            </Modal>
+            <ProfileListModal
+                visible={expanded}
+                title={title}
+                emptyMessage={emptyMessage}
+                itemCount={itemCount}
+                onClose={() => setExpanded(false)}
+            >
+                {expandedChildren}
+            </ProfileListModal>
         </View>
     );
 }
@@ -133,6 +170,26 @@ export function ProfileLedgerRow({
                         color: deltaPositive ? 'blue500' : 'grey600',
                         typography: large ? 't5' : undefined,
                     }}
+                />
+            }
+        />
+    );
+}
+
+type ProfileSoupRowProps = {
+    name: string;
+    imageSource?: ImageSourcePropType | null;
+};
+
+export function ProfileSoupRow({ name, imageSource = null }: ProfileSoupRowProps) {
+    return (
+        <ListRow
+            left={imageSource != null ? <BrandListRowImage source={imageSource} /> : undefined}
+            contents={
+                <ListRow.Texts
+                    type="1RowTypeA"
+                    top={name}
+                    topProps={{ fontWeight: 'bold', typography: 't5' }}
                 />
             }
         />

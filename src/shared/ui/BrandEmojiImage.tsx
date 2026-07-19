@@ -1,4 +1,4 @@
-import type { ImageSourcePropType, StyleProp, ImageStyle } from 'react-native';
+import type { ImageSourcePropType, StyleProp, ImageStyle, ViewStyle } from 'react-native';
 import { Image, StyleSheet, View } from 'react-native';
 import { toBrandImageSource } from './toBrandImageSource';
 
@@ -6,6 +6,7 @@ type BrandEmojiImageProps = {
     source: ImageSourcePropType;
     size?: number;
     style?: StyleProp<ImageStyle>;
+    containerStyle?: StyleProp<ViewStyle>;
     accessibilityLabel?: string;
 };
 
@@ -18,6 +19,7 @@ export function BrandEmojiImage({
     source,
     size = 30,
     style,
+    containerStyle,
     accessibilityLabel,
 }: BrandEmojiImageProps) {
     const uriSource = toBrandImageSource(source);
@@ -25,7 +27,7 @@ export function BrandEmojiImage({
         return null;
     }
     return (
-        <View style={[styles.wrap, { width: size, height: size }]}>
+        <View style={[styles.wrap, { width: size, height: size }, containerStyle]}>
             <Image
                 source={uriSource}
                 style={[{ width: size, height: size }, style]}

@@ -79,6 +79,7 @@ export async function loadUserState(): Promise<AppUserState> {
         completedRecipeIds,
         missionProgress: normalizeMissionProgress(missionProgress),
         ecoJamLedger: rest.ecoJamLedger ?? [],
+        almangPointsLedger: rest.almangPointsLedger ?? [],
         pendingRealRewards: rest.pendingRealRewards ?? [],
         lastShareRewardDate: rest.lastShareRewardDate ?? null,
     };

@@ -6,7 +6,7 @@ export function resolveShopName(shopId: string | null): string {
     if (shopId == null) {
         return '미선택';
     }
-    return getShopById(shopId)?.name ?? shopId;
+    return getShopById(shopId)?.name ?? '선택한 샵';
 }
 
 export function missionStatusFor(state: AppUserState, missionId: string): MissionProgressStatus {
