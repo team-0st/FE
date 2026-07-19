@@ -1,8 +1,7 @@
 import { brandUriSource } from './brandImageUris';
 
 /**
- * 재료·마스코트·가챠 히어로: Granite용 data-uri (`brandImageUris.ts`).
- * shareCard 등 초대형 배경만 require 유지.
+ * 재료·마스코트·가챠·공유카드: Granite용 data-uri (`brandImageUris.ts`).
  */
 export const BRAND_ASSET = {
     heroSprout: brandUriSource('mascotCarrot'),
@@ -22,7 +21,7 @@ export const BRAND_ASSET = {
     gachaFail5: brandUriSource('gachaFail5'),
     gachaFail7: brandUriSource('gachaFail7'),
     gachaFail8: brandUriSource('gachaFail8'),
-    shareCardPhoto: require('../../../assets/brand/share-card-photo-bg.png'),
+    shareCardPhoto: brandUriSource('shareCardPhoto'),
 } as const;
 
 /** 당첨 시 빵 연출 — 희귀도별 고정 (랜덤 아님) */
@@ -63,6 +62,7 @@ export const BRAND_EMOJI = {
     /** 에코잼 당첨 결과(빵 이후)용 — 이펙트 포함 */
     ecoJamReveal: brandUriSource('eco_jam_reveal'),
     almangPoint: brandUriSource('almang_point'),
+    completedSoups: brandUriSource('completed_soups'),
 } as const;
 
 export type BrandAssetKey = keyof typeof BRAND_ASSET;

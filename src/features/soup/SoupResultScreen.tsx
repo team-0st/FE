@@ -2,7 +2,7 @@ import { getRecipeById } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { BottomCTA, Button, Result, Top, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
-import { BRAND_ASSET } from '../../shared/constants/brandAssets';
+import { getSoupImageSource } from '../../shared/constants/soupAssets';
 import { buildSoupShareMessage } from '../../shared/feedback/shareResult';
 import { Screen } from '../../shared/ui/Screen';
 import { ShareResultButton } from '../../shared/ui/ShareResultButton';
@@ -21,14 +21,14 @@ export function SoupResultScreen({ recipeId, craft, onPressDone }: SoupResultScr
     const isFail = craft.result === 'FAIL';
     const isReal = craft.rewardType === 'REAL_ITEM';
     const rewardLabel = isFail
-        ? (craft.rewardDescription ?? '쓰레기 봉투')
+        ? (craft.rewardDescription ?? '아쉬운 한 그릇')
         : isReal
           ? (craft.rewardDescription ?? '리워드 지급 예정')
           : `에코잼 +${craft.rewardAmount ?? 0}개`;
 
-    const rewardTitle = isFail ? '실패 (확률)' : isReal ? '실물 리워드' : '에코잼 획득';
+    const rewardTitle = isFail ? '아쉽게 실패했어요' : isReal ? '실물 리워드' : '에코잼 획득';
     const rewardValue = isFail
-        ? (craft.rewardDescription ?? '쓰레기 봉투')
+        ? (craft.rewardDescription ?? '아쉬운 한 그릇')
         : isReal
           ? (craft.rewardDescription ?? '리워드 지급 예정')
           : `+${craft.rewardAmount ?? 0} 잼`;
@@ -40,8 +40,9 @@ export function SoupResultScreen({ recipeId, craft, onPressDone }: SoupResultScr
                 <Result
                     figure={
                         <TdsHeroAsset
-                            source={BRAND_ASSET.heroSoup}
-                            accessibilityLabel="완성된 스프"
+                            source={getSoupImageSource(recipeId)}
+                            size="hero"
+                            accessibilityLabel={displayName}
                         />
                     }
                     title={
@@ -68,7 +69,7 @@ export function SoupResultScreen({ recipeId, craft, onPressDone }: SoupResultScr
                                 </Txt>
                             ) : isFail ? (
                                 <Txt typography="t7" color="grey600" style={styles.sub}>
-                                    레시피는 완성됐어요. 재료는 사용되었어요.
+                                    {'레시피는 완성됐어요.\n재료는 사용되었어요.'}
                                 </Txt>
                             ) : null}
                         </View>

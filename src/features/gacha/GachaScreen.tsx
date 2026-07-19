@@ -224,7 +224,7 @@ export function GachaScreen() {
               ? '결과 발표'
               : phase === 'result'
                 ? '가챠 결과'
-                : '가챠 상자';
+                : '가챠 머신';
 
     const potHint =
         phase === 'pulling'

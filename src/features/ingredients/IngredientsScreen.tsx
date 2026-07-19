@@ -1,4 +1,4 @@
-import { INGREDIENTS, getIngredientById } from '@api/mock';
+import { INGREDIENTS } from '@api/mock';
 import {
     BREW_SLOT_MAX,
     findMatchingRecipe,
@@ -19,6 +19,7 @@ import {
     SOUP_BREW_PROBABILITY_LINES,
     SOUP_BREW_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
+import { getSoupImageSource, hasSoupImage } from '../../shared/constants/soupAssets';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { getBrewFailureMessage } from '../../shared/feedback/messages';
 import { useAppToast } from '../../shared/feedback/useAppToast';
@@ -133,7 +134,9 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                 <Top
                     title={<Top.TitleParagraph size={22}>제작</Top.TitleParagraph>}
                     subtitle2={
-                        <Top.SubtitleParagraph>재료를 골라 냄비에 넣어 스프를 만들어요.</Top.SubtitleParagraph>
+                        <Top.SubtitleParagraph>
+                            {'재료를 골라 냄비에 넣어요.\n스프를 만들어 보세요.'}
+                        </Top.SubtitleParagraph>
                     }
                 />
                 <IngredientSlotBar slots={slots} onPressSlot={handlePressSlot} />
@@ -161,23 +164,22 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                     ) : null}
                     {recommendedRecipes.length === 0 ? (
                         <Txt typography="t7" color="grey600">
-                            지금 만들 수 있는 입문·이번주 조합이 없어요. 미션으로 재료를 모아 보세요.
+                            {'지금 만들 수 있는 입문·이번주 조합이 없어요.\n미션으로 재료를 모아 보세요.'}
                         </Txt>
                     ) : (
                         <ScrollPreviewSection
                             title="추천 조합"
                             itemCount={recommendedRecipes.length}
-                            hint="보유 재료로 만들 수 있는 입문·이번주 조합이에요."
+                            hint={'보유 재료로 만들 수 있는\n입문·이번주 조합이에요.'}
                         >
                             {recommendedRecipes.map((recipe) => {
-                                const firstIngredient = getIngredientById(recipe.ingredientIds[0] ?? '');
                                 return (
                                 <ListRow
                                     key={recipe.id}
                                     onPress={() => handleApplyRecommendation(recipe.id)}
                                     left={
-                                        firstIngredient?.imageSource != null ? (
-                                            <BrandListRowImage source={firstIngredient.imageSource} />
+                                        hasSoupImage(recipe.id) ? (
+                                            <BrandListRowImage source={getSoupImageSource(recipe.id)} />
                                         ) : (
                                             <ListRow.Icon name={TDS_ICON.soupBowl} />
                                         )
