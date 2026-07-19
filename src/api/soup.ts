@@ -22,7 +22,7 @@ export async function postSoupCraft(
             soupId: 0,
             result: 'FAIL',
             rewardType: 'TRASH_ITEM',
-            rewardDescription: '잘못된 재료',
+            rewardDescription: '재료를 다시 확인해 주세요',
         };
     }
     return mockRollSoupCraft(recipe, random);

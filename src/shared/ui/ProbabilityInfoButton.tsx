@@ -27,7 +27,7 @@ export function ProbabilityInfoButton({
                 style={styles.infoButton}
             >
                 <Txt typography="t7" color="grey500" fontWeight="bold" style={styles.infoGlyph}>
-                    i
+                    !
                 </Txt>
             </Pressable>
             <Modal

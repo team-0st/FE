@@ -113,7 +113,7 @@ export function MissionsListScreen({ onPressMission, onPressBack }: MissionsList
                 }
             />
             <GuideHero
-                message="텀블러, 장바구니, 대중교통처럼 일상에서 할 수 있는 미션이에요."
+                message={'텀블러, 장바구니, 대중교통처럼\n일상에서 할 수 있는 미션이에요.'}
                 align="start"
                 compact
             />
@@ -125,7 +125,7 @@ export function MissionsListScreen({ onPressMission, onPressBack }: MissionsList
                 }
                 lower={
                     <ListHeader.DescriptionParagraph>
-                        난이도 1부터 차례로 해금돼요. 파일럿에서는 난이도 1 미션부터 시작해요.
+                        {'난이도 1부터 차례로 해금돼요.\n난이도 1 미션부터 시작해 보세요.'}
                     </ListHeader.DescriptionParagraph>
                 }
             />

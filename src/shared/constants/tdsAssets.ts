@@ -3,13 +3,15 @@
  * 커스텀 일러스트(재료·캐릭터)와 무관. 디자이너 그림 오기 전에도 이 기본 에셋으로 UI를 맞춘다.
  */
 export const TDS_ICON = {
-    /** Figma 05 제작 Tab Bar Resource= */
     tabHome: 'icon-home-mono',
-    tabCraft: 'icon-diamond-mono',
-    tabGacha: 'icon-shopping-bag-mono',
-    /** Figma는 graph-up(주식형) — 레시피 의미에 맞게 food로 교체 */
-    tabRecipes: 'icon-food-mono',
-    tabProfile: 'icon-line-three-mono',
+    /** 제작 — 스프/음식 그릇 */
+    tabCraft: 'icon-food-mono',
+    /** 가챠 — 선물 상자 */
+    tabGacha: 'icon-gift-mono',
+    /** 레시피 — 문서/종이 */
+    tabRecipes: 'icon-document-mono',
+    /** 마이 — 사람 */
+    tabProfile: 'icon-user-mono',
 
     sprout: 'icon-sprout-mono',
     gachaGift: 'icon-gift-mono',

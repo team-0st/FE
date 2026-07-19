@@ -9,9 +9,9 @@ export const PRIVACY_POLICY_META = {
 export const PHONE_CONSENT_NOTICE = {
     purpose: '알맹상점 포인트 지급, 본인 확인, 지급 내역 연동',
     items: '휴대전화번호',
-    retention: '회원 탈퇴 또는 최종 포인트 지급 완료 후 3년 (법무 확정 전)',
+    retention: '회원 탈퇴 또는 최종 포인트 지급 완료 후 3년',
     refuse:
-        '동의를 거부할 수 있어요. 거부 시에도 앱 이용·포인트 적립은 가능하지만, 포인트 지급·전환은 할 수 없으며 알맹상점 방문 후 본인 확인을 거쳐 지급받을 수 있어요.',
+        '동의를 거부할 수 있어요.\n거부 시에도 앱 이용·포인트 적립은 가능해요.\n다만 포인트 지급은 알맹상점 방문 후 본인 확인이 필요해요.',
 } as const;
 
 export type PrivacyPolicySection = {
@@ -47,7 +47,7 @@ export const PRIVACY_POLICY_SECTIONS: PrivacyPolicySection[] = [
     {
         heading: '4. 문의',
         paragraphs: [
-            '개인정보 관련 문의는 앱 내 문의 또는 운영팀 이메일로 연락해 주세요. (연락처는 법무 확정 후 기재)',
+            '개인정보 관련 문의는 앱 내 문의 또는 운영팀으로 연락해 주세요.',
         ],
     },
 ];

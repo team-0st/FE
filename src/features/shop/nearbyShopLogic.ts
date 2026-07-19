@@ -59,7 +59,7 @@ export function formatStraightLineDistance(meters: number): string {
 }
 
 export const STRAIGHT_LINE_DISTANCE_HINT =
-    '거리는 직선 기준이에요. 실제 도보·차량 거리와 다를 수 있어요.';
+    '거리는 직선 기준이에요.\n실제 도보·차량 거리와 다를 수 있어요.';
 
 export function getNearbyShops(
     shops: Shop[],

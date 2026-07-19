@@ -42,7 +42,7 @@ export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
                 </>
             ) : (
                 <GuideHero
-                    message="아직 선택한 샵이 없어요. 파일럿 샵을 선택해 주세요."
+                    message={'아직 선택한 샵이 없어요.\n단골 샵을 선택해 주세요.'}
                     mood="think"
                     align="start"
                     compact

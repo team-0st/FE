@@ -15,9 +15,8 @@ type TabItem = {
 };
 
 /**
- * Figma `05 제작` Tab Bar 슬롯:
- * 홈=icon-home-mono · 제작=icon-diamond-mono · 가챠=icon-shopping-bag-mono
- * · 레시피=icon-food-mono (Figma graph-up → 의미 맞춤) · 마이=icon-line-three-mono
+ * 메인 탭 아이콘:
+ * 홈=home · 제작=food(스프) · 가챠=gift · 레시피=document · 마이=user
  */
 export const MAIN_TABS: TabItem[] = [
     { id: 'home', label: '홈', iconName: TDS_ICON.tabHome, route: ROUTES.home },
@@ -41,7 +40,12 @@ export function MainTabBar({ activeTab, onPressTab }: MainTabBarProps) {
                 return (
                     <Pressable
                         key={tab.id}
-                        onPress={() => onPressTab(tab.route)}
+                        onPress={() => {
+                            if (active) {
+                                return;
+                            }
+                            onPressTab(tab.route);
+                        }}
                         style={styles.item}
                         accessibilityRole="tab"
                         accessibilityState={{ selected: active }}

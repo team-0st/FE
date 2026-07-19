@@ -132,7 +132,7 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
                 <View style={styles.hintBox}>
                     <View style={styles.hintTitleRow}>
                         <Txt typography="t7" fontWeight="semibold" style={{ color: colors.primary }}>
-                            오늘의 레시피 힌트
+                            이번주 레시피 힌트
                         </Txt>
                         <ProbabilityInfoButton
                             title={SOUP_WEEKLY_PROBABILITY_TITLE}

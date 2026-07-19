@@ -17,7 +17,7 @@ export function RandomMissionRewardBadge() {
                 {MISSION_RANDOM_REWARD_LABEL}
             </Txt>
             <Txt typography="t7" color="grey600">
-                검수 후 풀에서 1종이 지급돼요
+                완료하면 재료 풀에서 1종을 받아요
             </Txt>
         </View>
     );

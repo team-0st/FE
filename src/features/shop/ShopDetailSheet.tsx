@@ -61,11 +61,11 @@ export function ShopDetailSheet({ shop, visible, onClose }: ShopDetailSheetProps
                     </Txt>
                     {shop.geocodeStatus === 'pending' ? (
                         <Txt typography="t7" color="grey500">
-                            지도 위치는 알맹·공개 자료 수령 후 보정될 예정이에요.
+                            지도 위치는 곧 더 정확하게 맞춰질 예정이에요.
                         </Txt>
                     ) : shop.geocodeStatus === 'approximate' ? (
                         <Txt typography="t7" color="grey500">
-                            지도 핀은 구·군 단위 대략 위치예요. 정확한 좌표는 추후 보정돼요.
+                            {'지도 핀은 대략 위치예요.\n자세한 주소는 아래를 확인해 주세요.'}
                         </Txt>
                     ) : null}
                     <View style={styles.addressBox}>

@@ -18,20 +18,20 @@ export const ONBOARDING_GUIDE = {
 
 export const ONBOARDING_PROFILE_GUIDE = {
     nicknameTitle: '닉네임을 입력해 주세요',
-    nicknameSubtitle: '앱에서 사용할 이름이에요. 실명은 필요하지 않아요.',
+    nicknameSubtitle: '앱에서 사용할 이름이에요.\n실명은 필요하지 않아요.',
     nicknamePlaceholder: '예) 펭귄탐험가',
     phoneTitle: '휴대전화번호를 입력해 주세요',
     /** Figma 02 — 본문 / Help text 분리 */
-    phoneSubtitle: '알맹상점 포인트 지급에 사용해요. 010 번호만 입력할 수 있어요.',
+    phoneSubtitle: '알맹상점 포인트 지급에 사용해요.\n010 번호만 입력할 수 있어요.',
     phoneHelp: '나중에 입력해도 괜찮아요.',
     phoneBodyPlaceholder: '12345678',
     phoneConsentCheckbox:
         '[필수] 개인정보 처리방침 전문을 확인했으며, 휴대전화번호 수집·이용에 동의해요.',
     skipModalTitle: '나중에 입력해도 괜찮아요',
     skipModalBody:
-        '알맹상점 포인트는 게임에서 쌓일 수 있어요. 지급을 받으려면 알맹상점에 직접 방문해 주세요. 매장에서 본인 확인 후 지급해 드려요.',
+        '알맹상점 포인트는 게임에서 쌓일 수 있어요.\n지급을 받으려면 알맹상점에 직접 방문해 주세요.\n매장에서 본인 확인 후 지급해 드려요.',
     payoutHint:
-        '동의하지 않으면 포인트는 적립되지만 지급받을 수 없어요. 지급은 알맹상점 방문이 필요해요.',
+        '동의하지 않으면 포인트는 적립되지만 지급받을 수 없어요.\n지급은 알맹상점 방문이 필요해요.',
 } as const;
 
 /** Figma 03 온보딩 - 샵선택 */

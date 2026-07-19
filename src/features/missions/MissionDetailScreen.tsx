@@ -9,7 +9,6 @@ import {
     MISSION_REWARD_PROBABILITY_LINES,
     MISSION_REWARD_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
-import { formatMissionPoolHint } from '@api/mock/ingredients';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { RandomMissionRewardBadge } from '../../shared/ui/RandomMissionRewardBadge';
 import { Screen } from '../../shared/ui/Screen';
@@ -70,10 +69,10 @@ export function MissionDetailScreen({
                     <RandomMissionRewardBadge />
                     <View style={styles.poolHint}>
                         <Txt typography="t7" color="grey600">
-                            풀 후보: {formatMissionPoolHint(mission.id)}
+                            완료하면 재료 풀에서 1종을 받아요.
                         </Txt>
                         <ProbabilityInfoRow
-                            label="지급 확률"
+                            label="지급 안내"
                             title={MISSION_REWARD_PROBABILITY_TITLE}
                             lines={MISSION_REWARD_PROBABILITY_LINES}
                         />
@@ -83,8 +82,8 @@ export function MissionDetailScreen({
                             {mission.authType === 'receipt'
                                 ? '영수증 사진으로 인증해요.'
                                 : mission.authType === 'attendance_7d'
-                                  ? '7일 출석 후 1·4·7일차에 사진을 올려요. (파일럿 UI)'
-                                  : '사진 업로드 후 검수가 끝나면 재료를 받아요.'}
+                                  ? '7일 출석 후\n1·4·7일차에 사진을 올려요.'
+                                  : '사진 업로드 후\n검수가 끝나면 재료를 받아요.'}
                         </Txt>
                     </View>
                 </>
