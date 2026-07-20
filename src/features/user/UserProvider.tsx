@@ -9,7 +9,7 @@ import {
     type PropsWithChildren,
 } from 'react';
 import { postCheckIn, getCheckInStatus, type CheckInResult } from '@api/checkIn';
-import { isApiEnabled } from '@api/client';
+import { ApiClientError, isApiEnabled } from '@api/client';
 import { postGacha } from '@api/gacha';
 import { getEcoJamHistories } from '@api/history';
 import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
@@ -166,34 +166,64 @@ export function UserProvider({ children }: PropsWithChildren) {
         stateRef.current = state;
     }, [state]);
 
-    const ensureRegistered = useCallback(async (base: AppUserState): Promise<AppUserState> => {
-        const deviceId = await getOrCreateDeviceId();
-        if (base.userId != null) {
-            if (base.deviceId == null) {
+    const ensureRegistered = useCallback(
+        async (
+            base: AppUserState,
+            options?: { force?: boolean },
+        ): Promise<AppUserState> => {
+            const deviceId = await getOrCreateDeviceId();
+            if (base.userId != null && options?.force !== true) {
                 return { ...base, deviceId };
             }
-            return base;
-        }
-        try {
-            const registered = await postRegisterUser();
-            return applyRegisterUser(base, {
-                userId: registered.userId,
-                deviceId,
-                onboardingCompleted: registered.onboardingCompleted,
-            });
-        } catch {
-            if (isApiEnabled()) {
-                // 실서버 모드: 가짜 userId(1001)로 진행하지 않음
-                return { ...base, deviceId, userId: null };
+            try {
+                const registered = await postRegisterUser();
+                return applyRegisterUser(
+                    { ...base, userId: options?.force === true ? null : base.userId },
+                    {
+                        userId: registered.userId,
+                        deviceId,
+                        onboardingCompleted:
+                            registered.onboardingCompleted || base.onboardingCompleted,
+                    },
+                );
+            } catch {
+                if (isApiEnabled()) {
+                    // 실서버 모드: 가짜 userId(1001)로 진행하지 않음
+                    return { ...base, deviceId, userId: null };
+                }
+                return applyRegisterUser(base, {
+                    userId: 1001,
+                    deviceId,
+                    onboardingCompleted: base.onboardingCompleted,
+                });
             }
-            return applyRegisterUser(base, {
-                userId: 1001,
-                deviceId,
-                onboardingCompleted: base.onboardingCompleted,
-            });
-        }
-    }, []);
+        },
+        [],
+    );
 
+    const recoverRegistrationIfNeeded = useCallback(
+        async (error: unknown): Promise<boolean> => {
+            if (
+                !(error instanceof ApiClientError) ||
+                error.code !== 'USER_NOT_FOUND' ||
+                !isApiEnabled()
+            ) {
+                return false;
+            }
+            const recovered = await ensureRegistered(
+                { ...stateRef.current, userId: null },
+                { force: true },
+            );
+            if (recovered.userId == null) {
+                return false;
+            }
+            stateRef.current = recovered;
+            setState(recovered);
+            await saveUserState(recovered);
+            return true;
+        },
+        [ensureRegistered],
+    );
     useEffect(() => {
         let mounted = true;
         (async () => {
@@ -497,84 +527,103 @@ export function UserProvider({ children }: PropsWithChildren) {
                 }));
             },
             pullGacha: async (): Promise<GachaPullResult> => {
-                const current = stateRef.current;
-                if (current.ecoJam < GACHA_PULL_COST_ECO_JAM) {
-                    return { ok: false, reason: 'insufficient_eco_jam' };
-                }
-                try {
-                    const api = await postGacha(current.ecoJam);
-                    if (!api.ok) {
-                        if (isApiEnabled()) {
-                            try {
-                                const myPage = await getMyPage();
-                                if (myPage != null) {
-                                    const synced = { ...stateRef.current, ecoJam: myPage.ecoJam };
-                                    stateRef.current = synced;
-                                    setState(synced);
-                                    await saveUserState(synced);
-                                }
-                            } catch {
-                                // keep local
-                            }
-                        }
+                for (let attempt = 0; attempt < 2; attempt += 1) {
+                    const current = stateRef.current;
+                    if (current.ecoJam < GACHA_PULL_COST_ECO_JAM) {
                         return { ok: false, reason: 'insufficient_eco_jam' };
                     }
-                    const cost = api.response.costEcoJam || GACHA_PULL_COST_ECO_JAM;
-                    let next: AppUserState;
-                    if (isApiEnabled()) {
-                        // BE remainingEcoJam이 권위 (차감+보상 반영됨)
-                        next = {
-                            ...current,
-                            ecoJam: api.remainingEcoJam,
-                        };
-                        next = appendEcoJamLedger(next, '가챠 뽑기', -cost);
-                        if (api.reward.type === 'INGREDIENT' || api.reward.type === 'ALMANG_POINT') {
-                            next = applyGachaReward(next, api.reward);
-                        }
-                        if (api.reward.type === 'ECO_JAM' && api.reward.amount > 0) {
-                            next = appendEcoJamLedger(next, '가챠 보상', api.reward.amount);
-                        }
-                        if (api.reward.type === 'FAIL' && api.reward.consolationEcoJam > 0) {
-                            next = appendEcoJamLedger(
-                                next,
-                                '가챠 위로 보상',
-                                api.reward.consolationEcoJam,
-                            );
-                        }
-                        if (api.reward.type === 'ALMANG_POINT') {
-                            next = appendAlmangPointsLedger(next, '가챠 보상', api.reward.amount);
-                        }
-                    } else {
-                        const spent = spendEcoJam(current, cost, '가챠 뽑기');
-                        if (spent == null) {
+                    try {
+                        const api = await postGacha(current.ecoJam);
+                        if (!api.ok) {
+                            if (isApiEnabled()) {
+                                try {
+                                    const myPage = await getMyPage();
+                                    if (myPage != null) {
+                                        const synced = {
+                                            ...stateRef.current,
+                                            ecoJam: myPage.ecoJam,
+                                        };
+                                        stateRef.current = synced;
+                                        setState(synced);
+                                        await saveUserState(synced);
+                                    }
+                                } catch {
+                                    // keep local
+                                }
+                            }
                             return { ok: false, reason: 'insufficient_eco_jam' };
                         }
-                        next = applyGachaReward(spent, api.reward);
-                        if (api.reward.type === 'ECO_JAM') {
-                            next = appendEcoJamLedger(next, '가챠 보상', api.reward.amount);
+                        const cost = api.response.costEcoJam || GACHA_PULL_COST_ECO_JAM;
+                        let next: AppUserState;
+                        if (isApiEnabled()) {
+                            next = {
+                                ...current,
+                                ecoJam: api.remainingEcoJam,
+                            };
+                            next = appendEcoJamLedger(next, '가챠 뽑기', -cost);
+                            if (
+                                api.reward.type === 'INGREDIENT' ||
+                                api.reward.type === 'ALMANG_POINT'
+                            ) {
+                                next = applyGachaReward(next, api.reward);
+                            }
+                            if (api.reward.type === 'ECO_JAM' && api.reward.amount > 0) {
+                                next = appendEcoJamLedger(next, '가챠 보상', api.reward.amount);
+                            }
+                            if (api.reward.type === 'FAIL' && api.reward.consolationEcoJam > 0) {
+                                next = appendEcoJamLedger(
+                                    next,
+                                    '가챠 위로 보상',
+                                    api.reward.consolationEcoJam,
+                                );
+                            }
+                            if (api.reward.type === 'ALMANG_POINT') {
+                                next = appendAlmangPointsLedger(
+                                    next,
+                                    '가챠 보상',
+                                    api.reward.amount,
+                                );
+                            }
+                        } else {
+                            const spent = spendEcoJam(current, cost, '가챠 뽑기');
+                            if (spent == null) {
+                                return { ok: false, reason: 'insufficient_eco_jam' };
+                            }
+                            next = applyGachaReward(spent, api.reward);
+                            if (api.reward.type === 'ECO_JAM') {
+                                next = appendEcoJamLedger(next, '가챠 보상', api.reward.amount);
+                            }
+                            if (api.reward.type === 'FAIL' && api.reward.consolationEcoJam > 0) {
+                                next = appendEcoJamLedger(
+                                    next,
+                                    '가챠 위로 보상',
+                                    api.reward.consolationEcoJam,
+                                );
+                            }
+                            if (api.reward.type === 'ALMANG_POINT') {
+                                next = appendAlmangPointsLedger(
+                                    next,
+                                    '가챠 보상',
+                                    api.reward.amount,
+                                );
+                            }
                         }
-                        if (api.reward.type === 'FAIL' && api.reward.consolationEcoJam > 0) {
-                            next = appendEcoJamLedger(
-                                next,
-                                '가챠 위로 보상',
-                                api.reward.consolationEcoJam,
-                            );
+                        stateRef.current = next;
+                        setState(next);
+                        await saveUserState(next);
+                        return {
+                            ok: true,
+                            reward: api.reward,
+                            costEcoJam: cost,
+                        };
+                    } catch (error) {
+                        if (attempt === 0 && (await recoverRegistrationIfNeeded(error))) {
+                            continue;
                         }
-                        if (api.reward.type === 'ALMANG_POINT') {
-                            next = appendAlmangPointsLedger(next, '가챠 보상', api.reward.amount);
-                        }
+                        return { ok: false, reason: 'network_error' };
                     }
-                    stateRef.current = next;
-                    setState(next);
-                    await saveUserState(next);
-                    return {
-                        ok: true,
-                        reward: api.reward,
-                        costEcoJam: cost,
-                    };
-                } catch {
-                    return { ok: false, reason: 'network_error' };
                 }
+                return { ok: false, reason: 'network_error' };
             },
             claimShareReward: async () => {
                 const { state: next, result } = applyShareRewardState(stateRef.current);
@@ -661,7 +710,47 @@ export function UserProvider({ children }: PropsWithChildren) {
                     setState(next);
                     await saveUserState(next);
                     return { ok: true, recipe, craft };
-                } catch {
+                } catch (error) {
+                    if (await recoverRegistrationIfNeeded(error)) {
+                        try {
+                            const craft = await postSoupCraft(recipe, filled);
+                            if (
+                                craft.soupId === 0 &&
+                                craft.rewardDescription === '재료가 부족해요'
+                            ) {
+                                return { ok: false, reason: 'no_stock' };
+                            }
+                            if (
+                                craft.soupId === 0 &&
+                                (craft.rewardDescription === '레시피가 없어요' ||
+                                    craft.rewardDescription === '재료를 다시 확인해 주세요')
+                            ) {
+                                return { ok: false, reason: 'no_match' };
+                            }
+                            const consumed = consumeIngredientsForSlots(
+                                stateRef.current,
+                                filled,
+                            );
+                            if (consumed == null) {
+                                return { ok: false, reason: 'no_stock' };
+                            }
+                            let next = completeRecipe(consumed, recipe, craft);
+                            next = {
+                                ...next,
+                                lastSoupSession: {
+                                    recipeId: recipe.id,
+                                    craft,
+                                    rerollUsed: false,
+                                },
+                            };
+                            stateRef.current = next;
+                            setState(next);
+                            await saveUserState(next);
+                            return { ok: true, recipe, craft };
+                        } catch {
+                            return { ok: false, reason: 'network' };
+                        }
+                    }
                     return { ok: false, reason: 'network' };
                 }
             },
@@ -794,7 +883,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                 };
             },
         }),
-        [isReady, state, persist, ensureRegistered],
+        [isReady, state, persist, ensureRegistered, recoverRegistrationIfNeeded],
     );
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

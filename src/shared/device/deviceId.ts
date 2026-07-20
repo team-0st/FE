@@ -2,10 +2,28 @@ import { getAnonymousKey } from '@apps-in-toss/framework';
 import { readJson, writeJson } from '../storage/jsonStorage';
 import { STORAGE_KEYS } from '../storage/keys';
 
+/** BE `RegisterUserRequest.deviceId` maxLength — OpenAPI 기준 */
+export const DEVICE_ID_MAX_LENGTH = 64;
+
 function createDeviceId(): string {
     const random = Math.random().toString(16).slice(2);
     const time = Date.now().toString(16);
     return `550e8400-e29b-41d4-a716-${time.padStart(12, '0').slice(0, 12)}${random.slice(0, 3)}`;
+}
+
+/**
+ * BE는 deviceId 64자 제한.
+ * `getAnonymousKey` 해시가 더 길면 등록이 실패하고 이후 가챠·제작이 USER_NOT_FOUND가 된다.
+ */
+export function normalizeDeviceId(raw: string): string {
+    const trimmed = raw.trim();
+    if (trimmed.length === 0) {
+        return createDeviceId();
+    }
+    if (trimmed.length <= DEVICE_ID_MAX_LENGTH) {
+        return trimmed;
+    }
+    return trimmed.slice(0, DEVICE_ID_MAX_LENGTH);
 }
 
 /**
@@ -30,25 +48,26 @@ async function resolveAnonymousHash(): Promise<string | null> {
     return null;
 }
 
+/**
+ * 한 번 저장된 deviceId를 유지한다.
+ * (익명키가 나중에 바뀌어도 BE 유저와 어긋나지 않게)
+ */
 export async function getOrCreateDeviceId(): Promise<string> {
-    const anon = await resolveAnonymousHash();
-    if (anon != null) {
-        const saved = await readJson<string>(STORAGE_KEYS.deviceId);
-        if (saved !== anon) {
-            await writeJson(STORAGE_KEYS.deviceId, anon);
-        }
-        return anon;
-    }
-
     const saved = await readJson<string>(STORAGE_KEYS.deviceId);
     if (saved != null && saved.length > 0) {
-        return saved;
+        const normalized = normalizeDeviceId(saved);
+        if (normalized !== saved) {
+            await writeJson(STORAGE_KEYS.deviceId, normalized);
+        }
+        return normalized;
     }
-    const deviceId = createDeviceId();
+
+    const anon = await resolveAnonymousHash();
+    const deviceId = normalizeDeviceId(anon ?? createDeviceId());
     await writeJson(STORAGE_KEYS.deviceId, deviceId);
     return deviceId;
 }
 
 export function getDeviceIdHeader(deviceId: string): Record<string, string> {
-    return { 'X-Device-Id': deviceId };
+    return { 'X-Device-Id': normalizeDeviceId(deviceId) };
 }
