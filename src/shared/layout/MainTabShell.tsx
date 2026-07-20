@@ -9,7 +9,7 @@ type MainTabShellProps = PropsWithChildren<{
     onPressTab: (route: string) => void;
 }>;
 
-/** Figma: 콘텐츠 위 · Tab Bar 하단 고정 · 상태바/홈 인디케이터 safe area */
+/** 콘텐츠 위 · 하단 플로팅 탭바 (앱인토스 비게임 가이드) */
 export function MainTabShell({ activeTab, onPressTab, children }: MainTabShellProps) {
     const insets = useSafeAreaInsets();
 
