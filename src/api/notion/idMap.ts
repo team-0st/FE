@@ -46,6 +46,10 @@ export function recipeNumericId(slug: string): number | undefined {
     return recipeNumericBySlug.get(slug);
 }
 
+export function recipeSlugFromNumeric(id: number): string | undefined {
+    return ALL_RECIPES[id - 1]?.id;
+}
+
 export function ingredientIdsToNumeric(slugs: string[]): number[] {
     return slugs.map((slug) => ingredientNumericId(slug) ?? 0).filter((id) => id > 0);
 }

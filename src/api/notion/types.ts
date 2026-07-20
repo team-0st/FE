@@ -84,6 +84,9 @@ export type SoupCraftResponse = {
     rewardGrade?: SoupRewardGradeWire;
     /** FE — 재료 지급 등급일 때 slug */
     rewardIngredientId?: string;
+    /** BE brew — 에코잼·포인트를 동시에 줄 수 있음 */
+    rewardEcoJam?: number;
+    rewardPoint?: number;
 };
 
 export type GachaResponse = {
@@ -141,7 +144,7 @@ export type EcoJamHistoryItem = {
     createdAt: string;
 };
 
-/** BE 실제 prefix는 `/api/v1`. 미구현(gacha/soup/profile 등)은 FE mock 유지 */
+/** BE 실제 prefix는 `/api/v1` */
 export const API_PATHS = {
     usersRegister: '/api/v1/users/register',
     shops: '/api/v1/shops',
@@ -152,12 +155,16 @@ export const API_PATHS = {
     missionDetail: (id: number) => `/api/v1/missions/${id}`,
     missionVerify: (id: number) => `/api/v1/missions/${id}/verify`,
     missionCompletions: '/api/v1/missions/completions',
+    filesUpload: '/api/v1/files/upload',
     ingredients: '/api/v1/ingredients',
-    recipes: '/api/recipes',
-    recipesHidden: '/api/recipes/hidden',
-    soupCraft: '/api/soup/craft',
-    soupDetail: (soupId: number) => `/api/soup/${soupId}`,
-    profile: '/api/profile',
-    ecoJamHistory: '/api/eco-jam/history',
-    gacha: '/api/gacha',
+    recipes: '/api/v1/recipes',
+    recipeDetail: (id: number) => `/api/v1/recipes/${id}`,
+    recipesUnlockHidden: '/api/v1/recipes/unlock/hidden',
+    soupsBrew: '/api/v1/soups/brew',
+    gachasDraw: '/api/v1/gachas/draw',
+    gachasHistories: '/api/v1/gachas/histories',
+    myPage: '/api/v1/my-page',
+    ecoJamHistories: '/api/v1/histories/eco-jams',
+    pointHistories: '/api/v1/histories/points',
+    home: '/api/v1/home',
 } as const;

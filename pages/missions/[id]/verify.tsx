@@ -50,8 +50,8 @@ function Page() {
             mission={mission}
             onMissingPhoto={handleMissingPhoto}
             onCaptureError={handleCaptureError}
-            onSubmit={async () => {
-                const result = await verifyMission(mission.id);
+            onSubmit={async (photo) => {
+                const result = await verifyMission(mission.id, photo);
                 if (result.ok) {
                     navigateMissionResult(navigation, mission.id);
                     return;

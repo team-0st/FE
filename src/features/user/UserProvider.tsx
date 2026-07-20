@@ -10,14 +10,11 @@ import {
 } from 'react';
 import { postCheckIn, getCheckInStatus, type CheckInResult } from '@api/checkIn';
 import { isApiEnabled } from '@api/client';
-import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
-import { formatPhoneForApi, postOnboardingComplete } from '@api/onboarding';
-import { postRegisterUser } from '@api/users';
-import { getOrCreateDeviceId } from '../../shared/device/deviceId';
 import { postGacha } from '@api/gacha';
-import { postMissionVerify } from '@api/missions';
+import { getEcoJamHistories } from '@api/history';
+import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
+import { getMissionCompletions, postMissionVerify } from '@api/missions';
 import { DAILY_MISSIONS } from '@api/mock/missions';
-import { shopNumericId } from '@api/notion/idMap';
 import { HIDDEN_RECIPES } from '@api/mock/recipeCatalog';
 import type { Recipe } from '@api/mock/recipes';
 import {
@@ -29,10 +26,22 @@ import {
     getTodayRecipe,
     isValidBrewFillCount,
 } from '@api/mock/recipes';
-import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
 import { buildCraftForGrade } from '@api/mock/soupCraftMock';
+import {
+    ingredientSlugFromNumeric,
+    missionSlugFromNumeric,
+    recipeSlugFromNumeric,
+    shopNumericId,
+} from '@api/notion/idMap';
 import type { SoupCraftResponse } from '@api/notion/types';
+import { formatPhoneForApi, postOnboardingComplete } from '@api/onboarding';
+import { getMyPage } from '@api/profile';
+import { postUnlockHiddenRecipe } from '@api/recipes';
 import { postSoupCraft } from '@api/soup';
+import { postRegisterUser } from '@api/users';
+import type { MissionVerifyUploadInput } from '@api/files';
+import { getOrCreateDeviceId } from '../../shared/device/deviceId';
+import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
 import { ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST } from '../../shared/constants/ecoJamPolicy';
 import { GACHA_PULL_COST_ECO_JAM } from '../gacha/gachaConfig';
 import { applyGachaReward } from '../gacha/gachaLogic';
@@ -52,6 +61,7 @@ import type { AppUserState, AlmangPayoutConsent, LocationConsent } from './types
 import {
     addEcoJam,
     applyCheckInFromServer,
+    applyMissionCompletionsToState,
     syncCheckedInToday,
     applyRegisterUser,
     applySoupRerollDelta,
@@ -88,7 +98,10 @@ type UserContextValue = {
     resetOnboarding: () => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
     setLocationConsent: (consent: LocationConsent) => Promise<void>;
-    verifyMission: (missionId: string) => Promise<
+    verifyMission: (
+        missionId: string,
+        photo?: MissionVerifyUploadInput | null,
+    ) => Promise<
         | { ok: true; pending: boolean; ingredientId?: string }
         | {
               ok: false;
@@ -212,6 +225,46 @@ export function UserProvider({ children }: PropsWithChildren) {
                     }
                 } catch {
                     // keep local inventory
+                }
+                try {
+                    const myPage = await getMyPage();
+                    if (myPage != null) {
+                        next = {
+                            ...next,
+                            ecoJam: myPage.ecoJam,
+                            totalPoints: myPage.point,
+                            nickname: myPage.nickname ?? next.nickname,
+                        };
+                    }
+                } catch {
+                    // keep local assets
+                }
+                try {
+                    const completions = await getMissionCompletions();
+                    next = applyMissionCompletionsToState(
+                        next,
+                        completions,
+                        missionSlugFromNumeric,
+                        ingredientSlugFromNumeric,
+                    );
+                } catch {
+                    // keep local mission progress
+                }
+                try {
+                    const histories = await getEcoJamHistories();
+                    if (histories != null && histories.length > 0) {
+                        next = {
+                            ...next,
+                            ecoJamLedger: histories.slice(0, 30).map((item) => ({
+                                id: String(item.id),
+                                at: item.createdAt,
+                                label: item.description,
+                                delta: item.amount,
+                            })),
+                        };
+                    }
+                } catch {
+                    // keep local ledger
                 }
             }
             stateRef.current = next;
@@ -359,11 +412,11 @@ export function UserProvider({ children }: PropsWithChildren) {
             setLocationConsent: async (consent) => {
                 await persist((prev) => setLocationConsentState(prev, consent));
             },
-            verifyMission: async (missionId) => {
+            verifyMission: async (missionId, photo = null) => {
                 try {
                     const current = stateRef.current;
                     const todayStatus = getMissionTodayStatus(current, missionId);
-                    const api = await postMissionVerify(missionId, todayStatus);
+                    const api = await postMissionVerify(missionId, todayStatus, photo);
                     if (!api.ok) {
                         return api;
                     }
@@ -436,32 +489,67 @@ export function UserProvider({ children }: PropsWithChildren) {
                 if (current.ecoJam < GACHA_PULL_COST_ECO_JAM) {
                     return { ok: false, reason: 'insufficient_eco_jam' };
                 }
-                const api = await postGacha(current.ecoJam);
-                if (!api.ok) {
+                try {
+                    const api = await postGacha(current.ecoJam);
+                    if (!api.ok) {
+                        return { ok: false, reason: 'insufficient_eco_jam' };
+                    }
+                    const cost = api.response.costEcoJam || GACHA_PULL_COST_ECO_JAM;
+                    let next: AppUserState;
+                    if (isApiEnabled()) {
+                        // BE remainingEcoJam이 권위 (차감+보상 반영됨)
+                        next = {
+                            ...current,
+                            ecoJam: api.remainingEcoJam,
+                        };
+                        next = appendEcoJamLedger(next, '가챠 뽑기', -cost);
+                        if (api.reward.type === 'INGREDIENT' || api.reward.type === 'ALMANG_POINT') {
+                            next = applyGachaReward(next, api.reward);
+                        }
+                        if (api.reward.type === 'ECO_JAM' && api.reward.amount > 0) {
+                            next = appendEcoJamLedger(next, '가챠 보상', api.reward.amount);
+                        }
+                        if (api.reward.type === 'FAIL' && api.reward.consolationEcoJam > 0) {
+                            next = appendEcoJamLedger(
+                                next,
+                                '가챠 위로 보상',
+                                api.reward.consolationEcoJam,
+                            );
+                        }
+                        if (api.reward.type === 'ALMANG_POINT') {
+                            next = appendAlmangPointsLedger(next, '가챠 보상', api.reward.amount);
+                        }
+                    } else {
+                        const spent = spendEcoJam(current, cost, '가챠 뽑기');
+                        if (spent == null) {
+                            return { ok: false, reason: 'insufficient_eco_jam' };
+                        }
+                        next = applyGachaReward(spent, api.reward);
+                        if (api.reward.type === 'ECO_JAM') {
+                            next = appendEcoJamLedger(next, '가챠 보상', api.reward.amount);
+                        }
+                        if (api.reward.type === 'FAIL' && api.reward.consolationEcoJam > 0) {
+                            next = appendEcoJamLedger(
+                                next,
+                                '가챠 위로 보상',
+                                api.reward.consolationEcoJam,
+                            );
+                        }
+                        if (api.reward.type === 'ALMANG_POINT') {
+                            next = appendAlmangPointsLedger(next, '가챠 보상', api.reward.amount);
+                        }
+                    }
+                    stateRef.current = next;
+                    setState(next);
+                    await saveUserState(next);
+                    return {
+                        ok: true,
+                        reward: api.reward,
+                        costEcoJam: cost,
+                    };
+                } catch {
                     return { ok: false, reason: 'insufficient_eco_jam' };
                 }
-                const spent = spendEcoJam(current, GACHA_PULL_COST_ECO_JAM, '가챠 뽑기');
-                if (spent == null) {
-                    return { ok: false, reason: 'insufficient_eco_jam' };
-                }
-                let next = applyGachaReward(spent, api.reward);
-                if (api.reward.type === 'ECO_JAM') {
-                    next = appendEcoJamLedger(next, '가챠 보상', api.reward.amount);
-                }
-                if (api.reward.type === 'FAIL' && api.reward.consolationEcoJam > 0) {
-                    next = appendEcoJamLedger(next, '가챠 위로 보상', api.reward.consolationEcoJam);
-                }
-                if (api.reward.type === 'ALMANG_POINT') {
-                    next = appendAlmangPointsLedger(next, '가챠 보상', api.reward.amount);
-                }
-                stateRef.current = next;
-                setState(next);
-                await saveUserState(next);
-                return {
-                    ok: true,
-                    reward: api.reward,
-                    costEcoJam: GACHA_PULL_COST_ECO_JAM,
-                };
             },
             claimShareReward: async () => {
                 const { state: next, result } = applyShareRewardState(stateRef.current);
@@ -487,25 +575,59 @@ export function UserProvider({ children }: PropsWithChildren) {
                     }
                     return { ok: false, reason: 'no_match' };
                 }
-                const consumed = consumeIngredientsForSlots(current, filled);
-                if (consumed == null) {
+                const stockCheck = consumeIngredientsForSlots(current, filled);
+                if (stockCheck == null) {
                     return { ok: false, reason: 'no_stock' };
                 }
-                const craft = await postSoupCraft(recipe, filled);
-                let next = completeRecipe(consumed, recipe, craft);
-                // completeRecipe 가드에 걸려도 리롤 세션은 항상 기록
-                next = {
-                    ...next,
-                    lastSoupSession: {
-                        recipeId: recipe.id,
-                        craft,
-                        rerollUsed: false,
-                    },
-                };
-                stateRef.current = next;
-                setState(next);
-                await saveUserState(next);
-                return { ok: true, recipe, craft };
+                try {
+                    const craft = await postSoupCraft(recipe, filled);
+                    if (
+                        craft.soupId === 0 &&
+                        craft.rewardDescription === '재료가 부족해요'
+                    ) {
+                        return { ok: false, reason: 'no_stock' };
+                    }
+                    if (
+                        craft.soupId === 0 &&
+                        craft.rewardDescription === '레시피가 없어요'
+                    ) {
+                        return { ok: false, reason: 'no_match' };
+                    }
+                    // BE가 재료를 차감했거나 mock이면 로컬도 동일하게 차감
+                    const consumed = consumeIngredientsForSlots(current, filled);
+                    if (consumed == null) {
+                        return { ok: false, reason: 'no_stock' };
+                    }
+                    let next = completeRecipe(consumed, recipe, craft);
+                    next = {
+                        ...next,
+                        lastSoupSession: {
+                            recipeId: recipe.id,
+                            craft,
+                            rerollUsed: false,
+                        },
+                    };
+                    if (isApiEnabled()) {
+                        try {
+                            const remoteIngredients = await getUserIngredients();
+                            if (remoteIngredients != null) {
+                                next = {
+                                    ...next,
+                                    ingredientInventory:
+                                        inventoryFromUserIngredients(remoteIngredients),
+                                };
+                            }
+                        } catch {
+                            // keep local inventory after brew
+                        }
+                    }
+                    stateRef.current = next;
+                    setState(next);
+                    await saveUserState(next);
+                    return { ok: true, recipe, craft };
+                } catch {
+                    return { ok: false, reason: 'no_match' };
+                }
             },
             rerollSoupReward: async (input) => {
                 const current = stateRef.current;
@@ -568,6 +690,42 @@ export function UserProvider({ children }: PropsWithChildren) {
             },
             unlockRandomHiddenRecipe: async () => {
                 const current = stateRef.current;
+                if (isApiEnabled()) {
+                    const api = await postUnlockHiddenRecipe();
+                    if (api == null) {
+                        return { ok: false, reason: 'none' };
+                    }
+                    if (!api.ok) {
+                        if (api.code === 'INSUFFICIENT_ECO_JAM') {
+                            return { ok: false, reason: 'insufficient_eco_jam' };
+                        }
+                        if (api.code === 'NO_HIDDEN_RECIPE') {
+                            return { ok: false, reason: 'all_unlocked' };
+                        }
+                        return { ok: false, reason: 'none' };
+                    }
+                    const slug =
+                        recipeSlugFromNumeric(api.recipeId) ?? `be-${api.recipeId}`;
+                    let next: AppUserState = {
+                        ...current,
+                        ecoJam: api.remainingEcoJam,
+                    };
+                    next = appendEcoJamLedger(
+                        next,
+                        '희귀 레시피 해금',
+                        -ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST,
+                    );
+                    next = unlockHiddenRecipe(next, slug);
+                    stateRef.current = next;
+                    setState(next);
+                    await saveUserState(next);
+                    return {
+                        ok: true,
+                        recipeId: slug,
+                        recipeName: api.recipeName,
+                        cost: ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST,
+                    };
+                }
                 const locked = HIDDEN_RECIPES.filter(
                     (recipe) =>
                         !current.completedRecipeIds.includes(recipe.id) &&
