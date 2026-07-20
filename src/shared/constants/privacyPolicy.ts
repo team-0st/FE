@@ -17,7 +17,7 @@ export const PRIVACY_POLICY_META = {
     appName: '0st',
     /** 개인정보 보호책임자 */
     dpoName: '윤나래',
-    contactEmail: 'yn2511@gachon.ac.kr',
+    contactEmail: 'zerost.team@gmail.com',
 } as const;
 
 /** 외부 참고 링크 (토스·앱인토스) */
@@ -196,6 +196,7 @@ export const PRIVACY_POLICY_LABELS = {
     viewFullLink: '개인정보 처리방침 보기 →',
     mustReadHint: '처리방침을 확인한 뒤 동의할 수 있어요.',
     mustReadBeforeConsent: '처리방침을 먼저 확인해 주세요.',
+    readToEndHint: '아래까지 모두 읽으면 동의할 수 있어요.',
     policyConfirmed: '처리방침을 확인했어요.',
     confirmRead: '확인했어요',
     close: '닫기',

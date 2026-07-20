@@ -1,13 +1,14 @@
 import {
-    formatRecipeIngredients,
+    getAllRecipes,
     getBeginnerRecipes,
     getHiddenRecipes,
     getLegendaryRecipes,
+    getTodayRecipe,
     getTodayRecipeHint,
     getWeeklyRecipes,
 } from '@api/mock/recipes';
 import type { Recipe } from '@api/mock/recipeTypes';
-import { Asset, ListRow, Top, Txt, frameShape } from '@toss/tds-react-native';
+import { Asset, Button, ListRow, Top, Txt, frameShape } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
     type LayoutChangeEvent,
@@ -20,11 +21,14 @@ import {
     View,
 } from 'react-native';
 import {
+    RECIPE_LIST_GUIDE_LINES,
+    RECIPE_LIST_GUIDE_TITLE,
     SOUP_HIDDEN_PROBABILITY_LINES,
     SOUP_HIDDEN_PROBABILITY_TITLE,
     SOUP_WEEKLY_PROBABILITY_LINES,
     SOUP_WEEKLY_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
+import { ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST } from '../../shared/constants/ecoJamPolicy';
 import { getSoupImageSource, hasSoupImage } from '../../shared/constants/soupAssets';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
@@ -35,7 +39,8 @@ import { useUser } from '../user/UserProvider';
 import { RecipeListRowShell } from './RecipeCompletedStamp';
 import { colors } from '../../shared/theme/colors';
 
-const HIDDEN_LOCKED_MESSAGE = '히든 레시피는 아직 밝혀지지 않았어요. 조합을 맞추면 공개돼요.';
+const HIDDEN_LOCKED_MESSAGE =
+    '히든 레시피는 아직 밝혀지지 않았어요. 조합을 맞추거나 에코잼으로 랜덤 해금할 수 있어요.';
 const LEGENDARY_LOCKED_MESSAGE = '전설 레시피는 아직 밝혀지지 않았어요. 조합을 맞추면 공개돼요.';
 const SCROLL_BOTTOM_THRESHOLD = 24;
 
@@ -53,22 +58,17 @@ const RECIPE_TABS: { id: RecipeTabId; label: string }[] = [
     { id: 'legendary', label: '전설' },
 ];
 
-function secretRecipeBottom(recipe: Recipe, kind: 'hidden' | 'legendary'): string {
+function secretRecipeBottom(kind: 'hidden' | 'legendary'): string {
     if (kind === 'legendary') {
         return '레시피북에 이름도 없대요';
     }
-    return recipe.hintDrip ?? '조합을 맞추면 공개';
-}
-
-function unlockedSecretBottom(recipe: Recipe): string {
-    const ingredients = formatRecipeIngredients(recipe);
-    const reward = recipe.realRewardLabel;
-    return reward != null ? `${ingredients} · ${reward}` : ingredients;
+    return '조합을 맞추거나 에코잼으로 해금하면 공개돼요';
 }
 
 type RecipeSectionProps = {
     recipes: Recipe[];
     completedRecipeIds: string[];
+    unlockedRecipeIds: string[];
     kind?: 'public' | 'hidden' | 'legendary';
     onLockedPress?: () => void;
 };
@@ -76,6 +76,7 @@ type RecipeSectionProps = {
 function RecipeList({
     recipes,
     completedRecipeIds,
+    unlockedRecipeIds,
     kind = 'public',
     onLockedPress,
     soupThumbSize,
@@ -84,7 +85,10 @@ function RecipeList({
         <View>
             {recipes.map((recipe) => {
                 const done = completedRecipeIds.includes(recipe.id);
-                const unlocked = kind === 'public' || done;
+                const unlocked =
+                    kind === 'public' ||
+                    done ||
+                    unlockedRecipeIds.includes(recipe.id);
                 const showSoupArt = unlocked && hasSoupImage(recipe.id);
                 return (
                     <RecipeListRowShell key={recipe.id} done={done}>
@@ -104,7 +108,7 @@ function RecipeList({
                             }
                             contents={
                                 <View style={styles.recipeContents}>
-                                    {kind === 'public' && unlocked ? (
+                                    {unlocked ? (
                                         <>
                                             <ListRow.Texts
                                                 type="1RowTypeA"
@@ -116,13 +120,11 @@ function RecipeList({
                                     ) : (
                                         <ListRow.Texts
                                             type="2RowTypeA"
-                                            top={unlocked ? recipe.name : '???'}
+                                            top="???"
                                             topProps={{ fontWeight: 'bold' }}
-                                            bottom={
-                                                unlocked
-                                                    ? unlockedSecretBottom(recipe)
-                                                    : secretRecipeBottom(recipe, kind === 'legendary' ? 'legendary' : 'hidden')
-                                            }
+                                            bottom={secretRecipeBottom(
+                                                kind === 'legendary' ? 'legendary' : 'hidden',
+                                            )}
                                         />
                                     )}
                                 </View>
@@ -145,11 +147,12 @@ function RecipeList({
 }
 
 export function RecipesScreen() {
-    const { state } = useUser();
-    const { show } = useAppToast();
+    const { state, unlockRandomHiddenRecipe, hideTodayRecipePin, showTodayRecipePin } = useUser();
+    const { show, showSuccess, showError } = useAppToast();
     const { width: windowWidth } = useWindowDimensions();
     const soupThumbSize = recipeSoupThumbSize(windowWidth);
     const [tab, setTab] = useState<RecipeTabId>('today');
+    const [unlockLoading, setUnlockLoading] = useState(false);
     const [viewportHeight, setViewportHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const [scrollY, setScrollY] = useState(0);
@@ -157,6 +160,23 @@ export function RecipesScreen() {
     const beginner = getBeginnerRecipes();
     const hidden = getHiddenRecipes();
     const legendary = getLegendaryRecipes();
+    const todayRecipe = getTodayRecipe();
+    const allRecipeCount = useMemo(() => getAllRecipes().length, []);
+    const catalogUnlocked =
+        state.unlockedRecipeIds.length >= allRecipeCount && allRecipeCount > 0;
+    const todayRevealed =
+        todayRecipe != null &&
+        (state.completedRecipeIds.includes(todayRecipe.id) ||
+            state.unlockedRecipeIds.includes(todayRecipe.id) ||
+            catalogUnlocked);
+    const todayPinCollapsed =
+        todayRecipe != null && state.hiddenTodayRecipePinId === todayRecipe.id;
+    const showTodayPin = todayRevealed && todayRecipe != null && !todayPinCollapsed;
+    const hiddenLockedCount = hidden.filter(
+        (recipe) =>
+            !state.completedRecipeIds.includes(recipe.id) &&
+            !state.unlockedRecipeIds.includes(recipe.id),
+    ).length;
 
     const activeRecipes = useMemo(() => {
         switch (tab) {
@@ -170,6 +190,13 @@ export function RecipesScreen() {
                 return legendary;
         }
     }, [beginner, hidden, legendary, tab, weekly]);
+
+    const listRecipes = useMemo(() => {
+        if (tab !== 'today' || !showTodayPin || todayRecipe == null) {
+            return activeRecipes;
+        }
+        return activeRecipes.filter((recipe) => recipe.id !== todayRecipe.id);
+    }, [activeRecipes, showTodayPin, tab, todayRecipe]);
 
     const listKind: 'public' | 'hidden' | 'legendary' =
         tab === 'hidden' ? 'hidden' : tab === 'legendary' ? 'legendary' : 'public';
@@ -209,14 +236,72 @@ export function RecipesScreen() {
                         </Top.SubtitleParagraph>
                     }
                 />
-                <View style={styles.todayHint} accessibilityRole="text">
-                    <Txt typography="t7" color="grey500" fontWeight="semibold">
-                        오늘의 레시피 힌트
-                    </Txt>
-                    <Txt typography="t7" color="grey700" style={styles.todayHintText}>
-                        {getTodayRecipeHint()}
-                    </Txt>
-                </View>
+                <View style={styles.guideRow}>
+                    <ProbabilityInfoRow
+                        label="레시피 안내"
+                        title={RECIPE_LIST_GUIDE_TITLE}
+                        lines={RECIPE_LIST_GUIDE_LINES}
+                    />
+                </View>                {showTodayPin && todayRecipe != null ? (
+                    <View style={styles.todayHint}>
+                        <View style={styles.todayPinHeader}>
+                            <Txt typography="t7" color="grey500" fontWeight="semibold">
+                                오늘의 레시피
+                            </Txt>
+                            <Pressable
+                                onPress={() => {
+                                    void hideTodayRecipePin();
+                                }}
+                                hitSlop={8}
+                                accessibilityRole="button"
+                                accessibilityLabel="오늘의 레시피 숨기기"
+                            >
+                                <Txt typography="t7" color="grey500">
+                                    숨기기
+                                </Txt>
+                            </Pressable>
+                        </View>
+                        <View style={styles.todayPinList}>
+                            <RecipeList
+                                recipes={[todayRecipe]}
+                                completedRecipeIds={state.completedRecipeIds}
+                                unlockedRecipeIds={state.unlockedRecipeIds}
+                                kind="public"
+                                soupThumbSize={soupThumbSize}
+                            />
+                        </View>
+                    </View>
+                ) : todayRevealed && todayPinCollapsed ? (
+                    <View style={styles.todayHint}>
+                        <Pressable
+                            onPress={() => {
+                                void showTodayRecipePin();
+                            }}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            accessibilityLabel="오늘의 레시피 보기"
+                            style={styles.todayShowButton}
+                        >
+                            <Txt typography="t7" color="grey500" fontWeight="semibold">
+                                오늘의 레시피 보기
+                            </Txt>
+                        </Pressable>
+                    </View>
+                ) : (
+                    <View style={styles.todayHint} accessibilityRole="text">
+                        <Txt
+                            typography="t7"
+                            color="grey500"
+                            fontWeight="semibold"
+                            style={styles.todayHintLabel}
+                        >
+                            오늘의 레시피 힌트
+                        </Txt>
+                        <Txt typography="t7" color="grey700" style={styles.todayHintText}>
+                            {getTodayRecipeHint()}
+                        </Txt>
+                    </View>
+                )}
                 <View style={styles.tabs}>
                     {RECIPE_TABS.map((item) => {
                         const selected = tab === item.id;
@@ -267,8 +352,9 @@ export function RecipesScreen() {
                     onContentSizeChange={onContentSizeChange}
                 >
                     <RecipeList
-                        recipes={activeRecipes}
+                        recipes={listRecipes}
                         completedRecipeIds={state.completedRecipeIds}
+                        unlockedRecipeIds={state.unlockedRecipeIds}
                         kind={listKind}
                         soupThumbSize={soupThumbSize}
                         onLockedPress={() =>
@@ -279,13 +365,49 @@ export function RecipesScreen() {
                             )
                         }
                     />
-                    <View style={styles.note}>
-                        <Txt typography="t7" color="grey600" style={styles.noteText}>
-                            {
-                                '입문·이번 주 레시피는 재료 조합이 공개돼요.\n히든·전설은 완성 후에만 확인할 수 있어요.\n모든 레시피는 한 번만 만들 수 있어요.'
-                            }
-                        </Txt>
-                    </View>
+                    {tab === 'hidden' ? (
+                        <View style={styles.unlockWrap}>
+                            <Button
+                                size="large"
+                                type="primary"
+                                display="block"
+                                disabled={unlockLoading || hiddenLockedCount === 0}
+                                onPress={() => {
+                                    void (async () => {
+                                        setUnlockLoading(true);
+                                        try {
+                                            const result = await unlockRandomHiddenRecipe();
+                                            if (!result.ok) {
+                                                if (result.reason === 'insufficient_eco_jam') {
+                                                    showError(
+                                                        `에코잼이 부족해요. (필요: ${ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST}개)`,
+                                                    );
+                                                    return;
+                                                }
+                                                if (result.reason === 'all_unlocked') {
+                                                    show('희귀 레시피를 모두 열었어요.');
+                                                    return;
+                                                }
+                                                showError('지금은 해금할 수 없어요.');
+                                                return;
+                                            }
+                                            showSuccess(
+                                                `「${result.recipeName}」 레시피를 열었어요!`,
+                                            );
+                                        } finally {
+                                            setUnlockLoading(false);
+                                        }
+                                    })();
+                                }}
+                            >
+                                {hiddenLockedCount === 0
+                                    ? '희귀 레시피 모두 해금됨'
+                                    : unlockLoading
+                                      ? '해금 중…'
+                                      : `희귀 레시피 랜덤 해금 · 에코잼 ${ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST}`}
+                            </Button>
+                        </View>
+                    ) : null}
                 </ScrollView>
                 {canScrollMore ? (
                     <View
@@ -323,13 +445,41 @@ const styles = StyleSheet.create({
         maxWidth: 400,
         alignSelf: 'center',
     },
+    guideRow: {
+        alignSelf: 'flex-start',
+        marginBottom: 8,
+    },
     todayHint: {
         marginTop: 2,
         marginBottom: 6,
         gap: 2,
+        alignItems: 'center',
+        width: '100%',
+    },
+    todayPinHeader: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+    },
+    todayPinList: {
+        width: '100%',
+        alignSelf: 'stretch',
+    },
+    todayShowButton: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
+    todayHintLabel: {
+        textAlign: 'center',
+        width: '100%',
     },
     todayHintText: {
         lineHeight: 18,
+        textAlign: 'center',
+        width: '100%',
     },
     tabs: {
         flexDirection: 'row',
@@ -394,16 +544,9 @@ const styles = StyleSheet.create({
         zIndex: 1,
         transform: [{ scale: 0.75 }],
     },
-    note: {
-        marginTop: 8,
-        marginBottom: 8,
-        padding: 12,
-        backgroundColor: colors.primaryLight,
-        borderRadius: 12,
-        width: '100%',
-    },
-    noteText: {
-        textAlign: 'center',
+    unlockWrap: {
+        marginTop: 12,
+        marginBottom: 4,
     },
     recipeContents: {
         flex: 1,

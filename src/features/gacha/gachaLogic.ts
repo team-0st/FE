@@ -2,64 +2,74 @@ import { getIngredientById } from '@api/mock/ingredients';
 import { getAlmangRewardMessage } from '../user/almangPayoutCopy';
 import type { AppUserState } from '../user/types';
 import {
-    GACHA_INGREDIENT_POOL,
+    GACHA_COMMON_INGREDIENT_POOL,
+    GACHA_CONSOLATION_ECO_JAM,
+    GACHA_HIDDEN_INGREDIENT_POOL,
     GACHA_PULL_COST_ECO_JAM,
     GACHA_WEIGHT_TABLE,
+    type GachaWeightEntry,
 } from './gachaConfig';
-import type { GachaReward, GachaRewardType } from './gachaTypes';
+import type { GachaReward } from './gachaTypes';
 
-function pickRewardType(random: () => number): GachaRewardType {
+function pickWeightedEntry(random: () => number): GachaWeightEntry {
     const roll = random() * 100;
     let acc = 0;
     for (const entry of GACHA_WEIGHT_TABLE) {
         acc += entry.weight;
         if (roll < acc) {
-            return entry.type;
+            return entry;
         }
     }
-    return GACHA_WEIGHT_TABLE[GACHA_WEIGHT_TABLE.length - 1]?.type ?? 'FAIL';
+    return GACHA_WEIGHT_TABLE[GACHA_WEIGHT_TABLE.length - 1] ?? {
+        kind: 'consolation',
+        amount: GACHA_CONSOLATION_ECO_JAM,
+        weight: 15,
+    };
 }
 
-function pickIngredientId(random: () => number): string {
-    const index = Math.floor(random() * GACHA_INGREDIENT_POOL.length);
-    const picked = GACHA_INGREDIENT_POOL[index];
-    if (picked != null) {
-        return picked;
+function pickFromPool(pool: string[], random: () => number): string {
+    if (pool.length === 0) {
+        return 'cabbage';
     }
-    return GACHA_INGREDIENT_POOL[0] ?? 'cabbage';
+    const index = Math.floor(random() * pool.length);
+    return pool[index] ?? pool[0] ?? 'cabbage';
 }
 
 export function rollGachaReward(random: () => number = Math.random): GachaReward {
-    const type = pickRewardType(random);
-    switch (type) {
-        case 'FAIL':
-            return { type: 'FAIL' };
-        case 'ECO_JAM':
-            return { type: 'ECO_JAM', amount: 1 + Math.floor(random() * 3) };
-        case 'INGREDIENT':
+    const entry = pickWeightedEntry(random);
+    switch (entry.kind) {
+        case 'almang':
+            return { type: 'ALMANG_POINT', amount: entry.amount };
+        case 'common_ingredient':
             return {
                 type: 'INGREDIENT',
-                ingredientId: pickIngredientId(random),
-                amount: 1,
+                ingredientId: pickFromPool(GACHA_COMMON_INGREDIENT_POOL, random),
+                amount: entry.count,
+                rarity: 'COMMON',
             };
-        case 'ALMANG_POINT':
+        case 'hidden_ingredient':
             return {
-                type: 'ALMANG_POINT',
-                amount: 10 + Math.floor(random() * 21),
+                type: 'INGREDIENT',
+                ingredientId: pickFromPool(GACHA_HIDDEN_INGREDIENT_POOL, random),
+                amount: entry.count,
+                rarity: 'HIDDEN',
             };
+        case 'consolation':
+            return { type: 'FAIL', consolationEcoJam: entry.amount };
     }
 }
 
 export function formatGachaRewardMessage(reward: GachaReward, state?: AppUserState): string {
     switch (reward.type) {
         case 'FAIL':
-            return '아쉽게도 꽝이에요. 다음에 다시 도전해 보세요!';
+            return `아쉽게도 꽝이에요. 위로의 에코잼 ${reward.consolationEcoJam}개를 드렸어요!`;
         case 'ECO_JAM':
             return `에코잼 ${reward.amount}개를 받았어요!`;
         case 'INGREDIENT': {
             const item = getIngredientById(reward.ingredientId);
             const label = item != null ? item.name : '재료';
-            return `${label} ${reward.amount}개를 받았어요!`;
+            const rare = reward.rarity === 'HIDDEN' ? '희귀 ' : '';
+            return `${rare}${label} ${reward.amount}개를 받았어요!`;
         }
         case 'ALMANG_POINT':
             return state != null
@@ -87,6 +97,9 @@ export function applyGachaReward(state: AppUserState, reward: GachaReward): AppU
     let next = state;
     switch (reward.type) {
         case 'FAIL':
+            if (reward.consolationEcoJam > 0) {
+                next = { ...next, ecoJam: next.ecoJam + reward.consolationEcoJam };
+            }
             break;
         case 'ECO_JAM':
             next = { ...next, ecoJam: next.ecoJam + reward.amount };

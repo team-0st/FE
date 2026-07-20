@@ -6,9 +6,7 @@ import {
     getRecommendedRecipes,
     hasAffordableSecretRecipes,
     isValidBrewFillCount,
-    RECOMMEND_SECRET_RECIPE_NOTICE,
     recipeToSlots,
-    recommendationSubtitle,
     recommendationTitle,
 } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
@@ -16,19 +14,34 @@ import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import {
+    RECIPE_RECOMMEND_INFO_LINES,
+    RECIPE_RECOMMEND_INFO_TITLE,
     SOUP_BREW_PROBABILITY_LINES,
     SOUP_BREW_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
+import { HOME_DECOR } from '../../shared/constants/homeDecorAssets';
 import { getSoupImageSource, hasSoupImage } from '../../shared/constants/soupAssets';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { getBrewFailureMessage } from '../../shared/feedback/messages';
 import { useAppToast } from '../../shared/feedback/useAppToast';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { BrandListRowImage } from '../../shared/ui/BrandListRowImage';
 import { IngredientSlotBar } from '../../shared/ui/IngredientSlotBar';
+import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
-import { ScrollPreviewSection } from '../../shared/ui/ScrollPreviewSection';
+import { RecipeIngredientIcons } from '../../shared/ui/RecipeIngredientIcons';
+import {
+    PREVIEW_VISIBLE_ROWS,
+    ScrollPreviewSection,
+} from '../../shared/ui/ScrollPreviewSection';
 import { colors } from '../../shared/theme/colors';
+import { ProfileListModal } from '../profile/ProfileListSection';
 import { useUser } from '../user/UserProvider';
+
+/** 추천 행: 스프 썸네일 확대 + 재료 아이콘·라벨 */
+const RECOMMEND_SOUP_SIZE = 80;
+const RECOMMEND_INGREDIENT_SIZE = 26;
+const RECOMMEND_ROW_HEIGHT = 120;
 
 type IngredientsScreenProps = {
     onSoupMade: (recipeId: string, craft: SoupCraftResponse) => void;
@@ -38,11 +51,25 @@ function emptySlots(): (string | null)[] {
     return Array.from({ length: BREW_SLOT_MAX }, () => null);
 }
 
+function brewStatusMessage(filledCount: number, matchedLabel: string | null): string {
+    if (matchedLabel != null) {
+        return matchedLabel;
+    }
+    if (isValidBrewFillCount(filledCount)) {
+        return '조합이 맞는지 확인해 보세요.';
+    }
+    if (filledCount === 1) {
+        return '재료를 1개 더 넣으면 만들 수 있어요.';
+    }
+    return '재료를 2개 넣으면 만들 수 있어요.';
+}
+
 export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
     const { state, brewSoup } = useUser();
     const { showError } = useAppToast();
     const [slots, setSlots] = useState<(string | null)[]>(emptySlots);
     const [brewing, setBrewing] = useState(false);
+    const [ownedExpanded, setOwnedExpanded] = useState(false);
 
     const filledCount = getFilledIngredientIds(slots).length;
     const canBrew = isValidBrewFillCount(filledCount) && !brewing;
@@ -135,42 +162,40 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                     title={<Top.TitleParagraph size={22}>제작</Top.TitleParagraph>}
                     subtitle2={
                         <Top.SubtitleParagraph>
-                            {'재료를 골라 냄비에 넣어요.\n스프를 만들어 보세요.'}
+                            {'재료를 골라 냄비에 넣어요.\n조합이 맞으면 스프가 완성돼요.'}
                         </Top.SubtitleParagraph>
                     }
                 />
-                <IngredientSlotBar slots={slots} onPressSlot={handlePressSlot} />
-                <View style={styles.slotActions}>
-                    <Button
-                        size="medium"
-                        type="dark"
-                        style="weak"
-                        display="block"
-                        disabled={filledCount === 0}
-                        onPress={() => setSlots(emptySlots())}
-                        accessibilityLabel="냄비 재료 전부 비우기"
-                    >
-                        전부 비우기
-                    </Button>
+                <IngredientSlotBar
+                    slots={slots}
+                    onPressSlot={handlePressSlot}
+                    filledCount={filledCount}
+                    onClearAll={() => setSlots(emptySlots())}
+                />
+                <View style={styles.probRow}>
+                    <ProbabilityInfoRow
+                        label="제작 안내"
+                        title={SOUP_BREW_PROBABILITY_TITLE}
+                        lines={SOUP_BREW_PROBABILITY_LINES}
+                    />
                 </View>
                 <View style={styles.recommendSection}>
-                    <Txt typography="t7" color="grey600" style={styles.secretNotice}>
-                        {RECOMMEND_SECRET_RECIPE_NOTICE}
-                    </Txt>
-                    {hasSecretAffordable ? (
-                        <Txt typography="t7" color="blue500" style={styles.secretHint}>
-                            재료가 충분한 비밀 레시피가 있어요. 직접 넣어 조합해 보세요.
-                        </Txt>
-                    ) : null}
                     {recommendedRecipes.length === 0 ? (
                         <Txt typography="t7" color="grey600">
-                            {'지금 만들 수 있는 입문·이번주 조합이 없어요.\n미션으로 재료를 모아 보세요.'}
+                            지금 만들 수 있는 입문·이번주 조합이 없어요.
                         </Txt>
                     ) : (
                         <ScrollPreviewSection
                             title="추천 조합"
+                            titleExtra={
+                                <ProbabilityInfoButton
+                                    title={RECIPE_RECOMMEND_INFO_TITLE}
+                                    lines={RECIPE_RECOMMEND_INFO_LINES}
+                                    footnote={null}
+                                />
+                            }
                             itemCount={recommendedRecipes.length}
-                            hint={'보유 재료로 만들 수 있는\n입문·이번주 조합이에요.'}
+                            rowHeight={RECOMMEND_ROW_HEIGHT}
                         >
                             {recommendedRecipes.map((recipe) => {
                                 return (
@@ -179,102 +204,182 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                     onPress={() => handleApplyRecommendation(recipe.id)}
                                     left={
                                         hasSoupImage(recipe.id) ? (
-                                            <BrandListRowImage source={getSoupImageSource(recipe.id)} />
+                                            <BrandListRowImage
+                                                source={getSoupImageSource(recipe.id)}
+                                                size={RECOMMEND_SOUP_SIZE}
+                                            />
                                         ) : (
                                             <ListRow.Icon name={TDS_ICON.soupBowl} />
                                         )
                                     }
                                     contents={
-                                        <ListRow.Texts
-                                            type="2RowTypeA"
-                                            top={recommendationTitle(recipe)}
-                                            topProps={{ fontWeight: 'bold' }}
-                                            bottom={recommendationSubtitle(recipe)}
-                                        />
-                                    }
-                                    right={
-                                        <ListRow.RightTexts
-                                            type="1RowTypeA"
-                                            top="넣기"
-                                            topProps={{ color: 'blue500' }}
-                                        />
+                                        <View style={styles.recommendContents}>
+                                            <ListRow.Texts
+                                                type="1RowTypeA"
+                                                top={recommendationTitle(recipe)}
+                                                topProps={{ fontWeight: 'bold' }}
+                                            />
+                                            <RecipeIngredientIcons
+                                                ingredientIds={recipe.ingredientIds}
+                                                size={RECOMMEND_INGREDIENT_SIZE}
+                                            />
+                                        </View>
                                     }
                                 />
                                 );
                             })}
                         </ScrollPreviewSection>
                     )}
-                </View>
-                <View style={styles.matchHintSlot}>
-                    {matchedLabel != null ? (
-                        <Txt typography="t6" color="blue500" style={styles.matchHint}>
-                            {matchedLabel}
+                    {hasSecretAffordable ? (
+                        <Txt typography="t7" color="blue500" style={styles.secretHint}>
+                            {'재료가 충분한 비밀 레시피가 있어요.\n직접 넣어 조합해 보세요.'}
                         </Txt>
                     ) : null}
                 </View>
-                <Txt typography="t7" color="grey600" style={styles.hint}>
-                    칸을 탭하면 재료를 빼요. 전부 비우기로 한 번에 뺄 수도 있어요.
-                </Txt>
-                <View style={styles.probRow}>
-                    <ProbabilityInfoRow
-                        label="제작 보상"
-                        title={SOUP_BREW_PROBABILITY_TITLE}
-                        lines={SOUP_BREW_PROBABILITY_LINES}
-                    />
-                </View>
                 {ownedIngredients.length === 0 ? (
                     <>
-                        <Txt typography="t6" fontWeight="semibold" style={styles.sectionTitle}>
-                            보유 재료
-                        </Txt>
+                        <View style={styles.ownedTitleRow}>
+                            <Txt typography="t5" fontWeight="semibold" style={styles.sectionTitle}>
+                                보유 재료
+                            </Txt>
+                            <BrandEmojiImage
+                                source={HOME_DECOR.bannerVeggies}
+                                size={36}
+                                containerStyle={styles.ownedTitleArt}
+                                accessibilityLabel=""
+                            />
+                        </View>
                         <Txt typography="t7" color="grey600">
-                            보유한 재료가 없어요. 미션으로 재료를 모아 보세요.
+                            보유한 재료가 없어요.
                         </Txt>
                     </>
                 ) : (
-                    <ScrollPreviewSection title="보유 재료" itemCount={ownedIngredients.length}>
-                        {ownedIngredients.map((item) => {
-                            const owned = state.ingredientInventory[item.id] ?? 0;
-                            const inSlots = slots.filter((s) => s === item.id).length;
-                            const available = owned - inSlots;
-                            const disabled = available <= 0;
-                            return (
-                                <ListRow
-                                    key={item.id}
-                                    onPress={disabled ? undefined : () => handlePressIngredient(item.id)}
-                                    left={
-                                        item.imageSource != null ? (
-                                            <BrandListRowImage source={item.imageSource} />
-                                        ) : undefined
-                                    }
-                                    contents={
-                                        <ListRow.Texts
-                                            type="2RowTypeA"
-                                            top={
-                                                item.imageSource != null
-                                                    ? item.name
-                                                    : item.name
-                                            }
-                                            topProps={{ fontWeight: 'bold' }}
-                                            bottom={disabled ? '슬롯에 모두 사용 중' : `보유 ${available}개`}
-                                        />
-                                    }
-                                    right={
-                                        !disabled ? (
-                                            <ListRow.RightTexts
-                                                type="1RowTypeA"
-                                                top="넣기"
-                                                topProps={{ color: 'blue500' }}
-                                            />
-                                        ) : undefined
-                                    }
+                    <>
+                        <ScrollPreviewSection
+                            title="보유 재료"
+                            titleExtra={
+                                <BrandEmojiImage
+                                    source={HOME_DECOR.bannerVeggies}
+                                    size={36}
+                                    containerStyle={styles.ownedTitleArt}
+                                    accessibilityLabel=""
                                 />
-                            );
-                        })}
-                    </ScrollPreviewSection>
+                            }
+                            titleAction={
+                                ownedIngredients.length > PREVIEW_VISIBLE_ROWS ? (
+                                    <Txt
+                                        typography="t7"
+                                        color="blue500"
+                                        onPress={() => setOwnedExpanded(true)}
+                                        accessibilityRole="button"
+                                        accessibilityLabel="보유 재료 모두 보기"
+                                    >
+                                        모두 보기
+                                    </Txt>
+                                ) : null
+                            }
+                            itemCount={ownedIngredients.length}
+                        >
+                            {ownedIngredients.map((item) => {
+                                const owned = state.ingredientInventory[item.id] ?? 0;
+                                const inSlots = slots.filter((s) => s === item.id).length;
+                                const available = owned - inSlots;
+                                const disabled = available <= 0;
+                                return (
+                                    <ListRow
+                                        key={item.id}
+                                        onPress={
+                                            disabled
+                                                ? undefined
+                                                : () => handlePressIngredient(item.id)
+                                        }
+                                        left={
+                                            item.imageSource != null ? (
+                                                <BrandListRowImage source={item.imageSource} />
+                                            ) : undefined
+                                        }
+                                        contents={
+                                            <ListRow.Texts
+                                                type="2RowTypeA"
+                                                top={item.name}
+                                                topProps={{ fontWeight: 'bold' }}
+                                                bottom={
+                                                    disabled
+                                                        ? '슬롯에 모두 사용 중'
+                                                        : `보유 ${available}개`
+                                                }
+                                            />
+                                        }
+                                        right={
+                                            !disabled ? (
+                                                <ListRow.RightTexts
+                                                    type="1RowTypeA"
+                                                    top="넣기"
+                                                    topProps={{ color: 'blue500' }}
+                                                />
+                                            ) : undefined
+                                        }
+                                    />
+                                );
+                            })}
+                        </ScrollPreviewSection>
+                        <ProfileListModal
+                            visible={ownedExpanded}
+                            title="보유 재료"
+                            emptyMessage="보유한 재료가 없어요."
+                            itemCount={ownedIngredients.length}
+                            onClose={() => setOwnedExpanded(false)}
+                        >
+                            {ownedIngredients.map((item) => {
+                                const owned = state.ingredientInventory[item.id] ?? 0;
+                                const inSlots = slots.filter((s) => s === item.id).length;
+                                const available = owned - inSlots;
+                                const disabled = available <= 0;
+                                return (
+                                    <ListRow
+                                        key={`modal-${item.id}`}
+                                        onPress={
+                                            disabled
+                                                ? undefined
+                                                : () => handlePressIngredient(item.id)
+                                        }
+                                        left={
+                                            item.imageSource != null ? (
+                                                <BrandListRowImage source={item.imageSource} />
+                                            ) : undefined
+                                        }
+                                        contents={
+                                            <ListRow.Texts
+                                                type="2RowTypeA"
+                                                top={item.name}
+                                                topProps={{ fontWeight: 'bold' }}
+                                                bottom={
+                                                    disabled
+                                                        ? '슬롯에 모두 사용 중'
+                                                        : `보유 ${available}개`
+                                                }
+                                            />
+                                        }
+                                        right={
+                                            !disabled ? (
+                                                <ListRow.RightTexts
+                                                    type="1RowTypeA"
+                                                    top="넣기"
+                                                    topProps={{ color: 'blue500' }}
+                                                />
+                                            ) : undefined
+                                        }
+                                    />
+                                );
+                            })}
+                        </ProfileListModal>
+                    </>
                 )}
             </ScrollView>
             <View style={styles.cta}>
+                <Txt typography="t7" color="grey600" style={styles.brewStatus}>
+                    {brewStatusMessage(filledCount, matchedLabel)}
+                </Txt>
                 <Button
                     size="large"
                     type="primary"
@@ -312,35 +417,34 @@ const styles = StyleSheet.create({
         marginTop: 8,
         marginBottom: 4,
     },
-    slotActions: {
-        width: '100%',
-        marginBottom: 4,
-    },
-    secretNotice: {
-        marginBottom: 6,
+    recommendContents: {
+        flex: 1,
+        justifyContent: 'center',
     },
     secretHint: {
+        marginTop: 8,
+        textAlign: 'center',
+    },
+    ownedTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
         marginBottom: 8,
     },
     sectionTitle: {
-        marginBottom: 8,
+        marginBottom: 0,
     },
-    matchHintSlot: {
-        minHeight: 28,
-        justifyContent: 'center',
-        marginBottom: 4,
-    },
-    matchHint: {
-        textAlign: 'center',
-        fontWeight: '600',
-    },
-    hint: {
-        textAlign: 'center',
-        marginBottom: 8,
+    ownedTitleArt: {
+        marginRight: 0,
+        opacity: 0.9,
     },
     probRow: {
         alignSelf: 'flex-start',
         marginBottom: 12,
+    },
+    brewStatus: {
+        textAlign: 'center',
+        marginBottom: 8,
     },
     cta: {
         width: '100%',

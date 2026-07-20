@@ -1,10 +1,9 @@
 import { getShopById } from '@api/mock/shops';
 import { getIngredientById } from '@api/mock/ingredients';
-import { Button, Top, Txt } from '@toss/tds-react-native';
+import { Button, Top } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import {
-    CHECK_IN_ALREADY_MESSAGE,
     NETWORK_ERROR_MESSAGE,
     USER_NOT_FOUND_MESSAGE,
 } from '../../shared/feedback/messages';
@@ -29,7 +28,6 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
     const { state, checkInToday, setLocationConsent } = useUser();
     const { showSuccess, showError, show } = useAppToast();
     const checkedIn = isUserCheckedInToday(state);
-    const [todayRewardLabel, setTodayRewardLabel] = useState<string | null>(null);
     const [checkInLoading, setCheckInLoading] = useState(false);
     const [consentModalVisible, setConsentModalVisible] = useState(false);
     const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
@@ -50,7 +48,6 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
             if (result.ok) {
                 const ingredient = getIngredientById(result.data.ingredientId);
                 if (ingredient != null) {
-                    setTodayRewardLabel(ingredient.name);
                     showSuccess(`${ingredient.name} 재료를 받았어요.`);
                 } else {
                     showSuccess('오늘의 재료를 받았어요.');
@@ -58,7 +55,7 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
                 return;
             }
             if (result.code === 'ALREADY_CHECKED_IN') {
-                show(CHECK_IN_ALREADY_MESSAGE);
+                show('오늘은 이미 출석되어 있어요.\n출석 칸에 반영해 두었어요.');
                 return;
             }
             if (result.code === 'USER_NOT_FOUND') {
@@ -80,22 +77,6 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
             >
                 <View style={styles.topWrap}>
                     <Top title={<Top.TitleParagraph size={22}>제로스트</Top.TitleParagraph>} />
-                    {!checkedIn ? (
-                        <Pressable
-                            onPress={() => {
-                                void handleCheckIn();
-                            }}
-                            accessibilityRole="button"
-                            accessibilityLabel="오늘 출석하기"
-                            style={styles.checkInLink}
-                        >
-                            <Txt typography="t7" color="blue500">
-                                {checkInLoading
-                                    ? '출석 중…'
-                                    : (todayRewardLabel ?? '오늘 출석하고 재료 받기')}
-                            </Txt>
-                        </Pressable>
-                    ) : null}
                     <View style={styles.heroMascot} pointerEvents="none">
                         <BrandEmojiImage
                             source={HOME_DECOR.homeHero}
@@ -106,7 +87,13 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
                     </View>
                 </View>
                 <CommunityGoalSection />
-                <WeeklyMissionOxRow state={state} />
+                <WeeklyMissionOxRow
+                    state={state}
+                    checkInLoading={checkInLoading}
+                    onPressTodayCheckIn={() => {
+                        void handleCheckIn();
+                    }}
+                />
                 <NearbyShopsSection
                     locationConsentGranted={locationConsentGranted}
                     onPressViewAll={onPressPartnerShops}
@@ -115,15 +102,30 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
                 />
             </ScrollView>
             <View style={styles.footer}>
-                <Button
-                    size="large"
-                    type="primary"
-                    display="block"
-                    onPress={onPressMissions}
-                    accessibilityLabel="오늘 미션 하고 재료 받기"
-                >
-                    오늘 미션 하고 재료 받기
-                </Button>
+                {!checkedIn ? (
+                    <Button
+                        size="large"
+                        type="primary"
+                        display="block"
+                        onPress={() => {
+                            void handleCheckIn();
+                        }}
+                        disabled={checkInLoading}
+                        accessibilityLabel="오늘 출석하기"
+                    >
+                        {checkInLoading ? '출석 중…' : '오늘 출석하기'}
+                    </Button>
+                ) : (
+                    <Button
+                        size="large"
+                        type="primary"
+                        display="block"
+                        onPress={onPressMissions}
+                        accessibilityLabel="미션 하고 재료 받기"
+                    >
+                        미션 하고 재료 받기
+                    </Button>
+                )}
             </View>
             <LocationConsentModal
                 visible={consentModalVisible}
@@ -174,11 +176,6 @@ const styles = StyleSheet.create({
         paddingRight: 72,
         minHeight: 72,
         justifyContent: 'center',
-    },
-    checkInLink: {
-        marginTop: 4,
-        paddingRight: 8,
-        alignSelf: 'flex-start',
     },
     heroMascot: {
         position: 'absolute',

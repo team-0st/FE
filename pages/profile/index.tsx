@@ -25,6 +25,7 @@ function Page() {
                         ? () => {
                               void (async () => {
                                   await resetOnboarding();
+                                  // replace 전에 상태가 false여야 useRedirectHomeIfOnboarded에 안 튕김
                                   navigation.replace(ROUTES.onboarding);
                               })();
                           }

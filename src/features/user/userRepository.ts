@@ -65,6 +65,13 @@ export async function loadUserState(): Promise<AppUserState> {
         (id) => legacyRecipeIdMap[id] ?? id,
     );
 
+    const lastCheckInDate = rest.lastCheckInDate ?? null;
+    const savedDates = Array.isArray(rest.checkInDates) ? rest.checkInDates : [];
+    const checkInDates =
+        lastCheckInDate != null && !savedDates.includes(lastCheckInDate)
+            ? [...savedDates, lastCheckInDate].sort()
+            : savedDates;
+
     return {
         ...DEFAULT_USER_STATE,
         ...rest,
@@ -75,14 +82,19 @@ export async function loadUserState(): Promise<AppUserState> {
         almangPayoutConsent: rest.almangPayoutConsent ?? DEFAULT_USER_STATE.almangPayoutConsent,
         almangConsentAt: rest.almangConsentAt ?? null,
         privacyConsentAt: rest.privacyConsentAt ?? null,
+        lastCheckInDate,
+        checkInDates,
         ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
         ingredientInventory: normalizeIngredientInventory(rest.ingredientInventory),
         completedRecipeIds,
+        unlockedRecipeIds: Array.isArray(rest.unlockedRecipeIds) ? rest.unlockedRecipeIds : [],
+        lastSoupSession: rest.lastSoupSession ?? null,
         missionProgress: normalizeMissionProgress(missionProgress),
         ecoJamLedger: rest.ecoJamLedger ?? [],
         almangPointsLedger: rest.almangPointsLedger ?? [],
         pendingRealRewards: rest.pendingRealRewards ?? [],
         lastShareRewardDate: rest.lastShareRewardDate ?? null,
+        hiddenTodayRecipePinId: rest.hiddenTodayRecipePinId ?? null,
     };
 }
 

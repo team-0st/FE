@@ -70,7 +70,7 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
                 toast.showSuccess(SHARE_REWARD_SUCCESS_MESSAGE(reward.ecoJamGranted));
                 return;
             }
-            if (reward.reason === 'already_claimed_today') {
+            if (reward.reason === 'already_claimed') {
                 toast.show(SHARE_REWARD_ALREADY_CLAIMED_MESSAGE);
                 return;
             }

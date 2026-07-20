@@ -1,11 +1,23 @@
 import { Button, Txt } from '@toss/tds-react-native';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+    type LayoutChangeEvent,
+    type NativeScrollEvent,
+    type NativeSyntheticEvent,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    View,
+} from 'react-native';
 import {
     PRIVACY_POLICY_LABELS,
     PRIVACY_POLICY_META,
 } from '../../shared/constants/privacyPolicy';
 import { colors } from '../../shared/theme/colors';
 import { PrivacyPolicyContent } from './PrivacyPolicyContent';
+
+const SCROLL_END_THRESHOLD = 48;
 
 type PrivacyPolicyModalProps = {
     visible: boolean;
@@ -33,6 +45,42 @@ export function PrivacyPolicyModal({
     onDeclineOptional,
 }: PrivacyPolicyModalProps) {
     const isConsent = mode === 'consent';
+    const [readToEnd, setReadToEnd] = useState(false);
+    const [viewportHeight, setViewportHeight] = useState(0);
+    const [contentHeight, setContentHeight] = useState(0);
+
+    useEffect(() => {
+        if (visible) {
+            setReadToEnd(false);
+            setViewportHeight(0);
+            setContentHeight(0);
+        }
+    }, [visible]);
+
+    useEffect(() => {
+        if (!isConsent || readToEnd) {
+            return;
+        }
+        if (viewportHeight > 0 && contentHeight > 0 && contentHeight <= viewportHeight + SCROLL_END_THRESHOLD) {
+            setReadToEnd(true);
+        }
+    }, [contentHeight, isConsent, readToEnd, viewportHeight]);
+
+    const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (!isConsent || readToEnd) {
+            return;
+        }
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const distanceFromBottom =
+            contentSize.height - (contentOffset.y + layoutMeasurement.height);
+        if (distanceFromBottom <= SCROLL_END_THRESHOLD) {
+            setReadToEnd(true);
+        }
+    };
+
+    const onScrollLayout = (event: LayoutChangeEvent) => {
+        setViewportHeight(event.nativeEvent.layout.height);
+    };
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -41,13 +89,27 @@ export function PrivacyPolicyModal({
                     <Txt typography="t4" fontWeight="bold" style={styles.title}>
                         {PRIVACY_POLICY_META.title}
                     </Txt>
-                    <ScrollView style={styles.scroll} showsVerticalScrollIndicator>
+                    <ScrollView
+                        style={styles.scroll}
+                        showsVerticalScrollIndicator
+                        onScroll={isConsent ? onScroll : undefined}
+                        scrollEventThrottle={16}
+                        onLayout={isConsent ? onScrollLayout : undefined}
+                        onContentSizeChange={
+                            isConsent
+                                ? (_w, height) => {
+                                      setContentHeight(height);
+                                  }
+                                : undefined
+                        }
+                    >
                         <PrivacyPolicyContent
                             consentActions={
                                 isConsent
                                     ? {
                                           requiredAgreed,
                                           optionalAgreed,
+                                          canAgreeRequired: readToEnd,
                                           onAgreeRequired: () => onAgreeRequired?.(),
                                           onAgreeOptional: () => onAgreeOptional?.(),
                                           onDeclineOptional: () => {
@@ -97,6 +159,7 @@ const styles = StyleSheet.create({
     },
     scroll: {
         flexGrow: 0,
+        flexShrink: 1,
     },
     cancel: {
         textAlign: 'center',

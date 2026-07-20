@@ -21,6 +21,9 @@ export async function mockPostGacha(
     if (reward.type === 'ECO_JAM') {
         remainingEcoJam += reward.amount;
     }
+    if (reward.type === 'FAIL') {
+        remainingEcoJam += reward.consolationEcoJam;
+    }
     let resultIngredient: GachaResponse['resultIngredient'] = undefined;
     if (reward.type === 'INGREDIENT') {
         resultIngredient = toIngredientDto(reward.ingredientId);
@@ -30,7 +33,11 @@ export async function mockPostGacha(
         costEcoJam: GACHA_PULL_COST_ECO_JAM,
         resultType: reward.type,
         resultAmount:
-            reward.type === 'ECO_JAM' || reward.type === 'ALMANG_POINT' ? reward.amount : undefined,
+            reward.type === 'ECO_JAM' || reward.type === 'ALMANG_POINT'
+                ? reward.amount
+                : reward.type === 'FAIL'
+                  ? reward.consolationEcoJam
+                  : undefined,
         resultIngredient,
         remainingEcoJam,
     };

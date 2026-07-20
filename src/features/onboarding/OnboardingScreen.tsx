@@ -15,7 +15,7 @@ type OnboardingScreenProps = {
 /** Figma `01 온보딩 - 시작` — 마스코트 제로·스티 */
 export function OnboardingScreen({ onPressStart }: OnboardingScreenProps) {
     const floatStyle = useFloatAnimation(true, 10);
-    const heroSource = toBrandImageSource(HOME_DECOR.homeHero);
+    const heroSource = toBrandImageSource(HOME_DECOR.onboardingHero);
 
     return (
         <Screen>

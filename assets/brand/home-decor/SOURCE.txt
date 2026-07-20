@@ -9,3 +9,5 @@ banner_veggies <- 안내 배너 재료 그림.png
 bg_pattern <- 배경.png
 deco_sparkle <- 버튼 주변 장식.png (미니 장식 crop)
 건너뜀: 게이지2.png (게이지3과 역할 중복)
+home_hero <- 사진1 배경제거 (홈)
+onboarding_hero <- 사진2 배경제거 (온보딩)

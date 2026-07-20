@@ -5,7 +5,10 @@ import { homeDecorUriSource } from './homeDecorImageUris';
  * 대표 캐릭터 / 게이지* / 스템프* / 안내 배너 / 버튼 주변 장식 / 배경
  */
 export const HOME_DECOR = {
+    /** 홈 대표 — 제로·스티 (사진1) */
     homeHero: homeDecorUriSource('home_hero'),
+    /** 온보딩·가이드 — 제로·스티 (사진2) */
+    onboardingHero: homeDecorUriSource('onboarding_hero'),
     stampPending: homeDecorUriSource('stamp_pending'),
     stampProgress: homeDecorUriSource('stamp_progress'),
     stampDone: homeDecorUriSource('stamp_done'),

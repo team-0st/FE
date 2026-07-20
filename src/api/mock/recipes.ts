@@ -108,14 +108,22 @@ export function findMatchingRecipe(
     return candidates[0];
 }
 
-export function getTodayRecipeHint(weekKey = getIsoWeekKey()): string {
+/** 요일로 고른 이번 주(weekly) 레시피 1개 — 힌트·상단 고정 공통 */
+export function getTodayRecipe(weekKey = getIsoWeekKey()): Recipe | undefined {
     const weekly = getWeeklyRecipes(weekKey);
     if (weekly.length === 0) {
-        return '미션으로 재료를 모아\n스프를 끓여 보세요.';
+        return undefined;
     }
     const index = new Date().getDay() % weekly.length;
-    const recipe = weekly[index];
-    const raw = recipe?.hintDrip ?? recipe?.hint ?? '오늘의 힌트를 확인해 보세요.';
+    return weekly[index];
+}
+
+export function getTodayRecipeHint(weekKey = getIsoWeekKey()): string {
+    const recipe = getTodayRecipe(weekKey);
+    if (recipe == null) {
+        return '미션으로 재료를 모아\n스프를 끓여 보세요.';
+    }
+    const raw = recipe.hintDrip ?? recipe.hint ?? '오늘의 힌트를 확인해 보세요.';
     return formatRecipeHintLines(raw);
 }
 
@@ -239,13 +247,6 @@ export function hasAffordableSecretRecipes(
     });
 }
 
-export const RECOMMEND_SECRET_RECIPE_NOTICE =
-    '히든·전설 레시피는 추천에 나오지 않아요. 재료를 직접 넣어 조합해 보세요.';
-
 export function recommendationTitle(recipe: Recipe): string {
     return recipe.name;
-}
-
-export function recommendationSubtitle(recipe: Recipe): string {
-    return `${formatRecipeIngredients(recipe)} · 탭하면 바로 넣어요`;
 }
