@@ -2,16 +2,14 @@ import { appsInToss } from '@apps-in-toss/framework/plugins';
 import { hermes } from '@granite-js/plugin-hermes';
 import { router } from '@granite-js/plugin-router';
 import { defineConfig } from '@granite-js/react-native/config';
-
-/** Keep in sync with `app.config.ts` → APP_DISPLAY_NAME */
-const APP_DISPLAY_NAME = '제로스트';
+import { APP_DISPLAY_NAME, APP_NAME } from './app.config';
 
 /**
  * `appName` must match the name registered in the Apps in Toss console.
- * Update before sandbox / production testing.
+ * 콘솔 등록명: zerost (표시명: 제로스트)
  */
 export default defineConfig({
-  appName: '0st',
+  appName: APP_NAME,
   /** Must be `intoss` for Apps in Toss (see official RN config docs). */
   scheme: 'intoss',
   plugins: [

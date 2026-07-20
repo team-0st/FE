@@ -12,9 +12,9 @@ export const PRIVACY_POLICY_META = {
     /** 개인정보처리자 */
     operator: '제로스트 프로젝트팀',
     /** 서비스명 (이용자 표기) */
-    serviceName: '제로스트(0st)',
+    serviceName: '제로스트(zerost)',
     /** 앱 식별용 (앱인토스 appName 등) */
-    appName: '0st',
+    appName: 'zerost',
     /** 개인정보 보호책임자 */
     dpoName: '윤나래',
     contactEmail: 'zerost.team@gmail.com',
