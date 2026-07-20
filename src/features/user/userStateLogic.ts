@@ -2,6 +2,7 @@ import type { CheckInSuccessDto } from '@api/checkIn';
 import type { Recipe } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { gradeFromCraft, gradeRank } from '../soup/soupRewardGrades';
+import { getCarbonReduction } from '../missions/carbonReduction';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { appendAlmangPointsLedger } from './almangPointsLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
@@ -248,6 +249,13 @@ export function completeMissionVerify(
     const weeklyMissionDone = Math.min(next.weeklyMissionTotal, next.weeklyMissionDone + 1);
     next = { ...next, weeklyMissionDone };
     next = addIngredient(next, rewardIngredientId, 1);
+    const carbonReduction = getCarbonReduction(missionId);
+    if (carbonReduction?.grams != null) {
+        next = {
+            ...next,
+            totalCo2ReductionGrams: next.totalCo2ReductionGrams + carbonReduction.grams,
+        };
+    }
     return next;
 }
 

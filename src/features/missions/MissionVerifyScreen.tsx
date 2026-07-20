@@ -135,7 +135,9 @@ const styles = StyleSheet.create({
     },
     previewCard: {
         marginTop: 8,
+        alignSelf: 'center',
         width: '100%',
+        maxWidth: 270,
         aspectRatio: 3 / 4,
         maxHeight: 360,
         borderRadius: 16,
@@ -149,6 +151,7 @@ const styles = StyleSheet.create({
     previewImage: {
         width: '100%',
         height: '100%',
+        alignSelf: 'center',
     },
     hint: {
         textAlign: 'center',

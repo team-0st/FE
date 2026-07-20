@@ -6,6 +6,7 @@ import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
 import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
 import { getSoupImageSource } from '../../shared/constants/soupAssets';
+import { formatCarbonGrams } from '../missions/carbonReduction';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import { formatLedgerDelta } from '../user/ecoJamLedger';
@@ -176,6 +177,20 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                         목록 보기
                     </Txt>
                 </Pressable>
+                <View style={styles.card}>
+                    <BrandEmojiImage
+                        source={BRAND_EMOJI.sprout}
+                        size={48}
+                        containerStyle={styles.cardIcon}
+                        accessibilityLabel="탄소 절감량"
+                    />
+                    <Txt typography="t7" color="grey600">
+                        탄소 절감량
+                    </Txt>
+                    <Txt typography="t4" fontWeight="bold">
+                        {formatCarbonGrams(state.totalCo2ReductionGrams)}
+                    </Txt>
+                </View>
             </View>
             {state.pendingRealRewards.length > 0 ? (
                 <View style={styles.section}>
