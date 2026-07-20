@@ -1,5 +1,6 @@
 import { getMissionById } from '@api/mock';
 import { createRoute } from '@granite-js/react-native';
+import { useCallback } from 'react';
 import { MissionVerifyScreen } from '../../../src/features/missions/MissionVerifyScreen';
 import { useUser } from '../../../src/features/user/UserProvider';
 import { navigateMissionResult } from '../../../src/shared/constants/routes';
@@ -22,6 +23,18 @@ function Page() {
     const toast = useAppToast();
     const mission = getMissionById(id);
 
+    const handleMissingPhoto = useCallback(() => {
+        toast.showError('인증 사진이 없어요.\n다시 촬영해 주세요.');
+        navigation.navigate('/missions/:id', { id });
+    }, [id, navigation, toast]);
+
+    const handleCaptureError = useCallback(
+        (message: string) => {
+            toast.showError(message);
+        },
+        [toast],
+    );
+
     if (mission == null) {
         return (
             <Screen>
@@ -35,6 +48,8 @@ function Page() {
     return (
         <MissionVerifyScreen
             mission={mission}
+            onMissingPhoto={handleMissingPhoto}
+            onCaptureError={handleCaptureError}
             onSubmit={async () => {
                 const result = await verifyMission(mission.id);
                 if (result.ok) {
@@ -49,7 +64,7 @@ function Page() {
                     toast.showError('오늘은 이미 완료한 미션이에요.');
                     return;
                 }
-                toast.showError('제출에 실패했어요. 다시 시도해 주세요.');
+                toast.showError('제출에 실패했어요.\n다시 시도해 주세요.');
             }}
         />
     );

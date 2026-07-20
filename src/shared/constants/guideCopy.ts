@@ -42,5 +42,5 @@ export function getMissionCompleteMessage(ingredientLabel: string): string {
 }
 
 export function getMissionVerifyMessage(authHint: string): string {
-    return `${authHint} 사진을 올려주세요.`;
+    return `카메라로 ${authHint}을 찍어 주세요.`;
 }

@@ -24,6 +24,7 @@ type MissionDetailScreenProps = {
     mission: Mission;
     status: MissionProgressStatus;
     locked?: boolean;
+    verifyLoading?: boolean;
     onPressVerify: () => void;
 };
 
@@ -31,6 +32,7 @@ export function MissionDetailScreen({
     mission,
     status,
     locked = false,
+    verifyLoading = false,
     onPressVerify,
 }: MissionDetailScreenProps) {
     const isCompleted = status === 'completed';
@@ -103,10 +105,10 @@ export function MissionDetailScreen({
                     <View style={styles.note}>
                         <Txt typography="t7" color="grey600">
                             {mission.authType === 'receipt'
-                                ? '영수증 사진으로 인증해요.'
+                                ? '영수증을 카메라로 찍어 인증해요.'
                                 : mission.authType === 'attendance_7d'
-                                  ? '7일 출석 후 1·4·7일차에 사진을 올려요.'
-                                  : '사진 업로드 후 검수가 끝나면 재료를 받아요.'}
+                                  ? '7일 출석 후 1·4·7일차에 카메라로 찍어 인증해요.'
+                                  : '카메라로 바로 찍어 인증해요.\n사진첩 사진은 쓸 수 없어요.'}
                         </Txt>
                     </View>
                 </View>
@@ -117,10 +119,20 @@ export function MissionDetailScreen({
                     size="large"
                     type="primary"
                     display="block"
-                    disabled={isCompleted || locked}
+                    disabled={isCompleted || locked || verifyLoading}
+                    loading={verifyLoading}
                     onPress={onPressVerify}
+                    accessibilityLabel={
+                        locked ? '아직 잠겨 있어요' : isCompleted ? '이미 완료한 미션' : '인증하기'
+                    }
                 >
-                    {locked ? '아직 잠겨 있어요' : isCompleted ? '이미 완료한 미션' : '인증하기'}
+                    {locked
+                        ? '아직 잠겨 있어요'
+                        : isCompleted
+                          ? '이미 완료한 미션'
+                          : verifyLoading
+                            ? '카메라 여는 중…'
+                            : '인증하기'}
                 </Button>
             </View>
         </Screen>
