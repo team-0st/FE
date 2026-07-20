@@ -3,7 +3,9 @@ import { Button, Top, Txt } from '@toss/tds-react-native';
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
+import { TermsOfServiceModal } from '../legal/TermsOfServiceModal';
 import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
+import { TERMS_OF_SERVICE_LABELS } from '../../shared/constants/termsOfService';
 import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
 import { getSoupImageSource } from '../../shared/constants/soupAssets';
 import { formatCarbonGrams } from '../missions/carbonReduction';
@@ -49,6 +51,7 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
     const { state, grantTestEcoJam, unlockAllRecipesForTest } = useUser();
     const { showSuccess } = useAppToast();
     const [privacyVisible, setPrivacyVisible] = useState(false);
+    const [termsVisible, setTermsVisible] = useState(false);
     const [restartConfirmVisible, setRestartConfirmVisible] = useState(false);
     const [detailModal, setDetailModal] = useState<DetailModal>(null);
     const shopName = resolveShopName(state.shopId);
@@ -209,16 +212,28 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     ))}
                 </View>
             ) : null}
-            <Txt
-                typography="t6"
-                color="blue500"
-                style={styles.policyLink}
-                onPress={() => setPrivacyVisible(true)}
-                accessibilityRole="button"
-                accessibilityLabel={PRIVACY_POLICY_LABELS.myPageEntry}
-            >
-                {PRIVACY_POLICY_LABELS.myPageEntry}
-            </Txt>
+            <View style={styles.legalLinkRow}>
+                <Txt
+                    typography="t6"
+                    color="blue500"
+                    style={styles.policyLink}
+                    onPress={() => setPrivacyVisible(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={PRIVACY_POLICY_LABELS.myPageEntry}
+                >
+                    {PRIVACY_POLICY_LABELS.myPageEntry}
+                </Txt>
+                <Txt
+                    typography="t6"
+                    color="blue500"
+                    style={styles.policyLink}
+                    onPress={() => setTermsVisible(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={TERMS_OF_SERVICE_LABELS.myPageEntry}
+                >
+                    {TERMS_OF_SERVICE_LABELS.myPageEntry}
+                </Txt>
+            </View>
             {DEV_TEST_TOOLS_ENABLED ? (
                 <View style={styles.devBox}>
                     <Txt typography="t7" fontWeight="semibold" color="grey700">
@@ -305,6 +320,7 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 </View>
             </Modal>
             <PrivacyPolicyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
+            <TermsOfServiceModal visible={termsVisible} onClose={() => setTermsVisible(false)} />
             <ProfileListModal
                 visible={detailModal === 'ecoJam'}
                 title="에코잼 내역"
@@ -440,9 +456,13 @@ const styles = StyleSheet.create({
         backgroundColor: colors.warningBg,
         gap: 10,
     },
-    policyLink: {
+    legalLinkRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 16,
         marginTop: 16,
-        textAlign: 'center',
+    },
+    policyLink: {
         textDecorationLine: 'underline',
     },
     modalBackdrop: {

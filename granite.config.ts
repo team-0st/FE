@@ -15,12 +15,23 @@ export default defineConfig({
   scheme: 'intoss',
   plugins: [
     appsInToss({
+      appType: 'general',
       brand: {
         displayName: APP_DISPLAY_NAME,
         primaryColor: '#3182F6',
         icon: 'https://static.toss.im/icons/png/4x/icon-leaf-mono.png',
       },
       permissions: [{ name: 'camera', access: 'access' }],
+      /**
+       * `navigationBar`는 앱 전체에 적용되는 static 설정이라 화면별 분기가 안 됨
+       * (`useTopNavigation`은 accessory 버튼만 제어, back 버튼은 노출 불가 — 확인 필요 시 SDK 문서 참고).
+       * 탭 루트에서만 back을 없애는 옵션 A는 SDK 제약상 불가능해서,
+       * back은 전역으로 켜고 탭 루트는 `useRootBackClosesApp`으로 뒤로가기 시 앱을 닫도록 처리함.
+       */
+      navigationBar: {
+        withBackButton: true,
+        withHomeButton: false,
+      },
     }),
     router(),
     hermes(),

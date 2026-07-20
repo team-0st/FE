@@ -4,6 +4,11 @@ import { ROUTES } from '../constants/routes';
 import { TDS_ICON } from '../constants/tdsAssets';
 import { colors } from '../theme/colors';
 
+/**
+ * TODO(별도 작업): 심사 대응 리뷰에서 "플로팅 탭바로 전환" 제안이 있었음.
+ * 이번 fix/review-nav-terms-login PR 범위에서는 건드리지 않음 — 별도 티켓으로 진행.
+ */
+
 export type MainTabId = 'home' | 'ingredients' | 'gacha' | 'recipes' | 'profile';
 
 type TabItem = {
