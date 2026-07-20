@@ -3,11 +3,10 @@
 import { Route as _GachaRoute } from '../pages/gacha';
 import { Route as _IndexRoute } from '../pages/';
 import { Route as _IngredientsRoute } from '../pages/ingredients';
-import { Route as _LoginRoute } from '../pages/login';
-import { Route as _MissionsRoute } from '../pages/missions';
 import { Route as _MissionsIdResultRoute } from '../pages/missions/[id]/result';
 import { Route as _MissionsIdVerifyRoute } from '../pages/missions/[id]/verify';
 import { Route as _MissionsIdRoute } from '../pages/missions/[id]';
+import { Route as _MissionsRoute } from '../pages/missions';
 import { Route as _OnboardingRoute } from '../pages/onboarding';
 import { Route as _OnboardingProfileRoute } from '../pages/onboarding/profile';
 import { Route as _OnboardingShopRoute } from '../pages/onboarding/shop';
@@ -23,11 +22,10 @@ declare module '@granite-js/react-native' {
     '/gacha': (typeof _GachaRoute)['_inputType'];
     '/': (typeof _IndexRoute)['_inputType'];
     '/ingredients': (typeof _IngredientsRoute)['_inputType'];
-    '/login': (typeof _LoginRoute)['_inputType'];
-    '/missions': (typeof _MissionsRoute)['_inputType'];
     '/missions/[id]/result': (typeof _MissionsIdResultRoute)['_inputType'];
     '/missions/[id]/verify': (typeof _MissionsIdVerifyRoute)['_inputType'];
     '/missions/[id]': (typeof _MissionsIdRoute)['_inputType'];
+    '/missions': (typeof _MissionsRoute)['_inputType'];
     '/onboarding': (typeof _OnboardingRoute)['_inputType'];
     '/onboarding/profile': (typeof _OnboardingProfileRoute)['_inputType'];
     '/onboarding/shop': (typeof _OnboardingShopRoute)['_inputType'];
@@ -43,11 +41,10 @@ declare module '@granite-js/react-native' {
     '/gacha': (typeof _GachaRoute)['_outputType'];
     '/': (typeof _IndexRoute)['_outputType'];
     '/ingredients': (typeof _IngredientsRoute)['_outputType'];
-    '/login': (typeof _LoginRoute)['_outputType'];
-    '/missions': (typeof _MissionsRoute)['_outputType'];
     '/missions/[id]/result': (typeof _MissionsIdResultRoute)['_outputType'];
     '/missions/[id]/verify': (typeof _MissionsIdVerifyRoute)['_outputType'];
     '/missions/[id]': (typeof _MissionsIdRoute)['_outputType'];
+    '/missions': (typeof _MissionsRoute)['_outputType'];
     '/onboarding': (typeof _OnboardingRoute)['_outputType'];
     '/onboarding/profile': (typeof _OnboardingProfileRoute)['_outputType'];
     '/onboarding/shop': (typeof _OnboardingShopRoute)['_outputType'];

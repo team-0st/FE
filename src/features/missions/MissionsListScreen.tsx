@@ -2,7 +2,7 @@ import { formatMissionIngredientReward } from '@api/mock/ingredients';
 import { COOP_MISSIONS, DAILY_MISSIONS, missionStatusLabel, SPECIAL_MISSIONS } from '@api/mock/missions';
 import type { CoopMission, Mission } from '@api/mock';
 import { Badge, Border, ListRow, Top, Txt } from '@toss/tds-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
 import { missionStatusFor } from '../user/selectors';
 import type { MissionProgressStatus } from '../user/types';
@@ -16,7 +16,6 @@ import { colors } from '../../shared/theme/colors';
 
 type MissionsListScreenProps = {
     onPressMission: (id: string) => void;
-    onPressBack?: () => void;
 };
 
 type StatusBadgeType = 'green' | 'blue' | 'elephant' | 'red';
@@ -191,7 +190,7 @@ function CoopMissionRow({
     );
 }
 
-export function MissionsListScreen({ onPressMission, onPressBack }: MissionsListScreenProps) {
+export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) {
     const { state } = useUser();
     const toast = useAppToast();
 
@@ -206,13 +205,6 @@ export function MissionsListScreen({ onPressMission, onPressBack }: MissionsList
 
     return (
         <Screen scrollable>
-            {onPressBack != null ? (
-                <Pressable onPress={onPressBack} style={styles.back} accessibilityRole="button">
-                    <Txt typography="t6" color="blue500">
-                        ← 홈
-                    </Txt>
-                </Pressable>
-            ) : null}
             <Top
                 title={<Top.TitleParagraph size={22}>오늘의 미션</Top.TitleParagraph>}
                 subtitle2={
@@ -283,11 +275,6 @@ export function MissionsListScreen({ onPressMission, onPressBack }: MissionsList
 }
 
 const styles = StyleSheet.create({
-    back: {
-        alignSelf: 'flex-start',
-        paddingVertical: 8,
-        marginBottom: 4,
-    },
     sectionHeader: {
         marginTop: 24,
         marginBottom: 8,

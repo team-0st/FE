@@ -3,6 +3,7 @@ import { IngredientsScreen } from '../../src/features/ingredients/IngredientsScr
 import { useMainTabPress } from '../../src/shared/hooks/useMainTabNavigation';
 import { MainTabShell } from '../../src/shared/layout/MainTabShell';
 import { mainTabScreenOptions } from '../../src/shared/navigation/tabTransition';
+import { useRootBackClosesApp } from '../../src/shared/navigation/useRootBackClosesApp';
 import { navigateSoupResult } from '../../src/shared/constants/routes';
 
 export const Route = createRoute('/ingredients', {
@@ -13,6 +14,7 @@ export const Route = createRoute('/ingredients', {
 function Page() {
     const navigation = Route.useNavigation();
     const onPressTab = useMainTabPress(navigation, 'ingredients');
+    useRootBackClosesApp();
 
     return (
         <MainTabShell activeTab="ingredients" onPressTab={onPressTab}>

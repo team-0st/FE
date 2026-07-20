@@ -4,6 +4,7 @@ import { useUser } from '../../src/features/user/UserProvider';
 import { useMainTabPress } from '../../src/shared/hooks/useMainTabNavigation';
 import { MainTabShell } from '../../src/shared/layout/MainTabShell';
 import { mainTabScreenOptions } from '../../src/shared/navigation/tabTransition';
+import { useRootBackClosesApp } from '../../src/shared/navigation/useRootBackClosesApp';
 import { ROUTES } from '../../src/shared/constants/routes';
 
 export const Route = createRoute('/profile', {
@@ -15,6 +16,7 @@ function Page() {
     const navigation = Route.useNavigation();
     const onPressTab = useMainTabPress(navigation, 'profile');
     const { resetOnboarding } = useUser();
+    useRootBackClosesApp();
 
     return (
         <MainTabShell activeTab="profile" onPressTab={onPressTab}>

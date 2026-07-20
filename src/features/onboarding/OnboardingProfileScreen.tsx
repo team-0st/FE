@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import type { AlmangPayoutConsent } from '../user/types';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
+import { TermsOfServiceModal } from '../legal/TermsOfServiceModal';
 import { ONBOARDING_PROFILE_GUIDE } from '../../shared/constants/guideCopy';
 import {
     ONBOARDING_PRIVACY_CHECKBOX,
@@ -10,6 +11,7 @@ import {
     PRIVACY_POLICY_LABELS,
     SERVICE_CONSENT_SUMMARY,
 } from '../../shared/constants/privacyPolicy';
+import { TERMS_OF_SERVICE_LABELS } from '../../shared/constants/termsOfService';
 import { ALMANG_COMPLIANCE } from '../../shared/constants/almangComplianceCopy';
 import { colors } from '../../shared/theme/colors';
 import { GuideHero } from '../../shared/ui/GuideHero';
@@ -55,6 +57,7 @@ export function OnboardingProfileScreen({
     const [serviceChecked, setServiceChecked] = useState(false);
     const [phoneConsentChecked, setPhoneConsentChecked] = useState(false);
     const [policyModalVisible, setPolicyModalVisible] = useState(false);
+    const [termsModalVisible, setTermsModalVisible] = useState(false);
     const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
     const [policyButtonPulse, setPolicyButtonPulse] = useState(false);
     const [privacyConsentAt, setPrivacyConsentAt] = useState<string | null>(null);
@@ -302,6 +305,16 @@ export function OnboardingProfileScreen({
                         <Txt typography="t7" color="grey500" style={styles.softHint}>
                             선택 항목(휴대전화)은 다음 단계에서 따로 진행해요.
                         </Txt>
+                        <Pressable
+                            onPress={() => setTermsModalVisible(true)}
+                            accessibilityRole="link"
+                            accessibilityLabel={TERMS_OF_SERVICE_LABELS.viewFull}
+                            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                        >
+                            <Txt typography="t7" color="grey600" style={styles.termsLink}>
+                                {TERMS_OF_SERVICE_LABELS.viewFullLink}
+                            </Txt>
+                        </Pressable>
                     </View>
                     <View style={styles.checklist}>
                         <Checkbox.Line
@@ -349,6 +362,10 @@ export function OnboardingProfileScreen({
                     </Button>
                 </View>
                 {policyModal}
+                <TermsOfServiceModal
+                    visible={termsModalVisible}
+                    onClose={() => setTermsModalVisible(false)}
+                />
             </Screen>
         );
     }
@@ -513,6 +530,10 @@ const styles = StyleSheet.create({
     softHint: {
         marginTop: 2,
         lineHeight: 18,
+    },
+    termsLink: {
+        marginTop: 8,
+        textDecorationLine: 'underline',
     },
     checklist: {
         gap: 14,
