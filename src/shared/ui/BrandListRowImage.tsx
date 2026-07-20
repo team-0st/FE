@@ -11,5 +11,11 @@ export function BrandListRowImage({ source, size = 40 }: BrandListRowImageProps)
     if (source == null) {
         return null;
     }
-    return <BrandEmojiImage source={source} size={size} />;
+    return (
+        <BrandEmojiImage
+            source={source}
+            size={size}
+            containerStyle={{ marginRight: 8 }}
+        />
+    );
 }

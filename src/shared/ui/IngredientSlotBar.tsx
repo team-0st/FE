@@ -69,20 +69,21 @@ export function IngredientSlotBar({
                                             : `일반 레시피 재료 칸 ${index + 1}`
                                 }
                             >
-                                {filled ? (
-                                    ingredient.imageSource != null ? (
-                                        <BrandEmojiImage
-                                            source={ingredient.imageSource}
-                                            size={36}
-                                            containerStyle={{ marginRight: 0 }}
-                                            accessibilityLabel={ingredient.name}
-                                        />
-                                    ) : (
-                                        <Txt typography="t7" color="grey600">
-                                            {ingredient.name}
-                                        </Txt>
-                                    )
-                                ) : null}
+                                <View style={styles.slotInner}>
+                                    {filled ? (
+                                        ingredient.imageSource != null ? (
+                                            <BrandEmojiImage
+                                                source={ingredient.imageSource}
+                                                size={36}
+                                                accessibilityLabel={ingredient.name}
+                                            />
+                                        ) : (
+                                            <Txt typography="t7" color="grey600" style={styles.slotText}>
+                                                {ingredient.name}
+                                            </Txt>
+                                        )
+                                    ) : null}
+                                </View>
                             </Pressable>
                             {index === 0 || isHiddenSlot || isLegendarySlot ? (
                                 <Txt typography="t7" color="grey500" style={styles.slotLabel}>
@@ -125,7 +126,17 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
         borderWidth: 2,
+    },
+    slotInner: {
+        width: '100%',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    slotText: {
+        textAlign: 'center',
     },
     slotEmpty: {
         backgroundColor: colors.slotEmpty,

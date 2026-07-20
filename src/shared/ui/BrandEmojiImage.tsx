@@ -40,7 +40,6 @@ export function BrandEmojiImage({
 
 const styles = StyleSheet.create({
     wrap: {
-        marginRight: 8,
         alignItems: 'center',
         justifyContent: 'center',
     },
