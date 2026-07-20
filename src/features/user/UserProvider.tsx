@@ -57,7 +57,7 @@ import { appendEcoJamLedger } from './ecoJamLedger';
 import { appendAlmangPointsLedger } from './almangPointsLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
 import { loadUserState, saveUserState } from './userRepository';
-import type { AppUserState, AlmangPayoutConsent, LocationConsent } from './types';
+import type { AppUserState, AlmangPayoutConsent, CameraConsent, LocationConsent } from './types';
 import {
     addEcoJam,
     applyCheckInFromServer,
@@ -74,6 +74,7 @@ import {
     saveOnboardingProfile as saveOnboardingProfileState,
     setShopId,
     setLocationConsent as setLocationConsentState,
+    setCameraConsent as setCameraConsentState,
     submitMissionPendingReview,
     spendEcoJam,
     unlockHiddenRecipe,
@@ -98,6 +99,7 @@ type UserContextValue = {
     resetOnboarding: () => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
     setLocationConsent: (consent: LocationConsent) => Promise<void>;
+    setCameraConsent: (consent: CameraConsent) => Promise<void>;
     verifyMission: (
         missionId: string,
         photo?: MissionVerifyUploadInput | null,
@@ -414,6 +416,9 @@ export function UserProvider({ children }: PropsWithChildren) {
             },
             setLocationConsent: async (consent) => {
                 await persist((prev) => setLocationConsentState(prev, consent));
+            },
+            setCameraConsent: async (consent) => {
+                await persist((prev) => setCameraConsentState(prev, consent));
             },
             verifyMission: async (missionId, photo = null) => {
                 try {

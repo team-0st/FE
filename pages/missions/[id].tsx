@@ -4,12 +4,14 @@ import { createRoute } from '@granite-js/react-native';
 import { useCallback, useState } from 'react';
 import { Txt } from '@toss/tds-react-native';
 import { View } from 'react-native';
+import { CameraConsentModal } from '../../src/features/legal/CameraConsentModal';
 import { captureMissionVerifyPhoto } from '../../src/features/missions/captureMissionVerifyPhoto';
 import { MissionDetailScreen } from '../../src/features/missions/MissionDetailScreen';
 import { setPendingMissionVerifyPhoto } from '../../src/features/missions/missionVerifyPhotoStore';
 import { isCoopMissionUnlocked } from '../../src/features/missions/coopMissionLogic';
 import { useUser } from '../../src/features/user/UserProvider';
 import { missionStatusFor } from '../../src/features/user/selectors';
+import { CAMERA_CONSENT_NEEDED_MESSAGE } from '../../src/shared/constants/cameraPolicy';
 import { navigateMissionVerify } from '../../src/shared/constants/routes';
 import { useAppToast } from '../../src/shared/feedback/useAppToast';
 import { Screen } from '../../src/shared/ui/Screen';
@@ -24,12 +26,13 @@ export const Route = createRoute('/missions/:id', {
 function Page() {
     const { id } = Route.useParams();
     const navigation = Route.useNavigation();
-    const { state } = useUser();
+    const { state, setCameraConsent } = useUser();
     const toast = useAppToast();
     const [openingCamera, setOpeningCamera] = useState(false);
+    const [cameraConsentVisible, setCameraConsentVisible] = useState(false);
     const mission = getMissionById(id);
 
-    const handleVerify = useCallback(async () => {
+    const runCapture = useCallback(async () => {
         if (mission == null || openingCamera) {
             return;
         }
@@ -37,7 +40,10 @@ function Page() {
         try {
             const result = await captureMissionVerifyPhoto();
             if (!result.ok) {
-                if (result.reason === 'permission_denied') {
+                if (
+                    result.reason === 'permission_denied' ||
+                    result.reason === 'os_permission_denied'
+                ) {
                     toast.showError(result.message);
                 } else {
                     toast.show(result.message);
@@ -54,6 +60,17 @@ function Page() {
         }
     }, [mission, navigation, openingCamera, toast]);
 
+    const handleVerify = useCallback(() => {
+        if (mission == null || openingCamera) {
+            return;
+        }
+        if (state.cameraConsent !== 'granted') {
+            setCameraConsentVisible(true);
+            return;
+        }
+        void runCapture();
+    }, [mission, openingCamera, runCapture, state.cameraConsent]);
+
     if (mission == null) {
         return (
             <Screen>
@@ -65,12 +82,32 @@ function Page() {
     }
 
     return (
-        <MissionDetailScreen
-            mission={mission}
-            status={missionStatusFor(state, mission.id)}
-            locked={isCoopMission(mission) && !isCoopMissionUnlocked(state, mission)}
-            verifyLoading={openingCamera}
-            onPressVerify={() => void handleVerify()}
-        />
+        <>
+            <MissionDetailScreen
+                mission={mission}
+                status={missionStatusFor(state, mission.id)}
+                locked={isCoopMission(mission) && !isCoopMissionUnlocked(state, mission)}
+                verifyLoading={openingCamera}
+                onPressVerify={handleVerify}
+            />
+            <CameraConsentModal
+                visible={cameraConsentVisible}
+                onClose={() => setCameraConsentVisible(false)}
+                onAgree={() => {
+                    void (async () => {
+                        await setCameraConsent('granted');
+                        setCameraConsentVisible(false);
+                        await runCapture();
+                    })();
+                }}
+                onDecline={() => {
+                    void (async () => {
+                        await setCameraConsent('declined');
+                        setCameraConsentVisible(false);
+                        toast.show(CAMERA_CONSENT_NEEDED_MESSAGE);
+                    })();
+                }}
+            />
+        </>
     );
 }
