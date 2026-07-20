@@ -8,4 +8,4 @@ export type GachaReward =
 
 export type GachaPullResult =
     | { ok: true; reward: GachaReward; costEcoJam: number }
-    | { ok: false; reason: 'insufficient_eco_jam' };
+    | { ok: false; reason: 'insufficient_eco_jam' | 'network_error' };

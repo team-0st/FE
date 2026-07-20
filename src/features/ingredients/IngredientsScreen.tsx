@@ -1,6 +1,7 @@
 import { INGREDIENTS } from '@api/mock';
 import {
     BREW_SLOT_MAX,
+    findEmptySlotForIngredient,
     findMatchingRecipe,
     getFilledIngredientIds,
     getRecommendedRecipes,
@@ -9,8 +10,8 @@ import {
     recipeToSlots,
     recommendationTitle,
 } from '@api/mock/recipes';
-import type { SoupCraftResponse } from '@api/notion/types';
-import { Button, ListRow, Top, Txt } from '@toss/tds-react-native';
+import { getIngredientById } from '@api/mock/ingredients';import type { SoupCraftResponse } from '@api/notion/types';
+import { Button, ListRow, Txt } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import {
@@ -66,7 +67,7 @@ function brewStatusMessage(filledCount: number, matchedLabel: string | null): st
 
 export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
     const { state, brewSoup } = useUser();
-    const { showError } = useAppToast();
+    const { show, showError } = useAppToast();
     const [slots, setSlots] = useState<(string | null)[]>(emptySlots);
     const [brewing, setBrewing] = useState(false);
     const [ownedExpanded, setOwnedExpanded] = useState(false);
@@ -116,17 +117,29 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
             if (count <= usedInSlots) {
                 return;
             }
+            const emptyIndex = findEmptySlotForIngredient(slots, ingredientId);
+            if (emptyIndex < 0) {
+                const ingredient = getIngredientById(ingredientId);
+                const hasAnyEmpty = slots.some((slot) => slot == null);
+                if (!hasAnyEmpty) {
+                    show('냄비가 가득 찼어요.');
+                } else if (ingredient?.type === 'HIDDEN') {
+                    show('히든 재료는 히든·전설 칸에만 넣을 수 있어요.');
+                } else {
+                    show('일반 재료는 일반 칸에만 넣을 수 있어요.');
+                }
+                return;
+            }
             setSlots((prev) => {
                 const next = [...prev];
-                const emptyIndex = next.findIndex((s) => s == null);
-                if (emptyIndex < 0) {
+                if (next[emptyIndex] != null) {
                     return prev;
                 }
                 next[emptyIndex] = ingredientId;
                 return next;
             });
         },
-        [slots, state.ingredientInventory],
+        [slots, state.ingredientInventory, show],
     );
 
     const handlePressSlot = useCallback((index: number) => {
@@ -158,14 +171,9 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
     return (
         <View style={styles.root}>
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator>
-                <Top
-                    title={<Top.TitleParagraph size={22}>제작</Top.TitleParagraph>}
-                    subtitle2={
-                        <Top.SubtitleParagraph>
-                            {'재료를 골라 냄비에 넣어요.\n조합이 맞으면 스프가 완성돼요.'}
-                        </Top.SubtitleParagraph>
-                    }
-                />
+                <Txt typography="t6" color="grey600">
+                    {'재료를 골라 냄비에 넣어요.\n조합이 맞으면 스프가 완성돼요.'}
+                </Txt>
                 <IngredientSlotBar
                     slots={slots}
                     onPressSlot={handlePressSlot}

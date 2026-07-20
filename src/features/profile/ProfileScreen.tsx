@@ -1,5 +1,6 @@
+import { isApiEnabled } from '@api/client';
 import { findRecipeInCatalog } from '@api/mock/recipeCatalog';
-import { Button, Top, Txt, useDialog } from '@toss/tds-react-native';
+import { Button, Txt, useDialog } from '@toss/tds-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
@@ -93,7 +94,6 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
 
     return (
         <Screen scrollable>
-            <Top title={<Top.TitleParagraph size={22}>마이</Top.TitleParagraph>} />
             <View style={styles.hero}>
                 <Txt typography="t2" fontWeight="bold">
                     {state.nickname}
@@ -272,20 +272,26 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     >
                         모든 레시피 열람 해금
                     </Button>
-                    <Button
-                        size="medium"
-                        type="dark"
-                        style="weak"
-                        display="block"
-                        onPress={() => {
-                            void (async () => {
-                                await grantTestEcoJam(ECO_JAM_TEST_GRANT);
-                                showSuccess(`테스트 에코잼 +${ECO_JAM_TEST_GRANT}`);
-                            })();
-                        }}
-                    >
-                        {`에코잼 +${ECO_JAM_TEST_GRANT}`}
-                    </Button>
+                    {!isApiEnabled() ? (
+                        <Button
+                            size="medium"
+                            type="dark"
+                            style="weak"
+                            display="block"
+                            onPress={() => {
+                                void (async () => {
+                                    await grantTestEcoJam(ECO_JAM_TEST_GRANT);
+                                    showSuccess(`테스트 에코잼 +${ECO_JAM_TEST_GRANT}`);
+                                })();
+                            }}
+                        >
+                            {`에코잼 +${ECO_JAM_TEST_GRANT}`}
+                        </Button>
+                    ) : (
+                        <Txt typography="t7" color="grey500">
+                            API 연동 중에는 테스트 에코잼 지급을 쓸 수 없어요.
+                        </Txt>
+                    )}
                 </View>
             ) : null}
             {onPressRestartOnboarding != null ? (

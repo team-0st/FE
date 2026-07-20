@@ -1,5 +1,6 @@
 import { buildAllRecipes, buildWeeklyRecipes, findRecipeInCatalog, BEGINNER_RECIPES, HIDDEN_RECIPES, LEGENDARY_RECIPES } from './recipeCatalog';
 import { getIngredientById } from './ingredients';
+import type { IngredientCatalogType } from '../notion/types';
 import {
     BREW_SLOT_MAX,
     BEGINNER_SLOT_COUNT,
@@ -33,6 +34,39 @@ export const ALL_RECIPES: Recipe[] = buildAllRecipes();
 
 export function recipeIngredientCount(recipe: Recipe): number {
     return recipe.slotCount;
+}
+
+/** 히든·전설 칸(index 3~) — 히든 등급 재료만 */
+export function isSpecialBrewSlot(index: number): boolean {
+    return index >= WEEKLY_SLOT_COUNT && index < BREW_SLOT_MAX;
+}
+
+/** 슬롯 등급 규칙: 일반 칸=COMMON, 히든·전설 칸=HIDDEN (#28/#29) */
+export function slotAcceptsIngredientType(
+    index: number,
+    type: IngredientCatalogType,
+): boolean {
+    if (index < 0 || index >= BREW_SLOT_MAX) {
+        return false;
+    }
+    if (isSpecialBrewSlot(index)) {
+        return type === 'HIDDEN';
+    }
+    return type === 'COMMON';
+}
+
+/** 재료 등급에 맞는 첫 빈 슬롯. 없으면 -1 */
+export function findEmptySlotForIngredient(
+    slots: (string | null)[],
+    ingredientId: string,
+): number {
+    const ingredient = getIngredientById(ingredientId);
+    if (ingredient == null) {
+        return -1;
+    }
+    return slots.findIndex(
+        (slot, index) => slot == null && slotAcceptsIngredientType(index, ingredient.type),
+    );
 }
 
 export function getFilledIngredientIds(slots: (string | null)[]): string[] {

@@ -455,6 +455,10 @@ export function UserProvider({ children }: PropsWithChildren) {
                 if (!DEV_TEST_TOOLS_ENABLED) {
                     return;
                 }
+                // API 모드에서는 BE 잔액과 어긋나므로 로컬만 올리지 않음
+                if (isApiEnabled()) {
+                    return;
+                }
                 await persist((prev) => addEcoJam(prev, amount, '테스트 지급'));
             },
             unlockAllRecipesForTest: async () => {
@@ -500,6 +504,19 @@ export function UserProvider({ children }: PropsWithChildren) {
                 try {
                     const api = await postGacha(current.ecoJam);
                     if (!api.ok) {
+                        if (isApiEnabled()) {
+                            try {
+                                const myPage = await getMyPage();
+                                if (myPage != null) {
+                                    const synced = { ...stateRef.current, ecoJam: myPage.ecoJam };
+                                    stateRef.current = synced;
+                                    setState(synced);
+                                    await saveUserState(synced);
+                                }
+                            } catch {
+                                // keep local
+                            }
+                        }
                         return { ok: false, reason: 'insufficient_eco_jam' };
                     }
                     const cost = api.response.costEcoJam || GACHA_PULL_COST_ECO_JAM;
@@ -556,7 +573,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                         costEcoJam: cost,
                     };
                 } catch {
-                    return { ok: false, reason: 'insufficient_eco_jam' };
+                    return { ok: false, reason: 'network_error' };
                 }
             },
             claimShareReward: async () => {

@@ -1,5 +1,6 @@
+import { isApiEnabled } from '@api/client';
 import { getIngredientById } from '@api/mock/ingredients';
-import { Button, Top, Txt } from '@toss/tds-react-native';
+import { Button, Txt } from '@toss/tds-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Platform, StyleSheet, Vibration, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
@@ -217,7 +218,11 @@ export function GachaScreen() {
             const result = await pullGacha();
             if (!result.ok) {
                 setPhase('idle');
-                toast.showError(`에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`);
+                if (result.reason === 'network_error') {
+                    toast.showError('가챠를 진행하지 못했어요. 잠시 후 다시 시도해 주세요.');
+                } else {
+                    toast.showError(`에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`);
+                }
                 return;
             }
             setLastReward(result.reward);
@@ -242,9 +247,6 @@ export function GachaScreen() {
         <View style={styles.root}>
             <View style={styles.header}>
                 <View style={styles.titleRow}>
-                    <View style={styles.titleBlock}>
-                        <Top title={<Top.TitleParagraph size={22}>가챠</Top.TitleParagraph>} />
-                    </View>
                     <View style={styles.chips}>
                         <BalanceChip
                             source={BRAND_EMOJI.ecoJam}
@@ -299,7 +301,7 @@ export function GachaScreen() {
                 >
                     {isBusy ? '뽑는 중…' : pullLabel}
                 </Button>
-                {DEV_TEST_TOOLS_ENABLED ? (
+                {DEV_TEST_TOOLS_ENABLED && !isApiEnabled() ? (
                     <Button
                         size="medium"
                         type="dark"
@@ -337,13 +339,9 @@ const styles = StyleSheet.create({
     titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         gap: 12,
         minHeight: 44,
-    },
-    titleBlock: {
-        flex: 1,
-        minWidth: 0,
     },
     chips: {
         flexDirection: 'row',
