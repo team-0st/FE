@@ -13,6 +13,8 @@ export const DEFAULT_USER_STATE: AppUserState = {
     privacyConsentAt: null,
     locationConsent: null,
     locationConsentAt: null,
+    cameraConsent: null,
+    cameraConsentAt: null,
     shopId: null,
     lastCheckInDate: null,
     checkInDates: [],

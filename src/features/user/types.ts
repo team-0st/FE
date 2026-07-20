@@ -34,6 +34,9 @@ export type AlmangPayoutConsent = 'granted' | 'declined';
 /** 주변 제휴 상점 안내용 위치정보 동의 */
 export type LocationConsent = 'granted' | 'declined';
 
+/** 미션 인증 촬영용 카메라 이용 동의 (OS 권한 요청 전) */
+export type CameraConsent = 'granted' | 'declined';
+
 export type AppUserState = {
     userId: number | null;
     deviceId: string | null;
@@ -48,6 +51,9 @@ export type AppUserState = {
     privacyConsentAt: string | null;
     locationConsent: LocationConsent | null;
     locationConsentAt: string | null;
+    /** 미션 카메라 촬영 앱 내 동의. null이면 촬영 전 고지 모달 */
+    cameraConsent: CameraConsent | null;
+    cameraConsentAt: string | null;
     shopId: string | null;
     lastCheckInDate: string | null;
     /** 출석한 날짜 키(YYYY-MM-DD). 주간 칸·연속 출석 계산용 */

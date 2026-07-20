@@ -13,6 +13,7 @@ import {
 import type {
     AlmangPayoutConsent,
     AppUserState,
+    CameraConsent,
     LocationConsent,
     MissionProgressStatus,
     PendingRealReward,
@@ -162,6 +163,14 @@ export function setLocationConsent(state: AppUserState, consent: LocationConsent
         ...state,
         locationConsent: consent,
         locationConsentAt: new Date().toISOString(),
+    };
+}
+
+export function setCameraConsent(state: AppUserState, consent: CameraConsent): AppUserState {
+    return {
+        ...state,
+        cameraConsent: consent,
+        cameraConsentAt: new Date().toISOString(),
     };
 }
 

@@ -2,6 +2,7 @@ import {
     openCamera,
     OpenCameraPermissionError,
 } from '@apps-in-toss/framework';
+import { CAMERA_OS_DENIED_MESSAGE } from '../../shared/constants/cameraPolicy';
 import type { MissionVerifyPhoto } from './missionVerifyPhotoStore';
 
 export type CaptureMissionVerifyPhotoResult =
@@ -11,7 +12,7 @@ export type CaptureMissionVerifyPhotoResult =
       }
     | {
           ok: false;
-          reason: 'permission_denied' | 'cancelled_or_failed';
+          reason: 'permission_denied' | 'cancelled_or_failed' | 'os_permission_denied';
           message: string;
       };
 
@@ -55,15 +56,36 @@ function isCancelledError(error: unknown): boolean {
     );
 }
 
+function isOsPermissionDeniedStatus(status: string): boolean {
+    const normalized = status.toLowerCase().replace(/[_-]/g, '');
+    return (
+        normalized === 'ospermissiondenied' ||
+        normalized.includes('ospermissiondenied') ||
+        normalized.includes('systemdenied')
+    );
+}
+
+type EnsureCameraResult =
+    | { ok: true }
+    | { ok: false; reason: 'permission_denied' | 'os_permission_denied'; message: string };
+
 /**
- * Android 등에서 getPermission이 NO_PERMISSION throw를 내는 경우가 있어,
- * 조회 실패 시에도 openPermissionDialog로 한 번 더 요청한다.
+ * Android: 토스 앱 설정에서 카메라 OFF면 getPermission이 `osPermissionDenied`를 반환할 수 있음.
+ * (앱인토스 openCamera 문서)
+ * 그 경우 다이얼로그로는 풀리지 않으니 설정 안내를 띄운다.
  */
-async function ensureCameraPermission(): Promise<'allowed' | 'denied'> {
+async function ensureCameraPermission(): Promise<EnsureCameraResult> {
     try {
         const status = await openCamera.getPermission();
         if (status === 'allowed') {
-            return 'allowed';
+            return { ok: true };
+        }
+        if (typeof status === 'string' && isOsPermissionDeniedStatus(status)) {
+            return {
+                ok: false,
+                reason: 'os_permission_denied',
+                message: CAMERA_OS_DENIED_MESSAGE,
+            };
         }
     } catch {
         // getPermission NO_PERMISSION 등 — 다이얼로그로 진행
@@ -71,9 +93,35 @@ async function ensureCameraPermission(): Promise<'allowed' | 'denied'> {
 
     try {
         const next = await openCamera.openPermissionDialog();
-        return next === 'allowed' ? 'allowed' : 'denied';
-    } catch {
-        return 'denied';
+        if (next === 'allowed') {
+            return { ok: true };
+        }
+        if (typeof next === 'string' && isOsPermissionDeniedStatus(next)) {
+            return {
+                ok: false,
+                reason: 'os_permission_denied',
+                message: CAMERA_OS_DENIED_MESSAGE,
+            };
+        }
+        return {
+            ok: false,
+            reason: 'permission_denied',
+            message: PERMISSION_DENIED_MESSAGE,
+        };
+    } catch (error) {
+        const text = errorText(error);
+        if (isOsPermissionDeniedStatus(text) || text.includes('ospermission')) {
+            return {
+                ok: false,
+                reason: 'os_permission_denied',
+                message: CAMERA_OS_DENIED_MESSAGE,
+            };
+        }
+        return {
+            ok: false,
+            reason: 'permission_denied',
+            message: PERMISSION_DENIED_MESSAGE,
+        };
     }
 }
 
@@ -91,15 +139,16 @@ async function takePhoto(): Promise<Omit<MissionVerifyPhoto, 'missionId'>> {
 
 /**
  * 앨범 없이 카메라만 — Apps in Toss `openCamera`
- * Android NO_PERMISSION: 권한 다이얼로그 → 재시도
+ * - OS 권한 거부(osPermissionDenied): 토스 설정 안내
+ * - 그 외: 권한 다이얼로그 → 재시도
  */
 export async function captureMissionVerifyPhoto(): Promise<CaptureMissionVerifyPhotoResult> {
     const permission = await ensureCameraPermission();
-    if (permission !== 'allowed') {
+    if (!permission.ok) {
         return {
             ok: false,
-            reason: 'permission_denied',
-            message: PERMISSION_DENIED_MESSAGE,
+            reason: permission.reason,
+            message: permission.message,
         };
     }
 
@@ -116,9 +165,8 @@ export async function captureMissionVerifyPhoto(): Promise<CaptureMissionVerifyP
         }
 
         if (isPermissionError(error)) {
-            // openCamera 직전 허용됐어도 브릿지/OS 타이밍으로 실패할 수 있음 → 다이얼로그 후 1회 재시도
             const retried = await ensureCameraPermission();
-            if (retried === 'allowed') {
+            if (retried.ok) {
                 try {
                     const photo = await takePhoto();
                     return { ok: true, photo };
@@ -138,6 +186,12 @@ export async function captureMissionVerifyPhoto(): Promise<CaptureMissionVerifyP
                         };
                     }
                 }
+            } else {
+                return {
+                    ok: false,
+                    reason: retried.reason,
+                    message: retried.message,
+                };
             }
             return {
                 ok: false,
