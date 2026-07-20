@@ -6,7 +6,8 @@ import { APP_DISPLAY_NAME, APP_NAME } from './app.config';
 
 /**
  * `appName` must match the name registered in the Apps in Toss console.
- * 콘솔 등록명: zerost (표시명: 제로스트)
+ * 콘솔 등록명: 0st (표시명: 제로스트)
+ * legacy 스킴 `intoss://zerost` 는 `normalizeSchemeUrl`에서 0st로 정규화됨.
  */
 export default defineConfig({
   appName: APP_NAME,
