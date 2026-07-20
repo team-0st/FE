@@ -15,7 +15,7 @@ export function RecipeCompletedStamp({ visible }: RecipeCompletedStampProps) {
         <View style={styles.stampWrap} pointerEvents="none">
             <BrandEmojiImage
                 source={completedStampUriSource()}
-                size={72}
+                size={48}
                 containerStyle={styles.stampImage}
                 accessibilityLabel="완료"
             />
