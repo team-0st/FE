@@ -1,6 +1,7 @@
 import type { Mission } from '@api/mock';
 import { isCoopMission } from '@api/mock/types';
-import { Asset, Button, frameShape, Top, Txt } from '@toss/tds-react-native';
+import { formatMissionIngredientReward, MISSION_RANDOM_REWARD_LABEL } from '@api/mock/ingredients';
+import { Asset, Button, frameShape, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { getMissionVerifyMessage } from '../../shared/constants/guideCopy';
 import type { MissionProgressStatus } from '../user/types';
@@ -14,7 +15,7 @@ import { RandomMissionRewardBadge } from '../../shared/ui/RandomMissionRewardBad
 import { Screen } from '../../shared/ui/Screen';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { colors } from '../../shared/theme/colors';
-import { coopDifficultyLabel } from './coopMissionLogic';
+import { coopDifficultyStars } from './coopMissionLogic';
 
 type MissionDetailScreenProps = {
     mission: Mission;
@@ -31,63 +32,76 @@ export function MissionDetailScreen({
 }: MissionDetailScreenProps) {
     const isCompleted = status === 'completed';
     const isCoop = isCoopMission(mission);
+    const rewardLabel = formatMissionIngredientReward(mission.id);
+    // 특별 미션은 재료가 고정돼 있어요 (자연의 새싹, 에코 스타 등) — 랜덤 풀 안내는 그때만 보여줘요.
+    const isFixedReward = rewardLabel !== MISSION_RANDOM_REWARD_LABEL;
 
     return (
         <Screen scrollable>
             <View style={styles.hero}>
-                <Asset.Icon
-                    name={TDS_ICON.missionCamera}
-                    frameShape={frameShape.CircleLarge}
-                    backgroundColor={colors.primaryLight}
-                    accessibilityLabel={mission.title}
-                />
-                <Top
-                    title={<Top.TitleParagraph size={22}>{mission.title}</Top.TitleParagraph>}
-                    subtitle2={<Top.SubtitleParagraph>{mission.description}</Top.SubtitleParagraph>}
-                />
-            </View>
-            {isCoop ? (
-                <Txt typography="t7" color="grey600" style={styles.coopBadge}>
-                    공동 미션 · {coopDifficultyLabel(mission.difficulty)}
-                </Txt>
-            ) : null}
-            {locked ? (
-                <GuideHero
-                    message="이전 공동 미션을 완료하면 열려요."
-                    mood="think"
-                    align="start"
-                    compact
-                />
-            ) : (
-                <>
-                    <GuideHero
-                        message={getMissionVerifyMessage(mission.authHint)}
-                        mood="think"
-                        align="start"
-                        compact
-                    />
-                    <RandomMissionRewardBadge />
-                    <View style={styles.poolHint}>
-                        <Txt typography="t7" color="grey600">
-                            완료하면 재료 풀에서 1종을 받아요.
-                        </Txt>
-                        <ProbabilityInfoRow
-                            label="지급 안내"
-                            title={MISSION_REWARD_PROBABILITY_TITLE}
-                            lines={MISSION_REWARD_PROBABILITY_LINES}
+                <View style={styles.heroGuide}>
+                    {locked ? (
+                        <GuideHero
+                            message="이전 공동 미션을 완료하면 열려요."
+                            mood="think"
+                            align="start"
+                            compact
                         />
-                    </View>
+                    ) : (
+                        <GuideHero
+                            message={getMissionVerifyMessage(mission.authHint)}
+                            mood="think"
+                            align="start"
+                            compact
+                        />
+                    )}
+                </View>
+                <View style={styles.iconCard}>
+                    <Asset.Icon
+                        name={TDS_ICON.missionCamera}
+                        frameShape={frameShape.CircleLarge}
+                        backgroundColor={colors.primaryLight}
+                        accessibilityLabel={mission.title}
+                    />
+                    {isCoop ? (
+                        <Txt typography="t7" color="grey600">
+                            {`공동 미션 · ${coopDifficultyStars(mission.difficulty)}`}
+                        </Txt>
+                    ) : null}
+                </View>
+            </View>
+
+            {locked ? null : (
+                <View style={styles.body}>
+                    {isFixedReward ? (
+                        <RandomMissionRewardBadge label={rewardLabel} subtitle="완료하면 확정으로 받아요" />
+                    ) : (
+                        <>
+                            <RandomMissionRewardBadge />
+                            <View style={styles.poolHint}>
+                                <Txt typography="t7" color="grey600">
+                                    완료하면 재료 풀에서 1종을 받아요.
+                                </Txt>
+                                <ProbabilityInfoRow
+                                    label="지급 안내"
+                                    title={MISSION_REWARD_PROBABILITY_TITLE}
+                                    lines={MISSION_REWARD_PROBABILITY_LINES}
+                                />
+                            </View>
+                        </>
+                    )}
                     <View style={styles.note}>
-                        <Txt typography="t7" color="grey500">
+                        <Txt typography="t7" color="grey600">
                             {mission.authType === 'receipt'
                                 ? '영수증 사진으로 인증해요.'
                                 : mission.authType === 'attendance_7d'
-                                  ? '7일 출석 후\n1·4·7일차에 사진을 올려요.'
-                                  : '사진 업로드 후\n검수가 끝나면 재료를 받아요.'}
+                                  ? '7일 출석 후 1·4·7일차에 사진을 올려요.'
+                                  : '사진 업로드 후 검수가 끝나면 재료를 받아요.'}
                         </Txt>
                     </View>
-                </>
+                </View>
             )}
+
             <View style={styles.cta}>
                 <Button
                     size="large"
@@ -107,19 +121,36 @@ const styles = StyleSheet.create({
     hero: {
         alignItems: 'center',
         paddingTop: 8,
+        gap: 16,
     },
-    coopBadge: {
+    heroGuide: {
         width: '100%',
-        marginBottom: 8,
+    },
+    iconCard: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 55,
+        paddingHorizontal: 24,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+        gap: 8,
+    },
+    body: {
+        marginTop: 16,
+        gap: 16,
     },
     poolHint: {
-        marginTop: 12,
         gap: 8,
         alignItems: 'flex-start',
     },
     note: {
-        marginTop: 16,
-        gap: 8,
+        padding: 12,
+        borderRadius: 12,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     cta: {
         marginTop: 24,
