@@ -6,15 +6,15 @@ import {
 import { BottomCTA, Button, Top, Txt } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { BRAND_ASSET } from '../../shared/constants/brandAssets';
 import { SHARE_REWARD_ALREADY_CLAIMED_MESSAGE, SHARE_REWARD_SUCCESS_MESSAGE } from '../../shared/constants/shareRewardPolicy';
 import { buildMissionShareMessage, shareZerostResult } from '../../shared/feedback/shareResult';
 import { useAppToast } from '../../shared/feedback/useAppToast';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { Screen } from '../../shared/ui/Screen';
-import { TdsHeroAsset } from '../../shared/ui/TdsHeroAsset';
 import { colors } from '../../shared/theme/colors';
 import { resolveShopName } from '../user/selectors';
 import { useUser } from '../user/UserProvider';
+import { getCarbonReduction } from './carbonReduction';
 import { MissionShareCard } from './MissionShareCard';
 
 type MissionResultScreenProps = {
@@ -43,6 +43,7 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
         rewardIngredient != null
             ? formatIngredientReward(rewardIngredient.id)
             : '랜덤 재료';
+    const carbonReduction = getCarbonReduction(mission.id);
 
     const practiceCount = useMemo(
         () =>
@@ -86,12 +87,6 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
         <View style={styles.root}>
             <Screen scrollable>
                 <Top title={<Top.TitleParagraph size={22}>미션 완료</Top.TitleParagraph>} />
-                <View style={styles.hero}>
-                    <TdsHeroAsset
-                        source={BRAND_ASSET.heroMission}
-                        accessibilityLabel="미션 인증"
-                    />
-                </View>
                 {isPending ? (
                     <View style={styles.pendingBox}>
                         <Txt typography="t5" fontWeight="bold" style={styles.pendingTitle}>
@@ -107,6 +102,14 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
                 ) : (
                     <>
                         <View style={styles.rewardBox}>
+                            {rewardIngredient?.imageSource != null ? (
+                                <BrandEmojiImage
+                                    source={rewardIngredient.imageSource}
+                                    size={72}
+                                    containerStyle={styles.rewardImage}
+                                    accessibilityLabel={rewardLabel}
+                                />
+                            ) : null}
                             <Txt typography="t7" color="grey600">
                                 획득 재료
                             </Txt>
@@ -114,14 +117,18 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
                                 {rewardLabel}
                             </Txt>
                         </View>
+                        {carbonReduction != null ? (
+                            <Txt typography="t6" color="grey700" style={styles.carbonFeedback}>
+                                {carbonReduction.feedbackCopy}
+                            </Txt>
+                        ) : null}
                         <MissionShareCard
                             missionTitle={mission.title}
                             practiceCount={practiceCount}
                             shopName={shopName}
                             dateLabel={dateLabel}
-                            onPressShare={() => {
-                                void handleShare();
-                            }}
+                            rewardLabel={rewardLabel}
+                            carbonGrams={carbonReduction?.grams ?? null}
                         />
                     </>
                 )}
@@ -179,22 +186,26 @@ const styles = StyleSheet.create({
         gap: 12,
         alignItems: 'center',
     },
-    hero: {
-        alignItems: 'center',
-        marginTop: 8,
-        marginBottom: 8,
-    },
     rewardBox: {
         marginHorizontal: 20,
-        marginTop: 8,
+        marginTop: 16,
         padding: 16,
         borderRadius: 16,
         backgroundColor: colors.heroTint,
         alignItems: 'center',
         gap: 4,
     },
+    rewardImage: {
+        marginRight: 0,
+        marginBottom: 4,
+    },
     rewardLabel: {
         textAlign: 'center',
+    },
+    carbonFeedback: {
+        textAlign: 'center',
+        marginTop: 10,
+        marginHorizontal: 20,
     },
     pendingTitle: {
         textAlign: 'center',

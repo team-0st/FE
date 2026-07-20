@@ -74,6 +74,7 @@ export function IngredientSlotBar({
                                         <BrandEmojiImage
                                             source={ingredient.imageSource}
                                             size={36}
+                                            containerStyle={{ marginRight: 0 }}
                                             accessibilityLabel={ingredient.name}
                                         />
                                     ) : (

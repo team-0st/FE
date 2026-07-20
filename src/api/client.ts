@@ -36,6 +36,8 @@ type ApiRequestOptions = {
     body?: unknown;
     /** false면 X-Device-Id 생략 (register만) */
     withDeviceId?: boolean;
+    /** multipart 등 — Content-Type을 직접 넣지 않음 */
+    formData?: FormData;
 };
 
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
@@ -46,8 +48,11 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
 
     const headers: Record<string, string> = {
         Accept: 'application/json',
-        'Content-Type': 'application/json',
     };
+
+    if (options.formData == null) {
+        headers['Content-Type'] = 'application/json';
+    }
 
     if (options.withDeviceId !== false) {
         const deviceId = await getOrCreateDeviceId();
@@ -59,7 +64,12 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
         response = await fetch(`${base}${path}`, {
             method: options.method ?? 'GET',
             headers,
-            body: options.body != null ? JSON.stringify(options.body) : undefined,
+            body:
+                options.formData != null
+                    ? (options.formData as unknown as BodyInit_)
+                    : options.body != null
+                      ? JSON.stringify(options.body)
+                      : undefined,
         });
     } catch {
         throw new ApiClientError('NETWORK_ERROR', '네트워크 요청에 실패했습니다.', 0);

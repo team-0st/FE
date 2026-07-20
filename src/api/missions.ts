@@ -1,4 +1,5 @@
 import { ApiClientError, apiRequest, isApiEnabled } from './client';
+import { uploadMissionVerifyPhoto, type MissionVerifyUploadInput } from './files';
 import { pickMissionRewardIngredient } from './mock/ingredients';
 import { missionNumericId, toIngredientDto } from './notion/idMap';
 import type {
@@ -27,8 +28,6 @@ export type MissionVerifyResult =
 
 let completionSeq = 100;
 
-const MISSION_VERIFY_PHOTO_STUB = 'https://zerost.local/mission-verify/pending-upload';
-
 /** GET /api/v1/missions */
 export async function getMissions(): Promise<MissionSummaryDto[] | null> {
     if (!isApiEnabled()) {
@@ -37,12 +36,15 @@ export async function getMissions(): Promise<MissionSummaryDto[] | null> {
     return apiRequest<MissionSummaryDto[]>(API_PATHS.missions);
 }
 
-/** POST /api/v1/missions/{id}/verify — BE는 JSON `photoUrl` (업로드 API는 추후) */
+/**
+ * POST /api/v1/files/upload → POST /api/v1/missions/{id}/verify `{ photoKey }`
+ * mock(API 비활성): DEV면 즉시 APPROVED, 아니면 PENDING
+ */
 export async function postMissionVerify(
     missionId: string,
     todayStatus: MissionTodayStatus,
+    photo: MissionVerifyUploadInput | null = null,
     random: () => number = Math.random,
-    photoUrl: string = MISSION_VERIFY_PHOTO_STUB,
 ): Promise<MissionVerifyResult> {
     const numericId = missionNumericId(missionId);
 
@@ -50,15 +52,18 @@ export async function postMissionVerify(
         if (numericId == null) {
             return { ok: false, code: 'NOT_FOUND' };
         }
+        if (photo == null) {
+            return { ok: false, code: 'NETWORK_ERROR' };
+        }
         try {
+            const uploaded = await uploadMissionVerifyPhoto(numericId, photo);
             const data = await apiRequest<{ completionId: number; status: string }>(
                 API_PATHS.missionVerify(numericId),
                 {
                     method: 'POST',
-                    body: { photoUrl },
+                    body: { photoKey: uploaded.fileKey },
                 },
             );
-            // BE 제출 직후는 PENDING. 승인·보상은 completions 폴링으로 반영.
             return {
                 ok: true,
                 data: {

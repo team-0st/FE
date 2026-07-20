@@ -20,6 +20,7 @@ export const DEFAULT_USER_STATE: AppUserState = {
     weeklyMissionTotal: 6,
     totalPoints: 0,
     ecoJam: ECO_JAM_STARTING_BALANCE,
+    totalCo2ReductionGrams: 0,
     ingredientInventory: {
         tomato: 1,
         onion: 1,

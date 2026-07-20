@@ -56,6 +56,8 @@ export type AppUserState = {
     weeklyMissionTotal: number;
     totalPoints: number;
     ecoJam: number;
+    /** 미션으로 절감한 누적 탄소배출량(g) — FE 자체 환산치 */
+    totalCo2ReductionGrams: number;
     ingredientInventory: Record<string, number>;
     completedRecipeIds: string[];
     /** 에코잼으로 해금한 히든 레시피 (완성 전 열람용) */

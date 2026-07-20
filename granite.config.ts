@@ -21,7 +21,7 @@ export default defineConfig({
         primaryColor: '#3182F6',
         icon: 'https://static.toss.im/icons/png/4x/icon-leaf-mono.png',
       },
-      permissions: [],
+      permissions: [{ name: 'camera', access: 'access' }],
     }),
     router(),
     hermes(),

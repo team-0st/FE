@@ -1,9 +1,8 @@
-import { Txt } from '@toss/tds-react-native';
-import { ImageBackground, Pressable, StyleSheet, View } from 'react-native';
-import { BRAND_ASSET } from '../../shared/constants/brandAssets';
+import { Asset, frameShape, Txt } from '@toss/tds-react-native';
+import { StyleSheet, View } from 'react-native';
+import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { ZEROST_SHARE_HASHTAG } from '../../shared/feedback/shareResult';
-import { colors } from '../../shared/theme/colors';
-import { toBrandImageSource } from '../../shared/ui/toBrandImageSource';
+import { formatCarbonGrams } from './carbonReduction';
 
 const TODAY_PRACTICE_HASHTAG = '#오늘의실천';
 
@@ -12,7 +11,9 @@ type MissionShareCardProps = {
     practiceCount: number;
     shopName: string;
     dateLabel: string;
-    onPressShare: () => void;
+    rewardLabel: string;
+    /** 공식 절감량 자료가 있는 미션만 전달 — 없으면 null */
+    carbonGrams: number | null;
 };
 
 function pineTreeEquivalent(count: number): string {
@@ -26,16 +27,12 @@ export function MissionShareCard({
     practiceCount,
     shopName,
     dateLabel,
-    onPressShare,
+    rewardLabel,
+    carbonGrams,
 }: MissionShareCardProps) {
-    const photoSource = toBrandImageSource(BRAND_ASSET.shareCardPhoto);
     return (
         <View style={styles.polaroid}>
-            <ImageBackground
-                source={photoSource ?? undefined}
-                style={styles.photo}
-                imageStyle={styles.photoImage}
-            >
+            <View style={styles.photo}>
                 <View style={styles.heroGlass}>
                     <Txt typography="t1" fontWeight="bold" color="white" style={styles.heroCount}>
                         {practiceCount}
@@ -48,20 +45,17 @@ export function MissionShareCard({
                     </Txt>
                 </View>
 
-                <Pressable
-                    style={styles.shareFab}
-                    onPress={onPressShare}
-                    accessibilityLabel="결과 공유하기"
-                    accessibilityRole="button"
-                >
-                    <Txt typography="t5" fontWeight="bold" color="grey800">
-                        ↗
+                <View style={styles.photoPlaceholder}>
+                    <Asset.Icon
+                        name={TDS_ICON.missionCamera}
+                        frameShape={frameShape.CircleLarge}
+                        backgroundColor="rgba(255,255,255,0.16)"
+                        accessibilityLabel="인증 사진"
+                    />
+                    <Txt typography="t7" color="white" style={styles.photoPlaceholderLabel}>
+                        인증 사진
                     </Txt>
-                </Pressable>
-
-                <Txt typography="t7" color="white" style={styles.photoPlaceholder}>
-                    인증 사진
-                </Txt>
+                </View>
 
                 <View style={styles.dataGlass}>
                     <View style={styles.gridRow}>
@@ -75,10 +69,10 @@ export function MissionShareCard({
                         </View>
                         <View style={styles.gridCell}>
                             <Txt typography="st11" color="white" style={styles.gridLabel}>
-                                획득 에코잼
+                                획득 재료
                             </Txt>
-                            <Txt typography="t7" fontWeight="semibold" color="white">
-                                에코잼
+                            <Txt typography="t7" fontWeight="semibold" color="white" numberOfLines={1}>
+                                {rewardLabel}
                             </Txt>
                         </View>
                     </View>
@@ -100,8 +94,13 @@ export function MissionShareCard({
                             </Txt>
                         </View>
                     </View>
+                    {carbonGrams != null ? (
+                        <Txt typography="st11" color="white" style={styles.carbonNote}>
+                            {`이 실천으로 약 ${formatCarbonGrams(carbonGrams)} CO2를 줄였어요`}
+                        </Txt>
+                    ) : null}
                 </View>
-            </ImageBackground>
+            </View>
 
             <Txt typography="t7" fontWeight="semibold" color="grey800" style={styles.hashtags}>
                 {ZEROST_SHARE_HASHTAG}  {TODAY_PRACTICE_HASHTAG}
@@ -117,17 +116,6 @@ const styles = StyleSheet.create({
     polaroid: {
         marginTop: 16,
         marginHorizontal: 20,
-        backgroundColor: colors.surface,
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: colors.border,
-        padding: 13,
-        paddingBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-        elevation: 3,
         alignItems: 'center',
         gap: 8,
     },
@@ -138,10 +126,11 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         backgroundColor: '#296B4A',
         justifyContent: 'space-between',
-    },
-    photoImage: {
-        borderRadius: 16,
-        resizeMode: 'cover',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 3,
     },
     heroGlass: {
         marginTop: 14,
@@ -163,27 +152,15 @@ const styles = StyleSheet.create({
         opacity: 0.75,
         marginTop: 2,
     },
-    shareFab: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(255,255,255,0.92)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-        elevation: 2,
-    },
     photoPlaceholder: {
         position: 'absolute',
         alignSelf: 'center',
-        top: '48%',
-        opacity: 0.6,
+        top: '44%',
+        alignItems: 'center',
+        gap: 8,
+        opacity: 0.7,
+    },
+    photoPlaceholderLabel: {
         textAlign: 'center',
     },
     dataGlass: {
@@ -205,6 +182,10 @@ const styles = StyleSheet.create({
     },
     gridLabel: {
         opacity: 0.7,
+    },
+    carbonNote: {
+        textAlign: 'center',
+        opacity: 0.85,
     },
     hashtags: {
         textAlign: 'center',

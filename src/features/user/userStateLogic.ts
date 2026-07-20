@@ -2,6 +2,7 @@ import type { CheckInSuccessDto } from '@api/checkIn';
 import type { Recipe } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { gradeFromCraft, gradeRank } from '../soup/soupRewardGrades';
+import { getCarbonReduction } from '../missions/carbonReduction';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { appendAlmangPointsLedger } from './almangPointsLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
@@ -248,6 +249,64 @@ export function completeMissionVerify(
     const weeklyMissionDone = Math.min(next.weeklyMissionTotal, next.weeklyMissionDone + 1);
     next = { ...next, weeklyMissionDone };
     next = addIngredient(next, rewardIngredientId, 1);
+    const carbonReduction = getCarbonReduction(missionId);
+    if (carbonReduction?.grams != null) {
+        next = {
+            ...next,
+            totalCo2ReductionGrams: next.totalCo2ReductionGrams + carbonReduction.grams,
+        };
+    }
+    return next;
+}
+
+/** BE completions → 로컬 pending/approved 동기화 */
+export function applyMissionCompletionsToState(
+    state: AppUserState,
+    items: Array<{
+        completionId: number;
+        missionId: number;
+        status: 'PENDING' | 'APPROVED' | 'REJECTED';
+        rewardedIngredient?: { id: number } | null;
+    }>,
+    missionSlugFromNumeric: (id: number) => string | undefined,
+    ingredientSlugFromNumeric: (id: number) => string | undefined,
+): AppUserState {
+    let next = state;
+    for (const item of items) {
+        if (item.status !== 'APPROVED') {
+            continue;
+        }
+        const slug = missionSlugFromNumeric(item.missionId);
+        if (slug == null) {
+            continue;
+        }
+        if (next.missionProgress[slug]?.status === 'completed') {
+            continue;
+        }
+        const rewardSlug =
+            item.rewardedIngredient != null
+                ? (ingredientSlugFromNumeric(item.rewardedIngredient.id) ??
+                  `be-${item.rewardedIngredient.id}`)
+                : undefined;
+        if (rewardSlug == null) {
+            continue;
+        }
+        next = completeMissionVerify(next, slug, rewardSlug);
+    }
+    for (const item of items) {
+        if (item.status !== 'PENDING') {
+            continue;
+        }
+        const slug = missionSlugFromNumeric(item.missionId);
+        if (slug == null) {
+            continue;
+        }
+        const current = next.missionProgress[slug]?.status;
+        if (current === 'completed' || current === 'pending_review') {
+            continue;
+        }
+        next = submitMissionPendingReview(next, slug, item.completionId);
+    }
     return next;
 }
 
@@ -292,18 +351,27 @@ export function applySoupCraftReward(
     ledgerLabel = `${recipe.name} 보상`,
 ): AppUserState {
     let next = state;
-    if (craft.rewardGrade === 'INGREDIENT' && craft.rewardIngredientId != null) {
+    if (craft.rewardIngredientId != null) {
         next = addIngredientStock(next, craft.rewardIngredientId, 1);
-        return next;
     }
-    if (craft.result !== 'SUCCESS') {
-        return next;
+
+    // BE는 INGREDIENT 등급에도 에코잼·포인트를 함께 줄 수 있음 → rewardEcoJam/rewardPoint 우선
+    const eco =
+        craft.rewardEcoJam ??
+        (craft.rewardType === 'ECO_JAM' ? (craft.rewardAmount ?? 0) : 0);
+    if (eco > 0) {
+        next = { ...next, ecoJam: next.ecoJam + eco };
+        next = appendEcoJamLedger(next, ledgerLabel, eco);
     }
-    if (craft.rewardType === 'ECO_JAM' && (craft.rewardAmount ?? 0) > 0) {
-        const gain = craft.rewardAmount ?? 0;
-        next = { ...next, ecoJam: next.ecoJam + gain };
-        next = appendEcoJamLedger(next, ledgerLabel, gain);
+
+    const pointGain =
+        craft.rewardPoint ??
+        (craft.rewardType === 'ALMANG_POINT' ? (craft.rewardAmount ?? 0) : 0);
+    if (pointGain > 0) {
+        next = { ...next, totalPoints: next.totalPoints + pointGain };
+        next = appendAlmangPointsLedger(next, ledgerLabel, pointGain);
     }
+
     if (craft.rewardType === 'REAL_ITEM') {
         const pending: PendingRealReward = {
             id: `reward-${recipe.id}-${Date.now()}`,
@@ -317,11 +385,7 @@ export function applySoupCraftReward(
             pendingRealRewards: [pending, ...next.pendingRealRewards],
         };
     }
-    if (craft.rewardType === 'ALMANG_POINT' && (craft.rewardAmount ?? 0) > 0) {
-        const gain = craft.rewardAmount ?? 0;
-        next = { ...next, totalPoints: next.totalPoints + gain };
-        next = appendAlmangPointsLedger(next, ledgerLabel, gain);
-    }
+
     return next;
 }
 

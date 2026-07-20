@@ -85,6 +85,8 @@ export async function loadUserState(): Promise<AppUserState> {
         lastCheckInDate,
         checkInDates,
         ecoJam: rest.ecoJam ?? DEFAULT_USER_STATE.ecoJam,
+        totalCo2ReductionGrams:
+            rest.totalCo2ReductionGrams ?? DEFAULT_USER_STATE.totalCo2ReductionGrams,
         ingredientInventory: normalizeIngredientInventory(rest.ingredientInventory),
         completedRecipeIds,
         unlockedRecipeIds: Array.isArray(rest.unlockedRecipeIds) ? rest.unlockedRecipeIds : [],
