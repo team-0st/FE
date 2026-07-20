@@ -284,7 +284,12 @@ export function OnboardingProfileScreen({
                                 accessibilityLabel={PRIVACY_POLICY_LABELS.viewFull}
                                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                             >
-                                <Txt typography="t7" color="blue500" style={styles.policyLink}>
+                                <Txt
+                                    typography="t5"
+                                    fontWeight="bold"
+                                    color={policyButtonPulse ? 'red500' : 'blue500'}
+                                    style={styles.policyLink}
+                                >
                                     {PRIVACY_POLICY_LABELS.viewFullLink}
                                 </Txt>
                             </Pressable>
@@ -501,8 +506,9 @@ const styles = StyleSheet.create({
         lineHeight: 20,
     },
     policyLink: {
-        marginTop: 4,
+        marginTop: 8,
         textDecorationLine: 'underline',
+        textAlign: 'left',
     },
     softHint: {
         marginTop: 2,

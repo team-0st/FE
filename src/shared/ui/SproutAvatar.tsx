@@ -25,7 +25,7 @@ export function SproutAvatar({ size = 'medium', animate = false }: SproutAvatarP
     const floatStyle = useFloatAnimation(animate, size === 'hero' ? 10 : 8);
     const height = PIXEL_HEIGHT[size];
     const width = Math.round(height * DUO_ASPECT);
-    const uriSource = toBrandImageSource(HOME_DECOR.homeHero);
+    const uriSource = toBrandImageSource(HOME_DECOR.onboardingHero);
     const icon =
         uriSource == null ? null : (
             <Image

@@ -6,7 +6,6 @@ import type { ImageSourcePropType } from 'react-native';
 import {
     BRAND_ASSET,
     BRAND_EMOJI,
-    GACHA_BANG_BY_TIER,
     GACHA_FAIL_ASSETS,
 } from '../../shared/constants/brandAssets';
 import {
@@ -18,6 +17,7 @@ import { buildGachaShareMessage } from '../../shared/feedback/shareResult';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { ShareResultButton } from '../../shared/ui/ShareResultButton';
 import { toBrandImageSource } from '../../shared/ui/toBrandImageSource';
+import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
 import { colors } from '../../shared/theme/colors';
 import { useUser } from '../user/UserProvider';
 import {
@@ -27,17 +27,16 @@ import {
 import { formatGachaRewardMessage } from './gachaLogic';
 import type { GachaReward } from './gachaTypes';
 
-type GachaPhase = 'idle' | 'pulling' | 'bang' | 'result';
+type GachaPhase = 'idle' | 'pulling' | 'result';
 
-/** 하단 CTA·헤더·공유 줄을 침범하지 않는 선에서 최대한 큰 고정 스테이지 */
+/** 하단 CTA·헤더를 침범하지 않는 선에서 최대한 큰 고정 스테이지 */
 const STAGE_SIZE = 220;
 
-/** 공유 TextButton 줄 높이 — 유무와 관계없이 항상 확보해 레이아웃 점프 방지 */
-const SHARE_ROW_HEIGHT = 36;
+/** 공유 버튼 자리 — 유무와 관계없이 확보해 뽑기 버튼 위치 고정 */
+const SHARE_SLOT_HEIGHT = 48;
 
 const PHASE_MS = {
     pulling: 700,
-    bang: 500,
 } as const;
 
 function sleep(ms: number): Promise<void> {
@@ -79,40 +78,9 @@ function vibratePulling() {
     }
 }
 
-function vibrateBang() {
-    try {
-        if (Platform.OS === 'android') {
-            Vibration.vibrate(60);
-            return;
-        }
-        Vibration.vibrate();
-    } catch {
-        // ignore
-    }
-}
-
 function pickFailAsset(): ImageSourcePropType {
     const index = Math.floor(Math.random() * GACHA_FAIL_ASSETS.length);
     return GACHA_FAIL_ASSETS[index] ?? GACHA_FAIL_ASSETS[0];
-}
-
-/** 꽝은 null(빵 스킵). 당첨만 희귀도별 빵 */
-function bangAssetForReward(reward: GachaReward): ImageSourcePropType | null {
-    if (reward.type === 'FAIL') {
-        return null;
-    }
-    if (reward.type === 'ALMANG_POINT') {
-        return GACHA_BANG_BY_TIER.rare;
-    }
-    if (reward.type === 'INGREDIENT') {
-        const item = getIngredientById(reward.ingredientId);
-        if (item?.type === 'HIDDEN') {
-            return GACHA_BANG_BY_TIER.hidden;
-        }
-        return GACHA_BANG_BY_TIER.common;
-    }
-    // ECO_JAM
-    return GACHA_BANG_BY_TIER.common;
 }
 
 function gachaResultArtSource(
@@ -204,9 +172,8 @@ export function GachaScreen() {
     const toast = useAppToast();
     const [lastReward, setLastReward] = useState<GachaReward | null>(null);
     const [phase, setPhase] = useState<GachaPhase>('idle');
-    const [bangSource, setBangSource] = useState<ImageSourcePropType>(GACHA_BANG_BY_TIER.common);
     const [failArt, setFailArt] = useState<ImageSourcePropType>(GACHA_FAIL_ASSETS[0]);
-    const isBusy = phase === 'pulling' || phase === 'bang';
+    const isBusy = phase === 'pulling';
     const canPull = state.ecoJam >= GACHA_PULL_COST_ECO_JAM && !isBusy;
     const pullLabel = `에코잼 ${GACHA_PULL_COST_ECO_JAM}개로 뽑기`;
     const canShareLast = lastReward != null && lastReward.type !== 'FAIL' && phase === 'result';
@@ -215,41 +182,28 @@ export function GachaScreen() {
         if (phase === 'pulling') {
             return BRAND_ASSET.gachaPulling;
         }
-        if (phase === 'bang') {
-            return bangSource;
-        }
         if (phase === 'result' && lastReward != null) {
             return gachaResultArtSource(lastReward, failArt);
         }
         return BRAND_ASSET.heroGacha;
-    }, [bangSource, failArt, lastReward, phase]);
+    }, [failArt, lastReward, phase]);
 
     const stageKey =
         phase === 'result' && lastReward != null
             ? `result-${lastReward.type}-${'ingredientId' in lastReward ? lastReward.ingredientId : 'amount' in lastReward ? lastReward.amount : 0}`
-            : phase === 'bang'
-              ? 'bang'
-              : phase === 'pulling'
-                ? 'pulling'
-                : 'idle';
+            : phase === 'pulling'
+              ? 'pulling'
+              : 'idle';
 
     const heroLabel =
-        phase === 'pulling'
-            ? '가챠 뽑는 중'
-            : phase === 'bang'
-              ? '결과 발표'
-              : phase === 'result'
-                ? '가챠 결과'
-                : '가챠 머신';
+        phase === 'pulling' ? '가챠 뽑는 중' : phase === 'result' ? '가챠 결과' : '가챠 머신';
 
     const potHint =
         phase === 'pulling'
             ? '두구두구…'
-            : phase === 'bang'
-              ? '빵!'
-              : phase === 'result' && lastReward != null
-                ? formatGachaRewardMessage(lastReward, state)
-                : `1회 ${GACHA_PULL_COST_ECO_JAM} 에코잼이 소모돼요.`;
+            : phase === 'result' && lastReward != null
+              ? formatGachaRewardMessage(lastReward, state)
+              : `1회 ${GACHA_PULL_COST_ECO_JAM} 에코잼이 소모돼요.`;
 
     const onPressPull = useCallback(async () => {
         if (!canPull) {
@@ -268,19 +222,14 @@ export function GachaScreen() {
             }
             setLastReward(result.reward);
 
-            const bang = bangAssetForReward(result.reward);
-            if (bang == null) {
-                // 꽝: 축하 빵 없이 랜덤 꽝 아트로 바로 결과
+            // 빵(펑) 이펙트는 격자 이슈로 스킵 — 뽑기 연출 후 바로 결과
+            if (result.reward.type === 'FAIL') {
                 setFailArt(pickFailAsset());
                 setPhase('result');
                 toast.show(formatGachaRewardMessage(result.reward, state));
                 return;
             }
 
-            setBangSource(bang);
-            setPhase('bang');
-            vibrateBang();
-            await sleep(PHASE_MS.bang);
             setPhase('result');
             toast.showSuccess(formatGachaRewardMessage(result.reward, state));
         } catch {
@@ -332,10 +281,9 @@ export function GachaScreen() {
             </View>
 
             <View style={styles.footer}>
-                <View style={styles.shareRow}>
+                <View style={styles.shareSlot}>
                     {canShareLast ? (
                         <ShareResultButton
-                            presentation="text"
                             message={buildGachaShareMessage(
                                 formatGachaRewardMessage(lastReward!, state),
                             )}
@@ -351,7 +299,7 @@ export function GachaScreen() {
                 >
                     {isBusy ? '뽑는 중…' : pullLabel}
                 </Button>
-                {__DEV__ ? (
+                {DEV_TEST_TOOLS_ENABLED ? (
                     <Button
                         size="medium"
                         type="dark"
@@ -366,7 +314,7 @@ export function GachaScreen() {
                             })();
                         }}
                     >
-                        테스트용 에코잼 +{GACHA_TEST_ECO_JAM_GRANT}
+                        [테스트] 에코잼 +{GACHA_TEST_ECO_JAM_GRANT}
                     </Button>
                 ) : null}
             </View>
@@ -462,9 +410,8 @@ const styles = StyleSheet.create({
         gap: 10,
         paddingBottom: 8,
     },
-    shareRow: {
-        height: SHARE_ROW_HEIGHT,
-        alignItems: 'center',
+    shareSlot: {
+        minHeight: SHARE_SLOT_HEIGHT,
         justifyContent: 'center',
     },
 });

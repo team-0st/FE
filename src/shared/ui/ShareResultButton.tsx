@@ -2,13 +2,11 @@ import { Button, TextButton } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
     SHARE_REWARD_ALREADY_CLAIMED_MESSAGE,
-    SHARE_REWARD_ECO_JAM_AMOUNT,
     SHARE_REWARD_SUCCESS_MESSAGE,
 } from '../constants/shareRewardPolicy';
 import { shareZerostResult } from '../feedback/shareResult';
 import { useAppToast } from '../feedback/useAppToast';
 import { useUser } from '../../features/user/UserProvider';
-import { formatDateKey } from '../../features/user/userStateLogic';
 
 type ShareResultButtonProps = {
     message: string;
@@ -32,16 +30,14 @@ export function ShareResultButton({
     const { state, claimShareReward } = useUser();
     const [sharing, setSharing] = useState(false);
 
-    const today = formatDateKey(new Date());
-    const rewardAvailable =
-        rewardEnabled && state.lastShareRewardDate !== today;
+    const rewardAvailable = rewardEnabled && state.lastShareRewardDate == null;
 
     const buttonLabel = useMemo(() => {
         if (label != null) {
             return label;
         }
         if (rewardAvailable) {
-            return `친구에게 공유하고 에코잼 ${SHARE_REWARD_ECO_JAM_AMOUNT}개 받기`;
+            return '친구에게 공유하고 에코잼 받기';
         }
         return '친구에게 결과 공유하기';
     }, [label, rewardAvailable]);
@@ -66,7 +62,7 @@ export function ShareResultButton({
                 toast.showSuccess(SHARE_REWARD_SUCCESS_MESSAGE(reward.ecoJamGranted));
                 return;
             }
-            if (reward.reason === 'already_claimed_today') {
+            if (reward.reason === 'already_claimed') {
                 toast.show(SHARE_REWARD_ALREADY_CLAIMED_MESSAGE);
                 return;
             }

@@ -11,32 +11,42 @@ export const SCROLL_PREVIEW_HINT = '아래로 스크롤하면 더 볼 수 있어
 type ScrollPreviewSectionProps = {
     title?: string;
     titleExtra?: ReactNode;
+    /** 제목 행 오른쪽 (예: 모두 보기) */
+    titleAction?: ReactNode;
     hint?: string;
     itemCount: number;
     emptyMessage?: string;
     showScrollHint?: boolean;
+    /** 미리보기 한 줄 높이. 기본 PREVIEW_ROW_HEIGHT */
+    rowHeight?: number;
     children: ReactNode;
 };
 
 export function ScrollPreviewSection({
     title,
     titleExtra,
+    titleAction,
     hint,
     itemCount,
     emptyMessage,
     showScrollHint = true,
+    rowHeight = PREVIEW_ROW_HEIGHT,
     children,
 }: ScrollPreviewSectionProps) {
     const canScroll = itemCount > PREVIEW_VISIBLE_ROWS;
+    const previewMaxHeight = rowHeight * PREVIEW_VISIBLE_ROWS;
 
     return (
         <View style={styles.section}>
             {title != null ? (
                 <View style={styles.titleRow}>
-                    <Txt typography="t5" fontWeight="semibold">
-                        {title}
-                    </Txt>
-                    {titleExtra}
+                    <View style={styles.titleLeft}>
+                        <Txt typography="t5" fontWeight="semibold">
+                            {title}
+                        </Txt>
+                        {titleExtra != null ? titleExtra : null}
+                    </View>
+                    {titleAction != null ? titleAction : null}
                 </View>
             ) : null}
             {hint != null ? (
@@ -51,9 +61,9 @@ export function ScrollPreviewSection({
             ) : null}
             {itemCount > 0 ? (
                 <>
-                    <View style={styles.previewBox}>
+                    <View style={[styles.previewBox, { maxHeight: previewMaxHeight }]}>
                         <ScrollView
-                            style={styles.previewScroll}
+                            style={{ maxHeight: previewMaxHeight }}
                             nestedScrollEnabled
                             showsVerticalScrollIndicator={canScroll}
                         >
@@ -87,20 +97,22 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         gap: 8,
     },
+    titleLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        flexShrink: 1,
+    },
     hint: {
         marginBottom: 8,
     },
     previewBox: {
         width: '100%',
-        maxHeight: PREVIEW_ROW_HEIGHT * PREVIEW_VISIBLE_ROWS,
         backgroundColor: colors.surface,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
         overflow: 'hidden',
-    },
-    previewScroll: {
-        maxHeight: PREVIEW_ROW_HEIGHT * PREVIEW_VISIBLE_ROWS,
     },
     scrollHint: {
         marginTop: 6,

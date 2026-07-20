@@ -13,14 +13,14 @@ export function useAttentionPulse(active: boolean) {
         const animation = Animated.loop(
             Animated.sequence([
                 Animated.timing(opacity, {
-                    toValue: 0.3,
-                    duration: 500,
+                    toValue: 0.25,
+                    duration: 350,
                     easing: Easing.inOut(Easing.ease),
                     useNativeDriver: true,
                 }),
                 Animated.timing(opacity, {
                     toValue: 1,
-                    duration: 500,
+                    duration: 350,
                     easing: Easing.inOut(Easing.ease),
                     useNativeDriver: true,
                 }),

@@ -13,10 +13,12 @@ import { colors } from '../../shared/theme/colors';
 
 type PrivacyPolicyContentProps = {
     showSummary?: boolean;
-    /** 온보딩: 요약 아래에 필수/선택 동의 액션 */
+    /** 온보딩: 전문 하단에서만 동의 (스크롤 완료 후) */
     consentActions?: {
         requiredAgreed: boolean;
         optionalAgreed: boolean;
+        /** false면 필수 동의 버튼 비활성 */
+        canAgreeRequired: boolean;
         onAgreeRequired: () => void;
         onAgreeOptional: () => void;
         onDeclineOptional: () => void;
@@ -99,26 +101,6 @@ export function PrivacyPolicyContent({
                         items={SERVICE_CONSENT_NOTICE.items}
                         retention={SERVICE_CONSENT_NOTICE.retention}
                         refuse={SERVICE_CONSENT_NOTICE.refuse}
-                        footer={
-                            consentActions != null ? (
-                                <View style={styles.actionWrap}>
-                                    {consentActions.requiredAgreed ? (
-                                        <Txt typography="t7" color={colors.success} fontWeight="semibold">
-                                            {`✓ ${PRIVACY_POLICY_LABELS.requiredAgreed}`}
-                                        </Txt>
-                                    ) : (
-                                        <Button
-                                            size="medium"
-                                            type="primary"
-                                            display="block"
-                                            onPress={consentActions.onAgreeRequired}
-                                        >
-                                            {PRIVACY_POLICY_LABELS.agreeRequired}
-                                        </Button>
-                                    )}
-                                </View>
-                            ) : null
-                        }
                     />
                     <ConsentSummaryCard
                         title={PRIVACY_POLICY_LABELS.optionalSection}
@@ -126,38 +108,6 @@ export function PrivacyPolicyContent({
                         items={PHONE_CONSENT_NOTICE.items}
                         retention={PHONE_CONSENT_NOTICE.retention}
                         refuse={PHONE_CONSENT_NOTICE.refuse}
-                        footer={
-                            consentActions != null ? (
-                                <View style={styles.actionWrap}>
-                                    {consentActions.optionalAgreed ? (
-                                        <Txt typography="t7" color={colors.success} fontWeight="semibold">
-                                            {`✓ ${PRIVACY_POLICY_LABELS.optionalAgreed}`}
-                                        </Txt>
-                                    ) : (
-                                        <>
-                                            <Button
-                                                size="medium"
-                                                type="primary"
-                                                style="weak"
-                                                display="block"
-                                                onPress={consentActions.onAgreeOptional}
-                                            >
-                                                {PRIVACY_POLICY_LABELS.agreeOptional}
-                                            </Button>
-                                            <Button
-                                                size="medium"
-                                                type="dark"
-                                                style="weak"
-                                                display="block"
-                                                onPress={consentActions.onDeclineOptional}
-                                            >
-                                                {PRIVACY_POLICY_LABELS.declineOptional}
-                                            </Button>
-                                        </>
-                                    )}
-                                </View>
-                            ) : null
-                        }
                     />
                 </>
             ) : null}
@@ -197,6 +147,57 @@ export function PrivacyPolicyContent({
                     </Pressable>
                 ))}
             </View>
+            {consentActions != null ? (
+                <View style={styles.consentFooter}>
+                    {!consentActions.canAgreeRequired && !consentActions.requiredAgreed ? (
+                        <Txt typography="t7" color="grey600" style={styles.scrollHint}>
+                            {PRIVACY_POLICY_LABELS.readToEndHint}
+                        </Txt>
+                    ) : null}
+                    {consentActions.requiredAgreed ? (
+                        <Txt typography="t7" color={colors.success} fontWeight="semibold">
+                            {`✓ ${PRIVACY_POLICY_LABELS.requiredAgreed}`}
+                        </Txt>
+                    ) : (
+                        <Button
+                            size="medium"
+                            type="primary"
+                            display="block"
+                            disabled={!consentActions.canAgreeRequired}
+                            onPress={consentActions.onAgreeRequired}
+                        >
+                            {PRIVACY_POLICY_LABELS.agreeRequired}
+                        </Button>
+                    )}
+                    {consentActions.optionalAgreed ? (
+                        <Txt typography="t7" color={colors.success} fontWeight="semibold">
+                            {`✓ ${PRIVACY_POLICY_LABELS.optionalAgreed}`}
+                        </Txt>
+                    ) : (
+                        <>
+                            <Button
+                                size="medium"
+                                type="primary"
+                                style="weak"
+                                display="block"
+                                disabled={!consentActions.canAgreeRequired}
+                                onPress={consentActions.onAgreeOptional}
+                            >
+                                {PRIVACY_POLICY_LABELS.agreeOptional}
+                            </Button>
+                            <Button
+                                size="medium"
+                                type="dark"
+                                style="weak"
+                                display="block"
+                                onPress={consentActions.onDeclineOptional}
+                            >
+                                {PRIVACY_POLICY_LABELS.declineOptional}
+                            </Button>
+                        </>
+                    )}
+                </View>
+            ) : null}
         </View>
     );
 }
@@ -214,9 +215,16 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.border,
     },
-    actionWrap: {
+    consentFooter: {
         marginTop: 8,
         gap: 8,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+    },
+    scrollHint: {
+        textAlign: 'center',
+        lineHeight: 20,
     },
     section: {
         gap: 8,
@@ -225,7 +233,6 @@ const styles = StyleSheet.create({
         lineHeight: 22,
     },
     link: {
-        lineHeight: 22,
         textDecorationLine: 'underline',
     },
 });

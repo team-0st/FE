@@ -18,18 +18,32 @@ import { postGacha } from '@api/gacha';
 import { postMissionVerify } from '@api/missions';
 import { DAILY_MISSIONS } from '@api/mock/missions';
 import { shopNumericId } from '@api/notion/idMap';
+import { HIDDEN_RECIPES } from '@api/mock/recipeCatalog';
 import type { Recipe } from '@api/mock/recipes';
 import {
     findMatchingRecipe,
     findRecipeBySlots,
+    getAllRecipes,
     getFilledIngredientIds,
+    getRecipeById,
+    getTodayRecipe,
     isValidBrewFillCount,
 } from '@api/mock/recipes';
+import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
+import { buildCraftForGrade } from '@api/mock/soupCraftMock';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { postSoupCraft } from '@api/soup';
+import { ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST } from '../../shared/constants/ecoJamPolicy';
 import { GACHA_PULL_COST_ECO_JAM } from '../gacha/gachaConfig';
 import { applyGachaReward } from '../gacha/gachaLogic';
 import type { GachaPullResult } from '../gacha/gachaTypes';
+import {
+    gradeFromCraft,
+    rollRerollGrade,
+    soupRerollActionName,
+    soupRerollCost,
+    soupRerollKindFor,
+} from '../soup/soupRewardGrades';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { appendAlmangPointsLedger } from './almangPointsLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
@@ -38,7 +52,9 @@ import type { AppUserState, AlmangPayoutConsent, LocationConsent } from './types
 import {
     addEcoJam,
     applyCheckInFromServer,
+    syncCheckedInToday,
     applyRegisterUser,
+    applySoupRerollDelta,
     completeMissionVerify,
     completeRecipe,
     consumeIngredientsForSlots,
@@ -50,6 +66,7 @@ import {
     setLocationConsent as setLocationConsentState,
     submitMissionPendingReview,
     spendEcoJam,
+    unlockHiddenRecipe,
     claimShareReward as applyShareRewardState,
     formatDateKey,
 } from './userStateLogic';
@@ -88,9 +105,35 @@ type UserContextValue = {
     >;
     pullGacha: () => Promise<GachaPullResult>;
     grantTestEcoJam: (amount: number) => Promise<void>;
+    /** DEV only — 모든 레시피 열람 해금 (완성 처리 아님) */
+    unlockAllRecipesForTest: () => Promise<void>;
+    /** 상단 오늘의 레시피 고정 카드 숨기기 / 다시 보기 */
+    hideTodayRecipePin: () => Promise<void>;
+    showTodayRecipePin: () => Promise<void>;
+    rerollSoupReward: (input?: {
+        recipeId: string;
+        craft: SoupCraftResponse;
+    }) => Promise<
+        | { ok: true; craft: SoupCraftResponse; actionName: string; cost: number; upgraded: boolean }
+        | {
+              ok: false;
+              reason:
+                  | 'no_session'
+                  | 'already_used'
+                  | 'not_allowed'
+                  | 'insufficient_eco_jam';
+          }
+    >;
+    unlockRandomHiddenRecipe: () => Promise<
+        | { ok: true; recipeId: string; recipeName: string; cost: number }
+        | {
+              ok: false;
+              reason: 'insufficient_eco_jam' | 'all_unlocked' | 'none';
+          }
+    >;
     claimShareReward: () => Promise<
         | { ok: true; ecoJamGranted: number }
-        | { ok: false; reason: 'already_claimed_today' | 'share_cancelled' }
+        | { ok: false; reason: 'already_claimed' | 'share_cancelled' }
     >;
 };
 
@@ -152,8 +195,8 @@ export function UserProvider({ children }: PropsWithChildren) {
             try {
                 const today = formatDateKey(new Date());
                 const status = await getCheckInStatus(next.lastCheckInDate, today);
-                if (status.alreadyChecked && next.lastCheckInDate !== today) {
-                    next = { ...next, lastCheckInDate: today };
+                if (status.alreadyChecked) {
+                    next = syncCheckedInToday(next, today);
                 }
             } catch {
                 // keep local state
@@ -204,6 +247,13 @@ export function UserProvider({ children }: PropsWithChildren) {
                         today,
                     });
                     if (!apiResult.ok) {
+                        // 처음부터 다시 시작 등으로 로컬만 지워진 경우 BE와 UI 맞춤
+                        if (apiResult.code === 'ALREADY_CHECKED_IN') {
+                            const synced = syncCheckedInToday(stateRef.current, today);
+                            stateRef.current = synced;
+                            setState(synced);
+                            await saveUserState(synced);
+                        }
                         return apiResult;
                     }
                     const next = applyCheckInFromServer(stateRef.current, apiResult.data);
@@ -263,14 +313,45 @@ export function UserProvider({ children }: PropsWithChildren) {
                 );
             },
             resetOnboarding: async () => {
-                const cleared = resetOnboardingState(stateRef.current);
-                stateRef.current = cleared;
-                setState(cleared);
-                await saveUserState(cleared);
-                const registered = await ensureRegistered(cleared);
-                stateRef.current = registered;
-                setState(registered);
-                await saveUserState(registered);
+                const prev = stateRef.current;
+                // 로컬만 초기화. deviceId/userId는 유지해 재등록으로 BE onboardingCompleted=true 가
+                // 다시 덮어쓰여 홈으로 튕기는 것(온보딩 진입 불가)을 막는다.
+                let next: AppUserState = {
+                    ...resetOnboardingState(prev),
+                    deviceId: prev.deviceId,
+                    userId: prev.userId,
+                    onboardingCompleted: false,
+                };
+                // BE에 오늘 출석이 남아 있으면 로컬도 맞춰 UI·재시도 불일치 방지
+                try {
+                    const today = formatDateKey(new Date());
+                    const status = await getCheckInStatus(null, today);
+                    if (status.alreadyChecked) {
+                        next = syncCheckedInToday(next, today);
+                    }
+                } catch {
+                    // keep wiped check-in
+                }
+                stateRef.current = next;
+                setState(next);
+                await saveUserState(next);
+                if (next.userId == null) {
+                    const registered = await ensureRegistered(next);
+                    next = { ...registered, onboardingCompleted: false };
+                    try {
+                        const today = formatDateKey(new Date());
+                        const status = await getCheckInStatus(null, today);
+                        if (status.alreadyChecked) {
+                            next = syncCheckedInToday(next, today);
+                        }
+                    } catch {
+                        // keep
+                    }
+                    next = { ...next, onboardingCompleted: false };
+                    stateRef.current = next;
+                    setState(next);
+                    await saveUserState(next);
+                }
             },
             selectShop: async (shopId) => {
                 await persist((prev) => setShopId(prev, shopId));
@@ -310,7 +391,45 @@ export function UserProvider({ children }: PropsWithChildren) {
                 }
             },
             grantTestEcoJam: async (amount) => {
+                if (!DEV_TEST_TOOLS_ENABLED) {
+                    return;
+                }
                 await persist((prev) => addEcoJam(prev, amount, '테스트 지급'));
+            },
+            unlockAllRecipesForTest: async () => {
+                if (!DEV_TEST_TOOLS_ENABLED) {
+                    return;
+                }
+                await persist((prev) => {
+                    const ids = getAllRecipes().map((recipe) => recipe.id);
+                    const today = getTodayRecipe();
+                    if (today != null) {
+                        ids.push(today.id);
+                    }
+                    const merged = new Set([...prev.unlockedRecipeIds, ...ids]);
+                    return {
+                        ...prev,
+                        unlockedRecipeIds: [...merged],
+                        // 해금 직후 상단 오늘의 레시피가 보이도록 숨김 해제
+                        hiddenTodayRecipePinId: null,
+                    };
+                });
+            },
+            hideTodayRecipePin: async () => {
+                const recipe = getTodayRecipe();
+                if (recipe == null) {
+                    return;
+                }
+                await persist((prev) => ({
+                    ...prev,
+                    hiddenTodayRecipePinId: recipe.id,
+                }));
+            },
+            showTodayRecipePin: async () => {
+                await persist((prev) => ({
+                    ...prev,
+                    hiddenTodayRecipePinId: null,
+                }));
             },
             pullGacha: async (): Promise<GachaPullResult> => {
                 const current = stateRef.current;
@@ -328,6 +447,9 @@ export function UserProvider({ children }: PropsWithChildren) {
                 let next = applyGachaReward(spent, api.reward);
                 if (api.reward.type === 'ECO_JAM') {
                     next = appendEcoJamLedger(next, '가챠 보상', api.reward.amount);
+                }
+                if (api.reward.type === 'FAIL' && api.reward.consolationEcoJam > 0) {
+                    next = appendEcoJamLedger(next, '가챠 위로 보상', api.reward.consolationEcoJam);
                 }
                 if (api.reward.type === 'ALMANG_POINT') {
                     next = appendAlmangPointsLedger(next, '가챠 보상', api.reward.amount);
@@ -370,11 +492,112 @@ export function UserProvider({ children }: PropsWithChildren) {
                     return { ok: false, reason: 'no_stock' };
                 }
                 const craft = await postSoupCraft(recipe, filled);
-                const next = completeRecipe(consumed, recipe, craft);
+                let next = completeRecipe(consumed, recipe, craft);
+                // completeRecipe 가드에 걸려도 리롤 세션은 항상 기록
+                next = {
+                    ...next,
+                    lastSoupSession: {
+                        recipeId: recipe.id,
+                        craft,
+                        rerollUsed: false,
+                    },
+                };
                 stateRef.current = next;
                 setState(next);
                 await saveUserState(next);
                 return { ok: true, recipe, craft };
+            },
+            rerollSoupReward: async (input) => {
+                const current = stateRef.current;
+                // 세션이 비어도 결과 화면에서 넘긴 craft로 리롤 가능
+                const session =
+                    current.lastSoupSession ??
+                    (input != null
+                        ? {
+                              recipeId: input.recipeId,
+                              craft: input.craft,
+                              rerollUsed: false,
+                          }
+                        : null);
+                if (session == null) {
+                    return { ok: false, reason: 'no_session' };
+                }
+                if (session.rerollUsed) {
+                    return { ok: false, reason: 'already_used' };
+                }
+                const recipeId = input?.recipeId ?? session.recipeId;
+                const prevCraft = input?.craft ?? session.craft;
+                const recipe = getRecipeById(recipeId);
+                if (recipe == null) {
+                    return { ok: false, reason: 'no_session' };
+                }
+                const kind = soupRerollKindFor(recipe);
+                const fromGrade = gradeFromCraft(prevCraft);
+                const cost = soupRerollCost(kind, fromGrade);
+                if (cost == null) {
+                    return { ok: false, reason: 'not_allowed' };
+                }
+                const spent = spendEcoJam(current, cost, soupRerollActionName(kind));
+                if (spent == null) {
+                    return { ok: false, reason: 'insufficient_eco_jam' };
+                }
+                const nextGrade = rollRerollGrade(kind, fromGrade);
+                const nextCraft = buildCraftForGrade(recipe, nextGrade, prevCraft.soupId);
+                const upgraded =
+                    gradeFromCraft(nextCraft) !== fromGrade ||
+                    (nextCraft.rewardAmount ?? 0) > (prevCraft.rewardAmount ?? 0);
+                let next = applySoupRerollDelta(spent, recipe, prevCraft, nextCraft);
+                next = {
+                    ...next,
+                    lastSoupSession: {
+                        recipeId: recipe.id,
+                        craft: nextCraft,
+                        rerollUsed: true,
+                    },
+                };
+                stateRef.current = next;
+                setState(next);
+                await saveUserState(next);
+                return {
+                    ok: true,
+                    craft: nextCraft,
+                    actionName: soupRerollActionName(kind),
+                    cost,
+                    upgraded,
+                };
+            },
+            unlockRandomHiddenRecipe: async () => {
+                const current = stateRef.current;
+                const locked = HIDDEN_RECIPES.filter(
+                    (recipe) =>
+                        !current.completedRecipeIds.includes(recipe.id) &&
+                        !current.unlockedRecipeIds.includes(recipe.id),
+                );
+                if (locked.length === 0) {
+                    return { ok: false, reason: 'all_unlocked' };
+                }
+                const spent = spendEcoJam(
+                    current,
+                    ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST,
+                    '희귀 레시피 해금',
+                );
+                if (spent == null) {
+                    return { ok: false, reason: 'insufficient_eco_jam' };
+                }
+                const pick = locked[Math.floor(Math.random() * locked.length)];
+                if (pick == null) {
+                    return { ok: false, reason: 'none' };
+                }
+                const next = unlockHiddenRecipe(spent, pick.id);
+                stateRef.current = next;
+                setState(next);
+                await saveUserState(next);
+                return {
+                    ok: true,
+                    recipeId: pick.id,
+                    recipeName: pick.name,
+                    cost: ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST,
+                };
             },
         }),
         [isReady, state, persist, ensureRegistered],

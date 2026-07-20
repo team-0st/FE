@@ -1,5 +1,7 @@
 import { createRoute } from '@granite-js/react-native';
+import { useState } from 'react';
 import { decodeSoupCraftFromRoute } from '@api/mock/soupCraftMock';
+import type { SoupCraftResponse } from '@api/notion/types';
 import { SoupResultScreen } from '../../src/features/soup/SoupResultScreen';
 import { ROUTES } from '../../src/shared/constants/routes';
 
@@ -12,6 +14,8 @@ export const Route = createRoute('/soup/result', {
         rewardType: string;
         rewardAmount: string;
         rewardDescription: string;
+        rewardGrade: string;
+        rewardIngredientId: string;
     } => {
         const p = params as {
             recipeId?: string;
@@ -20,6 +24,8 @@ export const Route = createRoute('/soup/result', {
             rewardType?: string;
             rewardAmount?: string;
             rewardDescription?: string;
+            rewardGrade?: string;
+            rewardIngredientId?: string;
         } | undefined;
         return {
             recipeId: String(p?.recipeId ?? ''),
@@ -28,6 +34,8 @@ export const Route = createRoute('/soup/result', {
             rewardType: String(p?.rewardType ?? ''),
             rewardAmount: String(p?.rewardAmount ?? '0'),
             rewardDescription: String(p?.rewardDescription ?? ''),
+            rewardGrade: String(p?.rewardGrade ?? ''),
+            rewardIngredientId: String(p?.rewardIngredientId ?? ''),
         };
     },
 });
@@ -35,12 +43,14 @@ export const Route = createRoute('/soup/result', {
 function Page() {
     const params = Route.useParams();
     const navigation = Route.useNavigation();
-    const craft = decodeSoupCraftFromRoute(params);
+    const initial = decodeSoupCraftFromRoute(params);
+    const [craft, setCraft] = useState<SoupCraftResponse>(initial);
 
     return (
         <SoupResultScreen
             recipeId={params.recipeId}
             craft={craft}
+            onCraftUpdated={setCraft}
             onPressDone={() => navigation.replace(ROUTES.ingredients)}
         />
     );

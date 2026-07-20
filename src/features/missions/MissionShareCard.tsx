@@ -1,7 +1,6 @@
 import { Txt } from '@toss/tds-react-native';
 import { ImageBackground, Pressable, StyleSheet, View } from 'react-native';
 import { BRAND_ASSET } from '../../shared/constants/brandAssets';
-import { SHARE_REWARD_ECO_JAM_AMOUNT } from '../../shared/constants/shareRewardPolicy';
 import { ZEROST_SHARE_HASHTAG } from '../../shared/feedback/shareResult';
 import { colors } from '../../shared/theme/colors';
 import { toBrandImageSource } from '../../shared/ui/toBrandImageSource';
@@ -79,7 +78,7 @@ export function MissionShareCard({
                                 획득 에코잼
                             </Txt>
                             <Txt typography="t7" fontWeight="semibold" color="white">
-                                +{SHARE_REWARD_ECO_JAM_AMOUNT} 잼
+                                에코잼
                             </Txt>
                         </View>
                     </View>

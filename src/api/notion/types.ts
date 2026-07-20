@@ -70,6 +70,9 @@ export type MissionCompletionItem = {
 
 export type MissionVerifyResponse = MissionVerifyPendingResponse | MissionVerifyApprovedResponse;
 
+/** FE 스프 보상 등급 (노션 리롤: 꽝~대박) */
+export type SoupRewardGradeWire = 'FAIL' | 'INGREDIENT' | 'SMALL' | 'MEDIUM' | 'JACKPOT';
+
 export type SoupCraftResponse = {
     soupId: number;
     result: SoupCraftResult;
@@ -77,6 +80,10 @@ export type SoupCraftResponse = {
     rewardType?: RewardCatalogType;
     rewardAmount?: number;
     rewardDescription?: string;
+    /** FE — 리롤·표시용 등급 */
+    rewardGrade?: SoupRewardGradeWire;
+    /** FE — 재료 지급 등급일 때 slug */
+    rewardIngredientId?: string;
 };
 
 export type GachaResponse = {

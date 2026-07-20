@@ -1,9 +1,9 @@
 export type GachaRewardType = 'FAIL' | 'ECO_JAM' | 'INGREDIENT' | 'ALMANG_POINT';
 
 export type GachaReward =
-    | { type: 'FAIL' }
+    | { type: 'FAIL'; consolationEcoJam: number }
     | { type: 'ECO_JAM'; amount: number }
-    | { type: 'INGREDIENT'; ingredientId: string; amount: number }
+    | { type: 'INGREDIENT'; ingredientId: string; amount: number; rarity: 'COMMON' | 'HIDDEN' }
     | { type: 'ALMANG_POINT'; amount: number };
 
 export type GachaPullResult =

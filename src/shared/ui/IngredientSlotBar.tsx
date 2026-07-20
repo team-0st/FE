@@ -8,11 +8,39 @@ import { colors } from '../theme/colors';
 type IngredientSlotBarProps = {
     slots: (string | null)[];
     onPressSlot: (index: number) => void;
+    filledCount: number;
+    onClearAll: () => void;
 };
 
-export function IngredientSlotBar({ slots, onPressSlot }: IngredientSlotBarProps) {
+export function IngredientSlotBar({
+    slots,
+    onPressSlot,
+    filledCount,
+    onClearAll,
+}: IngredientSlotBarProps) {
     return (
         <View style={styles.wrap}>
+            <View style={styles.header}>
+                <Txt typography="t6" fontWeight="semibold" color="grey700">
+                    {`넣은 재료 ${filledCount}/${BREW_SLOT_MAX}`}
+                </Txt>
+                <Pressable
+                    onPress={onClearAll}
+                    disabled={filledCount === 0}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="냄비 재료 전부 비우기"
+                    accessibilityState={{ disabled: filledCount === 0 }}
+                >
+                    <Txt
+                        typography="t7"
+                        color={filledCount === 0 ? 'grey500' : 'blue500'}
+                        fontWeight="semibold"
+                    >
+                        전부 비우기
+                    </Txt>
+                </Pressable>
+            </View>
             <View style={styles.row}>
                 {Array.from({ length: BREW_SLOT_MAX }, (_, index) => {
                     const id = slots[index] ?? null;
@@ -53,11 +81,7 @@ export function IngredientSlotBar({ slots, onPressSlot }: IngredientSlotBarProps
                                             {ingredient.name}
                                         </Txt>
                                     )
-                                ) : (
-                                    <Txt typography="t4" color="grey400">
-                                        □
-                                    </Txt>
-                                )}
+                                ) : null}
                             </Pressable>
                             {index === 0 || isHiddenSlot || isLegendarySlot ? (
                                 <Txt typography="t7" color="grey500" style={styles.slotLabel}>
@@ -78,6 +102,12 @@ const styles = StyleSheet.create({
     wrap: {
         width: '100%',
         marginBottom: 8,
+        gap: 8,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     row: {
         flexDirection: 'row',
@@ -86,7 +116,7 @@ const styles = StyleSheet.create({
     },
     slotCol: {
         alignItems: 'center',
-        gap: 4,
+        gap: 2,
     },
     slot: {
         width: 60,
@@ -112,9 +142,10 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     slotLabel: {
-        fontSize: 11,
+        fontSize: 9,
+        lineHeight: 12,
     },
     slotLabelSpacer: {
-        height: 14,
+        height: 12,
     },
 });
