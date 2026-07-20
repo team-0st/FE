@@ -117,17 +117,14 @@ export async function postSoupCraft(
                         rewardGrade: 'FAIL',
                     };
                 }
+                // BE 레시피 미연동·입문 2칸 거부 등 — FE가 이미 맞춘 조합은 mock으로 진행
                 if (
                     error.code === 'SOUP_RECIPE_NOT_FOUND' ||
-                    error.code === 'RECIPE_NOT_FOUND'
+                    error.code === 'RECIPE_NOT_FOUND' ||
+                    error.code === 'INVALID_INPUT_VALUE'
                 ) {
-                    return {
-                        soupId: 0,
-                        result: 'FAIL',
-                        rewardType: 'TRASH_ITEM',
-                        rewardDescription: '레시피가 없어요',
-                        rewardGrade: 'FAIL',
-                    };
+                    await new Promise((r) => setTimeout(r, 40));
+                    return mockRollSoupCraft(recipe, random);
                 }
             }
             throw error;

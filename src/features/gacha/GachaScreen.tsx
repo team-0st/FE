@@ -1,4 +1,3 @@
-import { isApiEnabled } from '@api/client';
 import { getIngredientById } from '@api/mock/ingredients';
 import { Button, Txt } from '@toss/tds-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -301,7 +300,7 @@ export function GachaScreen() {
                 >
                     {isBusy ? '뽑는 중…' : pullLabel}
                 </Button>
-                {DEV_TEST_TOOLS_ENABLED && !isApiEnabled() ? (
+                {DEV_TEST_TOOLS_ENABLED ? (
                     <Button
                         size="medium"
                         type="dark"

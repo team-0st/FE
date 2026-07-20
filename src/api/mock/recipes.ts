@@ -217,9 +217,27 @@ export function canAffordRecipe(inventory: Record<string, number>, recipe: Recip
 
 export function recipeToSlots(recipe: Recipe): (string | null)[] {
     const slots: (string | null)[] = Array.from({ length: BREW_SLOT_MAX }, () => null);
-    for (let i = 0; i < recipe.ingredientIds.length; i += 1) {
-        slots[i] = recipe.ingredientIds[i] ?? null;
+    const commons: string[] = [];
+    const hiddens: string[] = [];
+    for (const id of recipe.ingredientIds) {
+        const type = getIngredientById(id)?.type;
+        if (type === 'HIDDEN') {
+            hiddens.push(id);
+        } else {
+            commons.push(id);
+        }
     }
+    commons.forEach((id, index) => {
+        if (index < WEEKLY_SLOT_COUNT) {
+            slots[index] = id;
+        }
+    });
+    hiddens.forEach((id, index) => {
+        const slotIndex = WEEKLY_SLOT_COUNT + index;
+        if (slotIndex < BREW_SLOT_MAX) {
+            slots[slotIndex] = id;
+        }
+    });
     return slots;
 }
 

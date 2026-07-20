@@ -11,6 +11,7 @@ import {
 import { postCheckIn, getCheckInStatus, type CheckInResult } from '@api/checkIn';
 import { ApiClientError, isApiEnabled } from '@api/client';
 import { postGacha } from '@api/gacha';
+import { mockPostGacha } from '@api/mock/gachaMock';
 import { getEcoJamHistories } from '@api/history';
 import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
 import { getMissionCompletions, postMissionVerify } from '@api/missions';
@@ -485,10 +486,6 @@ export function UserProvider({ children }: PropsWithChildren) {
                 if (!DEV_TEST_TOOLS_ENABLED) {
                     return;
                 }
-                // API 모드에서는 BE 잔액과 어긋나므로 로컬만 올리지 않음
-                if (isApiEnabled()) {
-                    return;
-                }
                 await persist((prev) => addEcoJam(prev, amount, '테스트 지급'));
             },
             unlockAllRecipesForTest: async () => {
@@ -535,6 +532,51 @@ export function UserProvider({ children }: PropsWithChildren) {
                     try {
                         const api = await postGacha(current.ecoJam);
                         if (!api.ok) {
+                            // DEV: 테스트 에코잼은 로컬이라 BE 부족 시 mock으로 뽑기
+                            if (DEV_TEST_TOOLS_ENABLED) {
+                                const mock = await mockPostGacha(current.ecoJam);
+                                if (!mock.ok) {
+                                    return { ok: false, reason: 'insufficient_eco_jam' };
+                                }
+                                const cost = mock.response.costEcoJam || GACHA_PULL_COST_ECO_JAM;
+                                const spent = spendEcoJam(current, cost, '가챠 뽑기');
+                                if (spent == null) {
+                                    return { ok: false, reason: 'insufficient_eco_jam' };
+                                }
+                                let next = applyGachaReward(spent, mock.reward);
+                                if (mock.reward.type === 'ECO_JAM') {
+                                    next = appendEcoJamLedger(
+                                        next,
+                                        '가챠 보상',
+                                        mock.reward.amount,
+                                    );
+                                }
+                                if (
+                                    mock.reward.type === 'FAIL' &&
+                                    mock.reward.consolationEcoJam > 0
+                                ) {
+                                    next = appendEcoJamLedger(
+                                        next,
+                                        '가챠 위로 보상',
+                                        mock.reward.consolationEcoJam,
+                                    );
+                                }
+                                if (mock.reward.type === 'ALMANG_POINT') {
+                                    next = appendAlmangPointsLedger(
+                                        next,
+                                        '가챠 보상',
+                                        mock.reward.amount,
+                                    );
+                                }
+                                stateRef.current = next;
+                                setState(next);
+                                await saveUserState(next);
+                                return {
+                                    ok: true,
+                                    reward: mock.reward,
+                                    costEcoJam: cost,
+                                };
+                            }
                             if (isApiEnabled()) {
                                 try {
                                     const myPage = await getMyPage();
