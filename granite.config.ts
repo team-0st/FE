@@ -19,7 +19,8 @@ export default defineConfig({
       brand: {
         displayName: APP_DISPLAY_NAME,
         primaryColor: '#3182F6',
-        icon: 'https://static.toss.im/icons/png/4x/icon-leaf-mono.png',
+        // 제로스트(0st) 컨셉에 맞춘 임시 아이콘. 콘솔에 업로드한 공식 로고 URL이 있으면 그것으로 교체.
+        icon: 'https://static.toss.im/icons/png/4x/icon-plant-mono.png',
       },
       permissions: [{ name: 'camera', access: 'access' }],
       /**
