@@ -1,20 +1,16 @@
-import { Button, Txt } from '@toss/tds-react-native';
+import { BottomSheet, Txt } from '@toss/tds-react-native';
 import { useEffect, useState } from 'react';
 import {
     type LayoutChangeEvent,
     type NativeScrollEvent,
     type NativeSyntheticEvent,
-    Modal,
-    Pressable,
     ScrollView,
     StyleSheet,
-    View,
 } from 'react-native';
 import {
     PRIVACY_POLICY_LABELS,
     PRIVACY_POLICY_META,
 } from '../../shared/constants/privacyPolicy';
-import { colors } from '../../shared/theme/colors';
 import { PrivacyPolicyContent } from './PrivacyPolicyContent';
 
 const SCROLL_END_THRESHOLD = 48;
@@ -34,6 +30,7 @@ type PrivacyPolicyModalProps = {
     onDeclineOptional?: () => void;
 };
 
+/** 개인정보 처리방침 — TDS BottomSheet */
 export function PrivacyPolicyModal({
     visible,
     onClose,
@@ -82,87 +79,74 @@ export function PrivacyPolicyModal({
         setViewportHeight(event.nativeEvent.layout.height);
     };
 
+    const closeLabel =
+        isConsent && requiredAgreed
+            ? PRIVACY_POLICY_LABELS.confirmRead
+            : PRIVACY_POLICY_LABELS.close;
+
     return (
-        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-            <View style={styles.backdrop}>
-                <View style={styles.sheet}>
-                    <Txt typography="t4" fontWeight="bold" style={styles.title}>
-                        {PRIVACY_POLICY_META.title}
+        <BottomSheet.Root
+            open={visible}
+            onClose={onClose}
+            onDimmerClick={onClose}
+            header={<BottomSheet.Header>{PRIVACY_POLICY_META.title}</BottomSheet.Header>}
+            cta={
+                <BottomSheet.CTA size="large" type="dark" style="weak" onPress={onClose}>
+                    {closeLabel}
+                </BottomSheet.CTA>
+            }
+        >
+            <ScrollView
+                style={styles.scroll}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator
+                onScroll={isConsent ? onScroll : undefined}
+                scrollEventThrottle={16}
+                onLayout={isConsent ? onScrollLayout : undefined}
+                onContentSizeChange={
+                    isConsent
+                        ? (_w, height) => {
+                              setContentHeight(height);
+                          }
+                        : undefined
+                }
+            >
+                <PrivacyPolicyContent
+                    consentActions={
+                        isConsent
+                            ? {
+                                  requiredAgreed,
+                                  optionalAgreed,
+                                  canAgreeRequired: readToEnd,
+                                  onAgreeRequired: () => onAgreeRequired?.(),
+                                  onAgreeOptional: () => onAgreeOptional?.(),
+                                  onDeclineOptional: () => {
+                                      onDeclineOptional?.();
+                                  },
+                              }
+                            : undefined
+                    }
+                />
+                {isConsent ? (
+                    <Txt typography="t7" color="grey600" style={styles.hint}>
+                        {requiredAgreed ? '동의 화면으로 돌아가려면 아래 버튼을 눌러 주세요.' : '닫으려면 아래 버튼을 눌러 주세요.'}
                     </Txt>
-                    <ScrollView
-                        style={styles.scroll}
-                        showsVerticalScrollIndicator
-                        onScroll={isConsent ? onScroll : undefined}
-                        scrollEventThrottle={16}
-                        onLayout={isConsent ? onScrollLayout : undefined}
-                        onContentSizeChange={
-                            isConsent
-                                ? (_w, height) => {
-                                      setContentHeight(height);
-                                  }
-                                : undefined
-                        }
-                    >
-                        <PrivacyPolicyContent
-                            consentActions={
-                                isConsent
-                                    ? {
-                                          requiredAgreed,
-                                          optionalAgreed,
-                                          canAgreeRequired: readToEnd,
-                                          onAgreeRequired: () => onAgreeRequired?.(),
-                                          onAgreeOptional: () => onAgreeOptional?.(),
-                                          onDeclineOptional: () => {
-                                              onDeclineOptional?.();
-                                          },
-                                      }
-                                    : undefined
-                            }
-                        />
-                    </ScrollView>
-                    <Button size="large" type="dark" style="weak" display="block" onPress={onClose}>
-                        {isConsent && requiredAgreed
-                            ? PRIVACY_POLICY_LABELS.confirmRead
-                            : PRIVACY_POLICY_LABELS.close}
-                    </Button>
-                    {isConsent ? (
-                        <Pressable onPress={onClose} accessibilityRole="button">
-                            <Txt typography="t7" color="grey600" style={styles.cancel}>
-                                {requiredAgreed ? '동의 화면으로' : '닫기'}
-                            </Txt>
-                        </Pressable>
-                    ) : null}
-                </View>
-            </View>
-        </Modal>
+                ) : null}
+            </ScrollView>
+        </BottomSheet.Root>
     );
 }
 
 const styles = StyleSheet.create({
-    backdrop: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        justifyContent: 'flex-end',
-    },
-    sheet: {
-        maxHeight: '92%',
-        backgroundColor: colors.background,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        paddingHorizontal: 20,
-        paddingTop: 20,
-        paddingBottom: 24,
-        gap: 12,
-    },
-    title: {
-        marginBottom: 4,
-    },
     scroll: {
-        flexGrow: 0,
-        flexShrink: 1,
+        maxHeight: 420,
     },
-    cancel: {
-        textAlign: 'center',
-        paddingVertical: 8,
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingBottom: 8,
+    },
+    hint: {
+        marginTop: 12,
+        lineHeight: 20,
     },
 });
