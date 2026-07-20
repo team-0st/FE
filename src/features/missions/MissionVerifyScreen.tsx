@@ -31,7 +31,13 @@ export function MissionVerifyScreen({ mission, onSubmit }: MissionVerifyScreenPr
                         {picked ? '인증 사진을 선택했어요' : '인증에 사용할 사진을 선택해 주세요'}
                     </Txt>
                     {!picked ? (
-                        <Button size="medium" type="dark" style="weak" onPress={() => setPicked(true)}>
+                        <Button
+                            size="medium"
+                            type="dark"
+                            style="weak"
+                            viewStyle={styles.pickButton}
+                            onPress={() => setPicked(true)}
+                        >
                             사진 선택
                         </Button>
                     ) : null}
@@ -67,6 +73,9 @@ const styles = StyleSheet.create({
     },
     hint: {
         textAlign: 'center',
+    },
+    pickButton: {
+        alignSelf: 'center',
     },
     cta: {
         padding: 20,
