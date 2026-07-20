@@ -114,7 +114,10 @@ type UserContextValue = {
     >;
     brewSoup: (slots: (string | null)[]) => Promise<
         | { ok: true; recipe: Recipe; craft: SoupCraftResponse }
-        | { ok: false; reason: 'incomplete' | 'no_match' | 'already_done' | 'no_stock' }
+        | {
+              ok: false;
+              reason: 'incomplete' | 'no_match' | 'already_done' | 'no_stock' | 'network';
+          }
     >;
     pullGacha: () => Promise<GachaPullResult>;
     grantTestEcoJam: (amount: number) => Promise<void>;
@@ -589,7 +592,8 @@ export function UserProvider({ children }: PropsWithChildren) {
                     }
                     if (
                         craft.soupId === 0 &&
-                        craft.rewardDescription === '레시피가 없어요'
+                        (craft.rewardDescription === '레시피가 없어요' ||
+                            craft.rewardDescription === '재료를 다시 확인해 주세요')
                     ) {
                         return { ok: false, reason: 'no_match' };
                     }
@@ -609,7 +613,10 @@ export function UserProvider({ children }: PropsWithChildren) {
                     };
                     if (isApiEnabled()) {
                         try {
-                            const remoteIngredients = await getUserIngredients();
+                            const [remoteIngredients, myPage] = await Promise.all([
+                                getUserIngredients(),
+                                getMyPage(),
+                            ]);
                             if (remoteIngredients != null) {
                                 next = {
                                     ...next,
@@ -617,8 +624,15 @@ export function UserProvider({ children }: PropsWithChildren) {
                                         inventoryFromUserIngredients(remoteIngredients),
                                 };
                             }
+                            if (myPage != null) {
+                                next = {
+                                    ...next,
+                                    ecoJam: myPage.ecoJam,
+                                    totalPoints: myPage.point,
+                                };
+                            }
                         } catch {
-                            // keep local inventory after brew
+                            // keep local inventory / rewards after brew
                         }
                     }
                     stateRef.current = next;
@@ -626,7 +640,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                     await saveUserState(next);
                     return { ok: true, recipe, craft };
                 } catch {
-                    return { ok: false, reason: 'no_match' };
+                    return { ok: false, reason: 'network' };
                 }
             },
             rerollSoupReward: async (input) => {
