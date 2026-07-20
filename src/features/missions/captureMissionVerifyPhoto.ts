@@ -15,6 +15,8 @@ export type CaptureMissionVerifyPhotoResult =
           message: string;
       };
 
+const PERMISSION_DENIED_MESSAGE = '카메라 권한이 필요해요.\n설정에서 허용해 주세요.';
+
 function toPreviewUri(dataUri: string): string {
     if (dataUri.startsWith('data:')) {
         return dataUri;
@@ -54,64 +56,101 @@ function isCancelledError(error: unknown): boolean {
 }
 
 /**
+ * Android 등에서 getPermission이 NO_PERMISSION throw를 내는 경우가 있어,
+ * 조회 실패 시에도 openPermissionDialog로 한 번 더 요청한다.
+ */
+async function ensureCameraPermission(): Promise<'allowed' | 'denied'> {
+    try {
+        const status = await openCamera.getPermission();
+        if (status === 'allowed') {
+            return 'allowed';
+        }
+    } catch {
+        // getPermission NO_PERMISSION 등 — 다이얼로그로 진행
+    }
+
+    try {
+        const next = await openCamera.openPermissionDialog();
+        return next === 'allowed' ? 'allowed' : 'denied';
+    } catch {
+        return 'denied';
+    }
+}
+
+async function takePhoto(): Promise<Omit<MissionVerifyPhoto, 'missionId'>> {
+    const { id, dataUri } = await openCamera({
+        base64: true,
+        maxWidth: 1024,
+    });
+    return {
+        photoId: id,
+        previewUri: toPreviewUri(dataUri),
+        uploadPayload: dataUri,
+    };
+}
+
+/**
  * 앨범 없이 카메라만 — Apps in Toss `openCamera`
- * 권한 미확정/거부 시 `openPermissionDialog`로 먼저 요청한다.
+ * Android NO_PERMISSION: 권한 다이얼로그 → 재시도
  */
 export async function captureMissionVerifyPhoto(): Promise<CaptureMissionVerifyPhotoResult> {
-    try {
-        try {
-            const status = await openCamera.getPermission();
-            if (status !== 'allowed') {
-                const next = await openCamera.openPermissionDialog();
-                if (next !== 'allowed') {
-                    return {
-                        ok: false,
-                        reason: 'permission_denied',
-                        message: '카메라 권한이 필요해요.\n설정에서 허용해 주세요.',
-                    };
-                }
-            }
-        } catch (permissionProbeError) {
-            // getPermission 자체가 막히는 환경도 있음 → openCamera로 진행
-            if (__DEV__) {
-                console.warn('[captureMissionVerifyPhoto] permission probe', permissionProbeError);
-            }
-        }
-
-        const { id, dataUri } = await openCamera({
-            base64: true,
-            maxWidth: 1024,
-        });
+    const permission = await ensureCameraPermission();
+    if (permission !== 'allowed') {
         return {
-            ok: true,
-            photo: {
-                photoId: id,
-                previewUri: toPreviewUri(dataUri),
-                uploadPayload: dataUri,
-            },
+            ok: false,
+            reason: 'permission_denied',
+            message: PERMISSION_DENIED_MESSAGE,
         };
+    }
+
+    try {
+        const photo = await takePhoto();
+        return { ok: true, photo };
     } catch (error) {
-        if (__DEV__) {
-            console.warn('[captureMissionVerifyPhoto] openCamera failed', error);
-        }
-        if (isPermissionError(error)) {
-            return {
-                ok: false,
-                reason: 'permission_denied',
-                message: '카메라 권한이 필요해요.\n설정에서 허용해 주세요.',
-            };
-        }
-        if (isCancelledError(error)) {
+        if (isCancelledError(error) && !isPermissionError(error)) {
             return {
                 ok: false,
                 reason: 'cancelled_or_failed',
                 message: '촬영을 취소했어요.\n다시 시도해 주세요.',
             };
         }
+
+        if (isPermissionError(error)) {
+            // openCamera 직전 허용됐어도 브릿지/OS 타이밍으로 실패할 수 있음 → 다이얼로그 후 1회 재시도
+            const retried = await ensureCameraPermission();
+            if (retried === 'allowed') {
+                try {
+                    const photo = await takePhoto();
+                    return { ok: true, photo };
+                } catch (retryError) {
+                    if (isPermissionError(retryError)) {
+                        return {
+                            ok: false,
+                            reason: 'permission_denied',
+                            message: PERMISSION_DENIED_MESSAGE,
+                        };
+                    }
+                    if (isCancelledError(retryError)) {
+                        return {
+                            ok: false,
+                            reason: 'cancelled_or_failed',
+                            message: '촬영을 취소했어요.\n다시 시도해 주세요.',
+                        };
+                    }
+                }
+            }
+            return {
+                ok: false,
+                reason: 'permission_denied',
+                message: PERMISSION_DENIED_MESSAGE,
+            };
+        }
+
         return {
             ok: false,
             reason: 'cancelled_or_failed',
-            message: '카메라를 열 수 없어요.\n토스 앱 설정에서 카메라 권한을 허용한 뒤 다시 시도해 주세요.',
+            message:
+                '카메라를 열 수 없어요.\n토스 앱 설정에서 카메라 권한을 허용한 뒤 다시 시도해 주세요.',
         };
     }
 }
