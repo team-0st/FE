@@ -16,6 +16,11 @@ export function coopDifficultyLabel(difficulty: 1 | 2 | 3): string {
     return `난이도 ${difficulty}`;
 }
 
+/** 난이도를 별 태그로 — ★1개=난이도1 ... ★3개=난이도3 */
+export function coopDifficultyStars(difficulty: 1 | 2 | 3): string {
+    return '★'.repeat(difficulty) + '☆'.repeat(3 - difficulty);
+}
+
 export function coopUnlockHint(mission: CoopMission): string | null {
     if (mission.unlockAfter == null) {
         return null;

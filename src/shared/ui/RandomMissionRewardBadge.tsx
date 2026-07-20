@@ -4,20 +4,29 @@ import { StyleSheet, View } from 'react-native';
 import { TDS_ICON } from '../constants/tdsAssets';
 import { colors } from '../theme/colors';
 
-export function RandomMissionRewardBadge() {
+type RandomMissionRewardBadgeProps = {
+    /** 특별 미션처럼 재료가 고정돼 있으면 실제 재료 이름을 넘겨주세요. */
+    label?: string;
+    subtitle?: string;
+};
+
+export function RandomMissionRewardBadge({
+    label = MISSION_RANDOM_REWARD_LABEL,
+    subtitle = '완료하면 재료 풀에서 1종을 받아요',
+}: RandomMissionRewardBadgeProps = {}) {
     return (
         <View style={styles.badge}>
             <Asset.Icon
                 name={TDS_ICON.gachaGift}
                 frameShape={frameShape.CircleMedium}
                 backgroundColor={colors.surface}
-                accessibilityLabel="랜덤 재료 보상"
+                accessibilityLabel="재료 보상"
             />
             <Txt typography="t6" fontWeight="bold">
-                {MISSION_RANDOM_REWARD_LABEL}
+                {label}
             </Txt>
             <Txt typography="t7" color="grey600">
-                완료하면 재료 풀에서 1종을 받아요
+                {subtitle}
             </Txt>
         </View>
     );
@@ -25,7 +34,6 @@ export function RandomMissionRewardBadge() {
 
 const styles = StyleSheet.create({
     badge: {
-        marginTop: 16,
         padding: 16,
         borderRadius: 12,
         backgroundColor: colors.primaryLight,
