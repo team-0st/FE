@@ -1,13 +1,8 @@
 import { Asset, Txt, frameShape } from '@toss/tds-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { ROUTES } from '../constants/routes';
 import { TDS_ICON } from '../constants/tdsAssets';
 import { colors } from '../theme/colors';
-
-/**
- * TODO(별도 작업): 심사 대응 리뷰에서 "플로팅 탭바로 전환" 제안이 있었음.
- * 이번 fix/review-nav-terms-login PR 범위에서는 건드리지 않음 — 별도 티켓으로 진행.
- */
 
 export type MainTabId = 'home' | 'ingredients' | 'gacha' | 'recipes' | 'profile';
 
@@ -22,6 +17,7 @@ type TabItem = {
 /**
  * 메인 탭 아이콘:
  * 홈=home · 제작=food(스프) · 가챠=gift · 레시피=document · 마이=user
+ * 앱인토스 비게임 가이드: 플로팅 형태 (최대 5탭)
  */
 export const MAIN_TABS: TabItem[] = [
     { id: 'home', label: '홈', iconName: TDS_ICON.tabHome, route: ROUTES.home },
@@ -41,59 +37,77 @@ type MainTabBarProps = {
 export function MainTabBar({ activeTab, onPressTab, bottomInset = 0 }: MainTabBarProps) {
     return (
         <View
-            style={[styles.bar, { paddingBottom: Math.max(12, bottomInset) }]}
-            accessibilityRole="tablist"
+            style={[styles.dock, { paddingBottom: Math.max(10, bottomInset) }]}
+            pointerEvents="box-none"
         >
-            {MAIN_TABS.map((tab) => {
-                const active = tab.id === activeTab;
-                const tint = active ? colors.primary : colors.textSecondary;
-                return (
-                    <Pressable
-                        key={tab.id}
-                        onPress={() => {
-                            if (active) {
-                                return;
-                            }
-                            onPressTab(tab.route);
-                        }}
-                        style={styles.item}
-                        accessibilityRole="tab"
-                        accessibilityState={{ selected: active }}
-                        accessibilityLabel={`${tab.label} 탭`}
-                    >
-                        <Asset.Icon
-                            name={tab.iconName}
-                            frameShape={frameShape.CleanW24}
-                            color={tint}
-                            accessibilityLabel={tab.label}
-                        />
-                        <Txt
-                            typography="st13"
-                            fontWeight={active ? 'bold' : 'medium'}
-                            style={{ color: tint, marginTop: 4 }}
+            <View style={styles.bar} accessibilityRole="tablist">
+                {MAIN_TABS.map((tab) => {
+                    const active = tab.id === activeTab;
+                    const tint = active ? colors.primary : colors.textSecondary;
+                    return (
+                        <Pressable
+                            key={tab.id}
+                            onPress={() => {
+                                if (active) {
+                                    return;
+                                }
+                                onPressTab(tab.route);
+                            }}
+                            style={styles.item}
+                            accessibilityRole="tab"
+                            accessibilityState={{ selected: active }}
+                            accessibilityLabel={`${tab.label} 탭`}
                         >
-                            {tab.label}
-                        </Txt>
-                    </Pressable>
-                );
-            })}
+                            <Asset.Icon
+                                name={tab.iconName}
+                                frameShape={frameShape.CleanW24}
+                                color={tint}
+                                accessibilityLabel={tab.label}
+                            />
+                            <Txt
+                                typography="st13"
+                                fontWeight={active ? 'bold' : 'medium'}
+                                style={{ color: tint, marginTop: 2 }}
+                            >
+                                {tab.label}
+                            </Txt>
+                        </Pressable>
+                    );
+                })}
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    dock: {
+        paddingHorizontal: 16,
+        paddingTop: 4,
+    },
     bar: {
         flexDirection: 'row',
-        borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: colors.border,
+        alignItems: 'center',
         backgroundColor: colors.tabBar,
-        paddingTop: 8,
-        paddingHorizontal: 2,
+        borderRadius: 28,
+        paddingVertical: 10,
+        paddingHorizontal: 6,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 8,
+            },
+            default: {},
+        }),
     },
     item: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 48,
+        minHeight: 44,
     },
 });
