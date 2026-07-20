@@ -1,7 +1,7 @@
 import { findRecipeInCatalog } from '@api/mock/recipeCatalog';
-import { Button, Top, Txt } from '@toss/tds-react-native';
+import { Button, Top, Txt, useDialog } from '@toss/tds-react-native';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { TermsOfServiceModal } from '../legal/TermsOfServiceModal';
 import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
@@ -50,9 +50,9 @@ function formatLedgerTime(iso: string): string {
 export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: ProfileScreenProps) {
     const { state, grantTestEcoJam, unlockAllRecipesForTest } = useUser();
     const { showSuccess } = useAppToast();
+    const { openConfirm } = useDialog();
     const [privacyVisible, setPrivacyVisible] = useState(false);
     const [termsVisible, setTermsVisible] = useState(false);
-    const [restartConfirmVisible, setRestartConfirmVisible] = useState(false);
     const [detailModal, setDetailModal] = useState<DetailModal>(null);
     const shopName = resolveShopName(state.shopId);
     const completed = state.completedRecipeIds.length;
@@ -71,6 +71,25 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
             }),
         [state.completedRecipeIds],
     );
+
+    const handleRestartOnboarding = () => {
+        if (onPressRestartOnboarding == null) {
+            return;
+        }
+        void (async () => {
+            const confirmed = await openConfirm({
+                title: '처음부터 다시 시작할까요?',
+                description:
+                    '온보딩을 다시 진행해요.\n지금까지 모은 알맹 포인트, 에코잼, 재료가 모두 사라지고 되돌릴 수 없어요.',
+                leftButton: '취소',
+                rightButton: '사라지고 다시 시작',
+                closeOnDimmerClick: true,
+            });
+            if (confirmed) {
+                onPressRestartOnboarding();
+            }
+        })();
+    };
 
     return (
         <Screen scrollable>
@@ -274,51 +293,13 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                     typography="t7"
                     color="blue500"
                     style={styles.restartOnboarding}
-                    onPress={() => setRestartConfirmVisible(true)}
+                    onPress={handleRestartOnboarding}
                     accessibilityRole="button"
                     accessibilityLabel="처음부터 다시 시작"
                 >
                     처음부터 다시 시작
                 </Txt>
             ) : null}
-            <Modal
-                visible={restartConfirmVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setRestartConfirmVisible(false)}
-            >
-                <View style={styles.modalBackdrop}>
-                    <View style={styles.modalCard}>
-                        <Txt typography="t5" fontWeight="bold">
-                            처음부터 다시 시작할까요?
-                        </Txt>
-                        <Txt typography="t6" color="grey700" style={styles.modalBody}>
-                            온보딩을 다시 진행해요. 지금까지 모은 알맹 포인트, 에코잼, 재료가 모두
-                            사라지고 되돌릴 수 없어요.
-                        </Txt>
-                        <Button
-                            size="medium"
-                            type="primary"
-                            display="block"
-                            onPress={() => {
-                                setRestartConfirmVisible(false);
-                                onPressRestartOnboarding?.();
-                            }}
-                        >
-                            사라지고 다시 시작
-                        </Button>
-                        <Button
-                            size="medium"
-                            type="dark"
-                            style="weak"
-                            display="block"
-                            onPress={() => setRestartConfirmVisible(false)}
-                        >
-                            취소
-                        </Button>
-                    </View>
-                </View>
-            </Modal>
             <PrivacyPolicyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
             <TermsOfServiceModal visible={termsVisible} onClose={() => setTermsVisible(false)} />
             <ProfileListModal
@@ -464,21 +445,5 @@ const styles = StyleSheet.create({
     },
     policyLink: {
         textDecorationLine: 'underline',
-    },
-    modalBackdrop: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        justifyContent: 'center',
-        padding: 24,
-        zIndex: 20,
-    },
-    modalCard: {
-        borderRadius: 16,
-        backgroundColor: colors.background,
-        padding: 20,
-        gap: 12,
-    },
-    modalBody: {
-        lineHeight: 22,
     },
 });
