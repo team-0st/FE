@@ -1,10 +1,8 @@
 import { createRoute } from '@granite-js/react-native';
-import { IngredientsScreen } from '../../src/features/ingredients/IngredientsScreen';
-import { useMainTabPress } from '../../src/shared/hooks/useMainTabNavigation';
-import { MainTabShell } from '../../src/shared/layout/MainTabShell';
+import { useMainTabsHostBindings } from '../../src/shared/hooks/useMainTabsHostBindings';
+import { MainTabsHost } from '../../src/shared/layout/MainTabsHost';
 import { mainTabScreenOptions } from '../../src/shared/navigation/tabTransition';
 import { useRootBackClosesApp } from '../../src/shared/navigation/useRootBackClosesApp';
-import { navigateSoupResult } from '../../src/shared/constants/routes';
 
 export const Route = createRoute('/ingredients', {
     component: Page,
@@ -13,14 +11,8 @@ export const Route = createRoute('/ingredients', {
 
 function Page() {
     const navigation = Route.useNavigation();
-    const onPressTab = useMainTabPress(navigation, 'ingredients');
+    const bindings = useMainTabsHostBindings(navigation);
     useRootBackClosesApp();
 
-    return (
-        <MainTabShell activeTab="ingredients" onPressTab={onPressTab}>
-            <IngredientsScreen
-                onSoupMade={(recipeId, outcome) => navigateSoupResult(navigation, recipeId, outcome)}
-            />
-        </MainTabShell>
-    );
+    return <MainTabsHost initialTab="ingredients" {...bindings} />;
 }

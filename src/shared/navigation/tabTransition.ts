@@ -1,8 +1,7 @@
 import type { MainTabId } from '../layout/MainTabBar';
-import { MAIN_TABS } from '../layout/MainTabBar';
+import { MAIN_TAB_ORDER } from '../layout/MainTabBar';
 
-/** 탭바 왼쪽→오른쪽 순서 */
-export const MAIN_TAB_ORDER: readonly MainTabId[] = MAIN_TABS.map((tab) => tab.id);
+export { MAIN_TAB_ORDER };
 
 export type TabReplaceAnimation = 'push' | 'pop';
 
@@ -10,6 +9,7 @@ let pendingReplaceAnimation: TabReplaceAnimation = 'push';
 
 /**
  * 탭 전환 방향에 따라 replace 애니메이션을 정한다.
+ * (딥링크·결과 화면에서 탭 루트로 진입할 때 사용)
  * - 오른쪽 탭으로 이동 → push (새 화면이 오른쪽에서 들어옴)
  * - 왼쪽 탭으로 이동 → pop (반대 방향)
  */
@@ -27,7 +27,7 @@ export function getTabReplaceAnimation(): TabReplaceAnimation {
     return pendingReplaceAnimation;
 }
 
-/** 메인 탭 화면용 — replace 시 방향 반영 */
+/** 메인 탭 화면용 — 딥링크 진입 시 가로 슬라이드 */
 export function mainTabScreenOptions() {
     return {
         animationTypeForReplace: getTabReplaceAnimation(),

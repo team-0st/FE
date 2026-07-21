@@ -6,10 +6,6 @@ import { getCarbonReduction } from '../missions/carbonReduction';
 import { appendEcoJamLedger } from './ecoJamLedger';
 import { appendAlmangPointsLedger } from './almangPointsLedger';
 import { DEFAULT_USER_STATE } from './defaultState';
-import {
-    SHARE_REWARD_ECO_JAM_AMOUNT,
-    SHARE_REWARD_LEDGER_LABEL,
-} from '../../shared/constants/shareRewardPolicy';
 import type {
     AlmangPayoutConsent,
     AppUserState,
@@ -426,6 +422,27 @@ export function applySoupRerollDelta(
     return applySoupCraftReward(state, recipe, nextCraft, `${recipe.name} 리롤`);
 }
 
+/** BE 리롤 결과와 후속 서버 조회 스냅샷만 로컬 state에 반영한다. */
+export function applySoupRerollServerSync(
+    state: AppUserState,
+    recipe: Recipe,
+    params: {
+        remainingEcoJam: number;
+        nextCraft: SoupCraftResponse;
+        syncedPoint: number | null;
+        syncedInventory: Record<string, number> | null;
+    },
+): AppUserState {
+    const { remainingEcoJam, nextCraft, syncedPoint, syncedInventory } = params;
+    return {
+        ...state,
+        ecoJam: remainingEcoJam,
+        totalPoints: syncedPoint ?? state.totalPoints,
+        ingredientInventory: syncedInventory ?? state.ingredientInventory,
+        lastSoupSession: { recipeId: recipe.id, craft: nextCraft, rerollUsed: true },
+    };
+}
+
 export function unlockHiddenRecipe(state: AppUserState, recipeId: string): AppUserState {
     if (state.unlockedRecipeIds.includes(recipeId) || state.completedRecipeIds.includes(recipeId)) {
         return state;
@@ -480,17 +497,17 @@ export function spendEcoJam(state: AppUserState, amount: number, label: string):
 
 export type ShareRewardClaimResult =
     | { ok: true; ecoJamGranted: number }
-    | { ok: false; reason: 'already_claimed' };
+    | { ok: false; reason: 'already_claimed' | 'verification_unavailable' };
 
-/** 공유 에코잼 보상 — 계정당 1회 */
+/**
+ * SNS 공유 에코잼 보상.
+ *
+ * 공유 성공 여부를 검증할 서버 API가 없어 현재는 방어적으로 항상 지급을 차단한다.
+ * 로컬 state/ledger는 절대 변경하지 않는다 (입력 state 참조를 그대로 반환).
+ * `lastShareRewardDate` 필드는 이전 지급 기록과의 마이그레이션 호환을 위해 타입에 유지한다.
+ */
 export function claimShareReward(
     state: AppUserState,
-    today = formatDateKey(new Date()),
 ): { state: AppUserState; result: ShareRewardClaimResult } {
-    if (state.lastShareRewardDate != null) {
-        return { state, result: { ok: false, reason: 'already_claimed' } };
-    }
-    let next = addEcoJam(state, SHARE_REWARD_ECO_JAM_AMOUNT, SHARE_REWARD_LEDGER_LABEL);
-    next = { ...next, lastShareRewardDate: today };
-    return { state: next, result: { ok: true, ecoJamGranted: SHARE_REWARD_ECO_JAM_AMOUNT } };
+    return { state, result: { ok: false, reason: 'verification_unavailable' } };
 }

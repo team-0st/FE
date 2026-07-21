@@ -11,8 +11,9 @@ import {
     recommendationTitle,
 } from '@api/mock/recipes';
 import { getIngredientById } from '@api/mock/ingredients';import type { SoupCraftResponse } from '@api/notion/types';
-import { Button, ListRow, Txt } from '@toss/tds-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { Button, ListRow, Switch, Txt } from '@toss/tds-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { LayoutChangeEvent } from 'react-native';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import {
     RECIPE_RECOMMEND_INFO_LINES,
@@ -23,7 +24,7 @@ import {
 import { HOME_DECOR } from '../../shared/constants/homeDecorAssets';
 import { getSoupImageSource, hasSoupImage } from '../../shared/constants/soupAssets';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
-import { getBrewFailureMessage } from '../../shared/feedback/messages';
+import type { BrewFailureReason } from '../../shared/feedback/messages';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { BrandListRowImage } from '../../shared/ui/BrandListRowImage';
@@ -32,12 +33,18 @@ import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { RecipeIngredientIcons } from '../../shared/ui/RecipeIngredientIcons';
 import {
+    PREVIEW_ROW_HEIGHT,
     PREVIEW_VISIBLE_ROWS,
     ScrollPreviewSection,
+    computeAdaptiveVisibleRows,
+    getMaxMeasuredRowHeight,
+    updateMeasuredRowHeightById,
 } from '../../shared/ui/ScrollPreviewSection';
 import { colors } from '../../shared/theme/colors';
 import { ProfileListModal } from '../profile/ProfileListSection';
 import { useUser } from '../user/UserProvider';
+import { CraftBrewAnimationOverlay } from '../craft/CraftBrewAnimationOverlay';
+import { useCraftSkipAnimationPreference } from '../craft/useCraftSkipAnimationPreference';
 
 /** 추천 행: 스프 썸네일 확대 + 재료 아이콘·라벨 */
 const RECOMMEND_SOUP_SIZE = 80;
@@ -46,13 +53,15 @@ const RECOMMEND_ROW_HEIGHT = 120;
 
 type IngredientsScreenProps = {
     onSoupMade: (recipeId: string, craft: SoupCraftResponse) => void;
+    onBrewStarted: () => void;
+    onBrewFailure: (reason: BrewFailureReason) => void;
 };
 
 function emptySlots(): (string | null)[] {
     return Array.from({ length: BREW_SLOT_MAX }, () => null);
 }
 
-function brewStatusMessage(filledCount: number, matchedLabel: string | null): string {
+export function brewStatusMessage(filledCount: number, matchedLabel: string | null): string {
     if (matchedLabel != null) {
         return matchedLabel;
     }
@@ -62,18 +71,33 @@ function brewStatusMessage(filledCount: number, matchedLabel: string | null): st
     if (filledCount === 1) {
         return '재료를 1개 더 넣으면 만들 수 있어요.';
     }
-    return '재료를 2개 넣으면 만들 수 있어요.';
+    return '재료를 2개 이상 넣으면 만들 수 있어요.';
 }
 
-export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
+export function IngredientsScreen({
+    onSoupMade,
+    onBrewStarted,
+    onBrewFailure,
+}: IngredientsScreenProps) {
     const { state, brewSoup } = useUser();
-    const { show, showError } = useAppToast();
+    const { show } = useAppToast();
+    const { skip: skipAnimation, setSkip: setSkipAnimation } = useCraftSkipAnimationPreference();
     const [slots, setSlots] = useState<(string | null)[]>(emptySlots);
     const [brewing, setBrewing] = useState(false);
+    const [animating, setAnimating] = useState(false);
     const [ownedExpanded, setOwnedExpanded] = useState(false);
+    const [scrollViewportHeight, setScrollViewportHeight] = useState(0);
+    const [scrollContentMeasurement, setScrollContentMeasurement] = useState({
+        height: 0,
+        rowHeight: PREVIEW_ROW_HEIGHT,
+    });
+    const [ownedVisibleRows, setOwnedVisibleRows] = useState(PREVIEW_VISIBLE_ROWS);
+    const [ownedMeasuredRowHeights, setOwnedMeasuredRowHeights] = useState<
+        Record<string, number>
+    >({});
 
     const filledCount = getFilledIngredientIds(slots).length;
-    const canBrew = isValidBrewFillCount(filledCount) && !brewing;
+    const canBrew = isValidBrewFillCount(filledCount) && !brewing && !animating;
     const matchedRecipe = isValidBrewFillCount(filledCount)
         ? findMatchingRecipe(slots, state.completedRecipeIds)
         : undefined;
@@ -98,6 +122,72 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
         () => INGREDIENTS.filter((item) => (state.ingredientInventory[item.id] ?? 0) > 0),
         [state.ingredientInventory],
     );
+    const ownedRowHeight = useMemo(
+        () =>
+            getMaxMeasuredRowHeight({
+                itemIds: ownedIngredients.map((item) => item.id),
+                measuredHeights: ownedMeasuredRowHeights,
+            }),
+        [ownedIngredients, ownedMeasuredRowHeights],
+    );
+
+    const handleScrollLayout = useCallback((event: LayoutChangeEvent) => {
+        setScrollViewportHeight(event.nativeEvent.layout.height);
+    }, []);
+
+    const handleScrollContentSizeChange = useCallback(
+        (_width: number, height: number) => {
+            setScrollContentMeasurement({ height, rowHeight: ownedRowHeight });
+        },
+        [ownedRowHeight],
+    );
+
+    const handleOwnedRowLayout = useCallback(
+        (itemId: string, event: LayoutChangeEvent) => {
+            const measuredHeight = event.nativeEvent.layout.height;
+            setOwnedMeasuredRowHeights((measuredHeights) =>
+                updateMeasuredRowHeightById({
+                    measuredHeights,
+                    itemId,
+                    measuredHeight,
+                }),
+            );
+        },
+        [],
+    );
+
+    /**
+     * 남은 화면 높이에 맞춰 보유 재료 노출 행(3~5)을 계산한다.
+     * otherContentHeight는 현재 보유 재료 카드가 차지 중인 높이를 콘텐츠 전체 높이에서 제외한 값이라
+     * ownedVisibleRows가 바뀌어도 다음 계산이 진동하지 않는다.
+     */
+    useEffect(() => {
+        if (
+            scrollViewportHeight <= 0 ||
+            scrollContentMeasurement.height <= 0 ||
+            ownedIngredients.length === 0
+        ) {
+            return;
+        }
+        const currentOwnedListHeight =
+            Math.min(ownedIngredients.length, ownedVisibleRows) *
+            scrollContentMeasurement.rowHeight;
+        const otherContentHeight = scrollContentMeasurement.height - currentOwnedListHeight;
+        const nextVisibleRows = computeAdaptiveVisibleRows({
+            viewportHeight: scrollViewportHeight,
+            otherContentHeight,
+            rowHeight: ownedRowHeight,
+        });
+        if (nextVisibleRows !== ownedVisibleRows) {
+            setOwnedVisibleRows(nextVisibleRows);
+        }
+    }, [
+        scrollViewportHeight,
+        scrollContentMeasurement,
+        ownedIngredients.length,
+        ownedVisibleRows,
+        ownedRowHeight,
+    ]);
 
     const handleApplyRecommendation = useCallback(
         (recipeId: string) => {
@@ -154,11 +244,16 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
         if (!canBrew) {
             return;
         }
+        onBrewStarted();
+        if (!skipAnimation) {
+            setAnimating(true);
+            return;
+        }
         setBrewing(true);
         try {
             const result = await brewSoup(slots);
             if (!result.ok) {
-                showError(getBrewFailureMessage(result.reason));
+                onBrewFailure(result.reason);
                 return;
             }
             setSlots(emptySlots());
@@ -168,9 +263,32 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
         }
     };
 
+    if (animating) {
+        return (
+            <CraftBrewAnimationOverlay
+                run={() => brewSoup(slots)}
+                onSuccess={(result) => {
+                    setSlots(emptySlots());
+                    setAnimating(false);
+                    onSoupMade(result.recipe.id, result.craft);
+                }}
+                onFailure={(reason) => {
+                    setAnimating(false);
+                    onBrewFailure(reason);
+                }}
+            />
+        );
+    }
+
     return (
         <View style={styles.root}>
-            <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator>
+            <ScrollView
+                style={styles.scroll}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator
+                onLayout={handleScrollLayout}
+                onContentSizeChange={handleScrollContentSizeChange}
+            >
                 <Txt typography="t6" color="grey600">
                     {'재료를 골라 냄비에 넣어요.\n조합이 맞으면 스프가 완성돼요.'}
                 </Txt>
@@ -274,7 +392,7 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                 />
                             }
                             titleAction={
-                                ownedIngredients.length > PREVIEW_VISIBLE_ROWS ? (
+                                ownedIngredients.length > ownedVisibleRows ? (
                                     <Txt
                                         typography="t7"
                                         color="blue500"
@@ -287,6 +405,8 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                 ) : null
                             }
                             itemCount={ownedIngredients.length}
+                            rowHeight={ownedRowHeight}
+                            visibleRows={ownedVisibleRows}
                         >
                             {ownedIngredients.map((item) => {
                                 const owned = state.ingredientInventory[item.id] ?? 0;
@@ -294,40 +414,44 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                                 const available = owned - inSlots;
                                 const disabled = available <= 0;
                                 return (
-                                    <ListRow
+                                    <View
                                         key={item.id}
-                                        onPress={
-                                            disabled
-                                                ? undefined
-                                                : () => handlePressIngredient(item.id)
-                                        }
-                                        left={
-                                            item.imageSource != null ? (
-                                                <BrandListRowImage source={item.imageSource} />
-                                            ) : undefined
-                                        }
-                                        contents={
-                                            <ListRow.Texts
-                                                type="2RowTypeA"
-                                                top={item.name}
-                                                topProps={{ fontWeight: 'bold' }}
-                                                bottom={
-                                                    disabled
-                                                        ? '슬롯에 모두 사용 중'
-                                                        : `보유 ${available}개`
-                                                }
-                                            />
-                                        }
-                                        right={
-                                            !disabled ? (
-                                                <ListRow.RightTexts
-                                                    type="1RowTypeA"
-                                                    top="넣기"
-                                                    topProps={{ color: 'blue500' }}
+                                        onLayout={(event) => handleOwnedRowLayout(item.id, event)}
+                                    >
+                                        <ListRow
+                                            onPress={
+                                                disabled
+                                                    ? undefined
+                                                    : () => handlePressIngredient(item.id)
+                                            }
+                                            left={
+                                                item.imageSource != null ? (
+                                                    <BrandListRowImage source={item.imageSource} />
+                                                ) : undefined
+                                            }
+                                            contents={
+                                                <ListRow.Texts
+                                                    type="2RowTypeA"
+                                                    top={item.name}
+                                                    topProps={{ fontWeight: 'bold' }}
+                                                    bottom={
+                                                        disabled
+                                                            ? '슬롯에 모두 사용 중'
+                                                            : `보유 ${available}개`
+                                                    }
                                                 />
-                                            ) : undefined
-                                        }
-                                    />
+                                            }
+                                            right={
+                                                !disabled ? (
+                                                    <ListRow.RightTexts
+                                                        type="1RowTypeA"
+                                                        top="넣기"
+                                                        topProps={{ color: 'blue500' }}
+                                                    />
+                                                ) : undefined
+                                            }
+                                        />
+                                    </View>
                                 );
                             })}
                         </ScrollPreviewSection>
@@ -385,6 +509,16 @@ export function IngredientsScreen({ onSoupMade }: IngredientsScreenProps) {
                 )}
             </ScrollView>
             <View style={styles.cta}>
+                <View style={styles.skipRow}>
+                    <Txt typography="st13" color="grey500">
+                        제작 애니메이션 건너뛰기
+                    </Txt>
+                    <Switch
+                        checked={skipAnimation}
+                        onCheckedChange={setSkipAnimation}
+                        accessibilityLabel="제작 애니메이션 건너뛰기"
+                    />
+                </View>
                 <Txt typography="t7" color="grey600" style={styles.brewStatus}>
                     {brewStatusMessage(filledCount, matchedLabel)}
                 </Txt>
@@ -453,6 +587,13 @@ const styles = StyleSheet.create({
     brewStatus: {
         textAlign: 'center',
         marginBottom: 8,
+    },
+    skipRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: 6,
+        marginBottom: 4,
     },
     cta: {
         width: '100%',

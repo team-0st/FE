@@ -4,10 +4,12 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { TermsOfServiceModal } from '../legal/TermsOfServiceModal';
+import { ABOUT_ZEROST_LABELS } from '../../shared/constants/aboutZerost';
 import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
 import { TERMS_OF_SERVICE_LABELS } from '../../shared/constants/termsOfService';
 import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
 import { getSoupImageSource } from '../../shared/constants/soupAssets';
+import { PROFILE_CARBON_FOOTPRINT_ICON } from '../../shared/constants/profileCarbonIcon';
 import { formatCarbonGrams } from '../missions/carbonReduction';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
@@ -28,6 +30,7 @@ import { colors } from '../../shared/theme/colors';
 
 type ProfileScreenProps = {
     onPressChangeShop?: () => void;
+    onPressAbout?: () => void;
     onPressRestartOnboarding?: () => void;
 };
 
@@ -47,7 +50,11 @@ function formatLedgerTime(iso: string): string {
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: ProfileScreenProps) {
+export function ProfileScreen({
+    onPressChangeShop,
+    onPressAbout,
+    onPressRestartOnboarding,
+}: ProfileScreenProps) {
     const { state, grantTestEcoJam, unlockAllRecipesForTest } = useUser();
     const { showSuccess } = useAppToast();
     const { openConfirm } = useDialog();
@@ -200,7 +207,7 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                 </Pressable>
                 <View style={styles.card}>
                     <BrandEmojiImage
-                        source={BRAND_EMOJI.sprout}
+                        source={PROFILE_CARBON_FOOTPRINT_ICON}
                         size={48}
                         containerStyle={styles.cardIcon}
                         accessibilityLabel="탄소 절감량"
@@ -228,6 +235,20 @@ export function ProfileScreen({ onPressChangeShop, onPressRestartOnboarding }: P
                             </Txt>
                         </View>
                     ))}
+                </View>
+            ) : null}
+            {onPressAbout != null ? (
+                <View style={styles.aboutLinkRow}>
+                    <Txt
+                        typography="t6"
+                        color="blue500"
+                        style={styles.policyLink}
+                        onPress={onPressAbout}
+                        accessibilityRole="button"
+                        accessibilityLabel={ABOUT_ZEROST_LABELS.myPageEntry}
+                    >
+                        {ABOUT_ZEROST_LABELS.myPageEntry}
+                    </Txt>
                 </View>
             ) : null}
             <View style={styles.legalLinkRow}>
@@ -436,11 +457,16 @@ const styles = StyleSheet.create({
         backgroundColor: colors.warningBg,
         gap: 10,
     },
+    aboutLinkRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 24,
+    },
     legalLinkRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         gap: 16,
-        marginTop: 16,
+        marginTop: 12,
     },
     policyLink: {
         textDecorationLine: 'underline',

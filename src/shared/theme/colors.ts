@@ -26,4 +26,7 @@ export const colors = {
     /** 알림·대기 배너 */
     warningBg: '#FFF8E7',
     warningBorder: '#FFB800',
+    /** 홈 환경 카피 카드 — 연두색, 눈에 띄게 */
+    ecoCopyBg: '#EAF7DA',
+    ecoCopyBorder: '#C5E8A0',
 } as const;

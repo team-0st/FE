@@ -8,7 +8,7 @@ import {
     getWeeklyRecipes,
 } from '@api/mock/recipes';
 import type { Recipe } from '@api/mock/recipeTypes';
-import { Asset, Button, ListRow, Top, Txt, frameShape } from '@toss/tds-react-native';
+import { Asset, Button, ListRow, Txt, frameShape } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
     type LayoutChangeEvent,
@@ -228,21 +228,17 @@ export function RecipesScreen() {
     return (
         <View style={styles.root}>
             <View style={styles.header}>
-                <Top
-                    title={<Top.TitleParagraph size={22}>레시피</Top.TitleParagraph>}
-                    subtitle2={
-                        <Top.SubtitleParagraph>
-                            카테고리를 골라 레시피를 확인해요.
-                        </Top.SubtitleParagraph>
-                    }
-                />
+                <Txt typography="t6" color="grey600">
+                    카테고리를 골라 레시피를 확인해요.
+                </Txt>
                 <View style={styles.guideRow}>
                     <ProbabilityInfoRow
                         label="레시피 안내"
                         title={RECIPE_LIST_GUIDE_TITLE}
                         lines={RECIPE_LIST_GUIDE_LINES}
                     />
-                </View>                {showTodayPin && todayRecipe != null ? (
+                </View>
+                {showTodayPin && todayRecipe != null ? (
                     <View style={styles.todayHint}>
                         <View style={styles.todayPinHeader}>
                             <Txt typography="t7" color="grey500" fontWeight="semibold">

@@ -1,10 +1,9 @@
 import { createRoute } from '@granite-js/react-native';
 import { useEffect } from 'react';
 import { CenterLoader } from '../src/shared/ui/CenterLoader';
-import { WitchSoupHomeScreen } from '../src/features/home/WitchSoupHomeScreen';
 import { useUser } from '../src/features/user/UserProvider';
-import { useMainTabPress } from '../src/shared/hooks/useMainTabNavigation';
-import { MainTabShell } from '../src/shared/layout/MainTabShell';
+import { useMainTabsHostBindings } from '../src/shared/hooks/useMainTabsHostBindings';
+import { MainTabsHost } from '../src/shared/layout/MainTabsHost';
 import { mainTabScreenOptions } from '../src/shared/navigation/tabTransition';
 import { useRootBackClosesApp } from '../src/shared/navigation/useRootBackClosesApp';
 import { ROUTES } from '../src/shared/constants/routes';
@@ -17,7 +16,7 @@ export const Route = createRoute('/', {
 
 function Page() {
     const navigation = Route.useNavigation();
-    const onPressTab = useMainTabPress(navigation, 'home');
+    const bindings = useMainTabsHostBindings(navigation);
     const { isReady, state } = useUser();
     useRootBackClosesApp();
 
@@ -39,12 +38,5 @@ function Page() {
         return null;
     }
 
-    return (
-        <MainTabShell activeTab="home" onPressTab={onPressTab}>
-            <WitchSoupHomeScreen
-                onPressMissions={() => navigation.navigate(ROUTES.missions)}
-                onPressPartnerShops={() => navigation.navigate(ROUTES.shopPartners)}
-            />
-        </MainTabShell>
-    );
+    return <MainTabsHost initialTab="home" {...bindings} />;
 }

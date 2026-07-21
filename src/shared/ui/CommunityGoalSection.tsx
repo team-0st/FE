@@ -2,13 +2,14 @@ import {
     getCommunityGoalProgressPercent,
     PILOT_COMMUNITY_GOAL,
 } from '../constants/communityGoalMock';
-import { progressCheerSource } from '../constants/homeDecorAssets';
+import { HOME_DECOR, progressCheerSource } from '../constants/homeDecorAssets';
 import { ProgressBar, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { BrandEmojiImage } from './BrandEmojiImage';
 
 const CHEER_SIZE = 22;
+const HERO_SIZE = 52;
 
 export function CommunityGoalSection() {
     const goal = PILOT_COMMUNITY_GOAL;
@@ -17,9 +18,17 @@ export function CommunityGoalSection() {
 
     return (
         <View style={styles.wrap}>
-            <Txt typography="t6" fontWeight="semibold">
-                {goal.title} · {percent}%
-            </Txt>
+            <View style={styles.headerRow}>
+                <Txt typography="t6" fontWeight="semibold" style={styles.title}>
+                    {goal.title} · {percent}%
+                </Txt>
+                <BrandEmojiImage
+                    source={HOME_DECOR.homeHero}
+                    size={HERO_SIZE}
+                    containerStyle={styles.hero}
+                    accessibilityLabel="제로와 스티"
+                />
+            </View>
             <Txt typography="t7" color="grey600">
                 {goal.description}
             </Txt>
@@ -53,8 +62,22 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
-        padding: 16,
+        padding: 14,
+        gap: 6,
+    },
+    headerRow: {
+        minHeight: HERO_SIZE,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         gap: 8,
+    },
+    title: {
+        flex: 1,
+    },
+    hero: {
+        flexShrink: 0,
+        marginRight: 0,
     },
     barRow: {
         flexDirection: 'row',

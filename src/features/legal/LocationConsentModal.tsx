@@ -15,9 +15,14 @@ type LocationConsentModalProps = {
 
 /** 위치정보 이용 동의 — TDS BottomSheet */
 export function LocationConsentModal({ visible, onClose, onAgree, onDecline }: LocationConsentModalProps) {
+    // closed 상태에서도 Root가 마운트되면 overflow로 탭바 아래로 비침
+    if (!visible) {
+        return null;
+    }
+
     return (
         <BottomSheet.Root
-            open={visible}
+            open
             onClose={onClose}
             onDimmerClick={onClose}
             header={<BottomSheet.Header>{LOCATION_POLICY_META.title}</BottomSheet.Header>}

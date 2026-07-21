@@ -1,5 +1,5 @@
 import { INGREDIENTS } from '../mock/ingredients';
-import { ALL_MISSIONS } from '../mock/missions';
+import { ALL_MISSIONS, DAILY_MISSIONS } from '../mock/missions';
 import { ALL_RECIPES } from '../mock/recipes';
 import { MOCK_SHOPS } from '../mock/shops';
 import type { IngredientDto } from './types';
@@ -13,7 +13,8 @@ function buildNumericMap<T extends { id: string }>(items: T[]): Map<string, numb
 }
 
 const ingredientNumericBySlug = buildNumericMap(INGREDIENTS);
-const missionNumericBySlug = buildNumericMap(ALL_MISSIONS);
+/** BE 미션은 일일 1~6만 존재. ALL_MISSIONS 순번(7+)로 보내면 MISSION_NOT_FOUND */
+const missionNumericBySlug = buildNumericMap(DAILY_MISSIONS);
 const shopNumericBySlug = buildNumericMap(MOCK_SHOPS);
 const recipeNumericBySlug = buildNumericMap(ALL_RECIPES);
 
@@ -31,7 +32,7 @@ export function missionNumericId(slug: string): number | undefined {
 }
 
 export function missionSlugFromNumeric(id: number): string | undefined {
-    return ALL_MISSIONS[id - 1]?.id;
+    return DAILY_MISSIONS[id - 1]?.id ?? ALL_MISSIONS[id - 1]?.id;
 }
 
 export function shopNumericId(slug: string): number | undefined {

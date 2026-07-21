@@ -1,6 +1,6 @@
 import { getShopById } from '@api/mock/shops';
 import { getIngredientById } from '@api/mock/ingredients';
-import { Button, Top } from '@toss/tds-react-native';
+import { Button } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import {
@@ -12,9 +12,8 @@ import { LocationConsentModal } from '../legal/LocationConsentModal';
 import { ShopDetailSheet } from '../shop/ShopDetailSheet';
 import { useUser } from '../user/UserProvider';
 import { isUserCheckedInToday } from '../user/selectors';
-import { HOME_DECOR } from '../../shared/constants/homeDecorAssets';
-import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { CommunityGoalSection } from '../../shared/ui/CommunityGoalSection';
+import { EcoCopyCard } from '../../shared/ui/EcoCopyCard';
 import { NearbyShopsSection } from '../../shared/ui/NearbyShopsSection';
 import { WeeklyMissionOxRow } from '../../shared/ui/WeeklyMissionOxRow';
 import { colors } from '../../shared/theme/colors';
@@ -75,17 +74,6 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
                 contentContainerStyle={styles.bodyContent}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.topWrap}>
-                    <Top title={<Top.TitleParagraph size={22}>제로스트</Top.TitleParagraph>} />
-                    <View style={styles.heroMascot} pointerEvents="none">
-                        <BrandEmojiImage
-                            source={HOME_DECOR.homeHero}
-                            size={64}
-                            containerStyle={styles.heroImage}
-                            accessibilityLabel="제로와 스티"
-                        />
-                    </View>
-                </View>
                 <CommunityGoalSection />
                 <WeeklyMissionOxRow
                     state={state}
@@ -94,6 +82,7 @@ export function WitchSoupHomeScreen({ onPressMissions, onPressPartnerShops }: Wi
                         void handleCheckIn();
                     }}
                 />
+                <EcoCopyCard />
                 <NearbyShopsSection
                     locationConsentGranted={locationConsentGranted}
                     onPressViewAll={onPressPartnerShops}
@@ -164,33 +153,17 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     bodyContent: {
-        paddingTop: 8,
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
-        gap: 12,
-        paddingBottom: 12,
-    },
-    topWrap: {
-        position: 'relative',
-        paddingRight: 72,
-        minHeight: 72,
-        justifyContent: 'center',
-    },
-    heroMascot: {
-        position: 'absolute',
-        right: 0,
-        bottom: 8,
-        opacity: 0.92,
-    },
-    heroImage: {
-        marginRight: 0,
+        gap: 8,
+        paddingBottom: 8,
     },
     footer: {
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
-        paddingTop: 8,
-        paddingBottom: 8,
+        paddingTop: 4,
+        paddingBottom: 4,
     },
 });

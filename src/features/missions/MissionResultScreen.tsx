@@ -6,7 +6,6 @@ import {
 import { BottomCTA, Button, Top, Txt } from '@toss/tds-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SHARE_REWARD_ALREADY_CLAIMED_MESSAGE, SHARE_REWARD_SUCCESS_MESSAGE } from '../../shared/constants/shareRewardPolicy';
 import { buildMissionShareMessage, shareZerostResult } from '../../shared/feedback/shareResult';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
@@ -30,7 +29,7 @@ function formatShareDate(date: Date): string {
 }
 
 export function MissionResultScreen({ mission, onPressHome }: MissionResultScreenProps) {
-    const { state, claimShareReward } = useUser();
+    const { state } = useUser();
     const toast = useAppToast();
     const [sharing, setSharing] = useState(false);
     const progress = state.missionProgress[mission.id];
@@ -55,6 +54,7 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
     const dateLabel = formatShareDate(new Date());
     const shareMessage = buildMissionShareMessage(mission.title, rewardLabel);
 
+    // 공유 성공 검증 서버 API가 없어 에코잼 보상 없이 공유만 수행한다.
     const handleShare = useCallback(async () => {
         if (sharing) {
             return;
@@ -66,22 +66,13 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
                 toast.show('공유를 취소했어요.');
                 return;
             }
-            const reward = await claimShareReward();
-            if (reward.ok) {
-                toast.showSuccess(SHARE_REWARD_SUCCESS_MESSAGE(reward.ecoJamGranted));
-                return;
-            }
-            if (reward.reason === 'already_claimed') {
-                toast.show(SHARE_REWARD_ALREADY_CLAIMED_MESSAGE);
-                return;
-            }
             toast.showSuccess('공유했어요!');
         } catch {
             toast.show('공유를 취소했어요.');
         } finally {
             setSharing(false);
         }
-    }, [claimShareReward, shareMessage, sharing, toast]);
+    }, [shareMessage, sharing, toast]);
 
     return (
         <View style={styles.root}>
