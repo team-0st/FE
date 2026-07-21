@@ -98,7 +98,7 @@ export function MainTabsHost({
                         ) : tabId === 'ingredients' ? (
                             <CraftScreen onSoupMade={onSoupMade} active={index === pageIndex} />
                         ) : tabId === 'gacha' ? (
-                            <GachaScreen />
+                            <GachaScreen active={index === pageIndex} />
                         ) : tabId === 'recipes' ? (
                             <RecipesScreen />
                         ) : (

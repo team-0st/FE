@@ -5,10 +5,12 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { BrewFailureReason } from '../../shared/feedback/messages';
 import { CAULDRON_TIER_LAYERS, STIR_STICK_IMAGE } from '../../shared/constants/cauldronImages';
+import { CenteredFeatureStage } from '../../shared/ui/CenteredFeatureStage';
 import { colors } from '../../shared/theme/colors';
 import { CauldronStage } from './CauldronStage';
 import { resolveCraftAnimationTier } from './craftAnimationTier';
 import { type CraftBrewPhase, runCraftBrewSequence } from './craftBrewSequence';
+import { CRAFT_STAGE_ALIGNMENT } from './craftStageAlignment';
 
 export type CraftBrewOutcome =
     | { ok: true; recipe: Recipe; craft: SoupCraftResponse }
@@ -19,6 +21,12 @@ const PHASE_HINT: Record<CraftBrewPhase, string> = {
     transform: '스프가 변하고 있어요…',
     complete: '스프가 완성됐어요!',
 };
+
+/**
+ * 약 270px 내부 캔버스의 alpha 정렬 이동과 complete 단계 emphasize 1.1 배율을
+ * stacked fallback ScrollView 경계 안에서 안전하게 보여주기 위한 위·아래 여유.
+ */
+const BREW_STAGE_OVERFLOW_INSET = 40;
 
 type CraftBrewAnimationOverlayProps = {
     /** 브루 API 호출. 컴포넌트 마운트 시 1회만 실행한다. */
@@ -93,16 +101,30 @@ export function CraftBrewAnimationOverlay({ run, onSuccess, onFailure }: CraftBr
 
     return (
         <View style={styles.overlay}>
-            <CauldronStage
-                layers={layers}
-                width={240}
-                stirring={phase === 'stir'}
-                emphasize={phase === 'complete'}
-                accessibilityLabel="스프 만드는 중"
+            <CenteredFeatureStage
+                testID="craft-brew-centered-stage"
+                stageTestID="craft-brew-stage-viewport"
+                belowTestID="craft-brew-below"
+                belowScrollable={false}
+                allowStageOverflow
+                stageOverflowInset={BREW_STAGE_OVERFLOW_INSET}
+                stage={
+                    <View style={{ transform: [{ translateY: CRAFT_STAGE_ALIGNMENT.translateY }] }}>
+                        <CauldronStage
+                            layers={layers}
+                            width={CRAFT_STAGE_ALIGNMENT.innerCanvasWidth}
+                            stirring={phase === 'stir'}
+                            emphasize={phase === 'complete'}
+                            accessibilityLabel="스프 만드는 중"
+                        />
+                    </View>
+                }
+                below={
+                    <Txt typography="t6" color="grey600" style={styles.hint}>
+                        {PHASE_HINT[phase]}
+                    </Txt>
+                }
             />
-            <Txt typography="t6" color="grey600" style={styles.hint}>
-                {PHASE_HINT[phase]}
-            </Txt>
         </View>
     );
 }
@@ -110,9 +132,6 @@ export function CraftBrewAnimationOverlay({ run, onSuccess, onFailure }: CraftBr
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 16,
         backgroundColor: colors.background,
     },
     hint: {

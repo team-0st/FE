@@ -12,7 +12,7 @@ import {
 import { getSoupRerollArtSource } from '../../shared/constants/soupRerollAssets';
 import { buildSoupShareMessage } from '../../shared/feedback/shareResult';
 import { useAppToast } from '../../shared/feedback/useAppToast';
-import { Screen } from '../../shared/ui/Screen';
+import { CenteredFeatureStage } from '../../shared/ui/CenteredFeatureStage';
 import { ShareResultButton } from '../../shared/ui/ShareResultButton';
 import { toBrandImageSource } from '../../shared/ui/toBrandImageSource';
 import { colors } from '../../shared/theme/colors';
@@ -32,7 +32,6 @@ type SoupResultScreenProps = {
     onCraftUpdated?: (craft: SoupCraftResponse) => void;
 };
 
-const HERO_SIZE = 200;
 const THUMB_SIZE = 56;
 const REROLL_ART_SIZE = 72;
 
@@ -49,6 +48,7 @@ export function SoupResultScreen({
         recipeIdProp.length > 0 ? recipeIdProp : (session?.recipeId ?? '');
     const [craft, setCraft] = useState(craftProp);
     const [rerollLoading, setRerollLoading] = useState(false);
+    const [heroAspectRatio, setHeroAspectRatio] = useState(1);
 
     useEffect(() => {
         if (session == null) {
@@ -80,6 +80,10 @@ export function SoupResultScreen({
         }
         return getSoupImageSource(recipeId);
     }, [isFail, failPhrase, craft.soupId, recipeId]);
+
+    useEffect(() => {
+        setHeroAspectRatio(1);
+    }, [heroSource]);
 
     const heroUri = toBrandImageSource(heroSource);
     const soupThumbUri = toBrandImageSource(getSoupImageSource(recipeId));
@@ -151,77 +155,92 @@ export function SoupResultScreen({
 
     return (
         <View style={styles.root}>
-            <Screen scrollable contentCentered>
-                <View style={styles.stage}>
-                    {heroUri != null ? (
-                        <Image
-                            source={heroUri}
-                            style={styles.hero}
-                            resizeMode="contain"
-                            accessibilityLabel={isFail ? failPhrase : displayName}
-                        />
-                    ) : null}
-
-                    {showUndercookedSoupChip ? (
-                        <View style={styles.soupChip}>
+            <View style={styles.body} testID="soup-result-body">
+                <CenteredFeatureStage
+                    testID="soup-result-centered-stage"
+                    stageTestID="soup-result-stage-viewport"
+                    belowTestID="soup-result-below"
+                    stage={
+                        heroUri != null ? (
                             <Image
-                                source={soupThumbUri}
-                                style={styles.soupThumb}
+                                testID="soup-result-hero-image"
+                                source={heroUri}
+                                style={[styles.hero, { aspectRatio: heroAspectRatio }]}
                                 resizeMode="contain"
-                                accessibilityLabel={displayName}
+                                onLoad={(event) => {
+                                    const { width, height } = event.nativeEvent.source;
+                                    if (width > 0 && height > 0) {
+                                        setHeroAspectRatio(width / height);
+                                    }
+                                }}
+                                accessibilityLabel={isFail ? failPhrase : displayName}
                             />
-                            <Txt typography="t7" color="grey600" numberOfLines={1}>
-                                {displayName}
-                            </Txt>
-                        </View>
-                    ) : null}
-
-                    <Txt typography="t2" fontWeight="bold" style={styles.mainTitle}>
-                        {mainTitle}
-                    </Txt>
-
-                    <Txt typography="t6" color="grey600" style={styles.oneLine}>
-                        {oneLineSub}
-                    </Txt>
-
-                    {showRerollButton ? (
-                        <View style={styles.rerollBlock}>
-                            <View style={styles.rerollRow}>
-                                {rerollArtUri != null ? (
+                        ) : null
+                    }
+                    below={
+                        <View style={styles.details}>
+                            {showUndercookedSoupChip ? (
+                                <View style={styles.soupChip}>
                                     <Image
-                                        source={rerollArtUri}
-                                        style={styles.rerollArt}
+                                        source={soupThumbUri}
+                                        style={styles.soupThumb}
                                         resizeMode="contain"
-                                        accessibilityLabel={actionName}
+                                        accessibilityLabel={displayName}
                                     />
-                                ) : null}
-                                <View style={styles.rerollButtonWrap}>
-                                    <Button
-                                        size="large"
-                                        type="dark"
-                                        style="weak"
-                                        display="block"
-                                        disabled={rerollLoading || !canReroll}
-                                        onPress={() => {
-                                            void handleReroll();
-                                        }}
-                                    >
-                                        {rerollLoading
-                                            ? '리롤 중…'
-                                            : canReroll
-                                              ? `${actionName} · ${rerollCost}잼`
-                                              : `에코잼 부족 · ${rerollCost}잼`}
-                                    </Button>
+                                    <Txt typography="t7" color="grey600" numberOfLines={1}>
+                                        {displayName}
+                                    </Txt>
                                 </View>
-                            </View>
+                            ) : null}
+
+                            <Txt typography="t2" fontWeight="bold" style={styles.mainTitle}>
+                                {mainTitle}
+                            </Txt>
+
+                            <Txt typography="t6" color="grey600" style={styles.oneLine}>
+                                {oneLineSub}
+                            </Txt>
+
+                            {showRerollButton ? (
+                                <View style={styles.rerollBlock}>
+                                    <View style={styles.rerollRow}>
+                                        {rerollArtUri != null ? (
+                                            <Image
+                                                source={rerollArtUri}
+                                                style={styles.rerollArt}
+                                                resizeMode="contain"
+                                                accessibilityLabel={actionName}
+                                            />
+                                        ) : null}
+                                        <View style={styles.rerollButtonWrap}>
+                                            <Button
+                                                size="large"
+                                                type="dark"
+                                                style="weak"
+                                                display="block"
+                                                disabled={rerollLoading || !canReroll}
+                                                onPress={() => {
+                                                    void handleReroll();
+                                                }}
+                                            >
+                                                {rerollLoading
+                                                    ? '리롤 중…'
+                                                    : canReroll
+                                                      ? `${actionName} · ${rerollCost}잼`
+                                                      : `에코잼 부족 · ${rerollCost}잼`}
+                                            </Button>
+                                        </View>
+                                    </View>
+                                </View>
+                            ) : alreadyUsed ? (
+                                <Txt typography="t7" color="grey500" style={styles.rerollUsed}>
+                                    {`${actionName}은 이미 사용했어요.`}
+                                </Txt>
+                            ) : null}
                         </View>
-                    ) : alreadyUsed ? (
-                        <Txt typography="t7" color="grey500" style={styles.rerollUsed}>
-                            {`${actionName}은 이미 사용했어요.`}
-                        </Txt>
-                    ) : null}
-                </View>
-            </Screen>
+                    }
+                />
+            </View>
             <View style={styles.footer}>
                 {grade !== 'FAIL' ? (
                     <BottomCTA.Double
@@ -256,18 +275,22 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    stage: {
+    body: {
+        flex: 1,
         width: '100%',
-        alignItems: 'center',
+        maxWidth: 400,
+        alignSelf: 'center',
         paddingHorizontal: 24,
-        paddingTop: 24,
-        paddingBottom: 16,
-        gap: 12,
     },
     hero: {
-        width: HERO_SIZE,
-        height: HERO_SIZE,
-        marginBottom: 8,
+        height: '100%',
+        maxWidth: '100%',
+    },
+    details: {
+        width: '100%',
+        alignItems: 'center',
+        paddingBottom: 24,
+        gap: 12,
     },
     soupChip: {
         flexDirection: 'row',

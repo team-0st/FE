@@ -1,4 +1,5 @@
 import { getIngredientById } from '@api/mock/ingredients';
+import type { ImageSourcePropType } from 'react-native';
 import { getAlmangRewardMessage } from '../user/almangPayoutCopy';
 import type { AppUserState } from '../user/types';
 import {
@@ -131,4 +132,93 @@ export function canAffordGachaPull(
     costEcoJam = GACHA_PULL_COST_ECO_JAM,
 ): boolean {
     return state.ecoJam >= costEcoJam;
+}
+
+export type GachaTabPhase = 'idle' | 'pulling' | 'result';
+
+/**
+ * 가챠 탭 표시 상태. `active`는 이 탭이 현재 보이는 탭인지 여부다.
+ * `generation`은 탭을 나갈 때마다(active: true→false) 증가하는 토큰으로,
+ * 이탈 이전에 시작된 pull의 늦은 결과가 복귀 후 화면에 다시 반영되지 않도록 막는 데 쓴다.
+ * `isPullPending`은 서버 pull 요청이 아직 끝나지 않았는지를 나타내며 `phase`와는 독립적으로
+ * 유지된다 — 이탈로 `phase`가 idle로 초기화돼도 요청이 끝나기 전까지는 true로 남아 중복 뽑기를 막는다.
+ */
+export type GachaTabState = {
+    active: boolean;
+    phase: GachaTabPhase;
+    lastReward: GachaReward | null;
+    failArt: ImageSourcePropType;
+    idleFailArt: ImageSourcePropType;
+    isPullPending: boolean;
+    generation: number;
+};
+
+export type GachaTabEvent =
+    | { type: 'TAB_ACTIVE_CHANGED'; active: boolean }
+    | { type: 'PULL_STARTED' }
+    | { type: 'PULL_ABANDONED_SETTLED' }
+    | { type: 'PULL_SETTLED'; outcome: 'idle' }
+    | {
+          type: 'PULL_SETTLED';
+          outcome: 'result';
+          reward: GachaReward;
+          failArt?: ImageSourcePropType;
+      };
+
+export function createInitialGachaTabState(
+    active: boolean,
+    idleFailArt: ImageSourcePropType,
+): GachaTabState {
+    return {
+        active,
+        phase: 'idle',
+        lastReward: null,
+        failArt: idleFailArt,
+        idleFailArt,
+        isPullPending: false,
+        generation: 0,
+    };
+}
+
+export function reduceGachaTabState(state: GachaTabState, event: GachaTabEvent): GachaTabState {
+    switch (event.type) {
+        case 'TAB_ACTIVE_CHANGED': {
+            if (event.active) {
+                return { ...state, active: true };
+            }
+            return {
+                ...state,
+                active: false,
+                phase: 'idle',
+                lastReward: null,
+                failArt: state.idleFailArt,
+                generation: state.generation + 1,
+            };
+        }
+        case 'PULL_STARTED':
+            return { ...state, phase: 'pulling', isPullPending: true };
+        case 'PULL_ABANDONED_SETTLED':
+            return { ...state, isPullPending: false };
+        case 'PULL_SETTLED':
+            if (event.outcome === 'idle') {
+                return { ...state, phase: 'idle', isPullPending: false };
+            }
+            return {
+                ...state,
+                phase: 'result',
+                lastReward: event.reward,
+                failArt: event.failArt ?? state.failArt,
+                isPullPending: false,
+            };
+        default:
+            return state;
+    }
+}
+
+/** pull 시작 시점 generation과 현재 generation이 같을 때만 그 결과를 화면에 반영해야 한다. */
+export function isGachaPullOutcomeCurrent(
+    startGeneration: number,
+    currentGeneration: number,
+): boolean {
+    return startGeneration === currentGeneration;
 }

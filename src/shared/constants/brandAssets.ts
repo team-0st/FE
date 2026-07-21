@@ -1,4 +1,29 @@
+import type { AlphaVisibleBounds } from './cauldronImages';
 import { brandUriSource } from './brandImageUris';
+
+/** 제작·가챠 기능의 메인 이미지가 공유하는 고정 높이 */
+export const FEATURE_STAGE_HEIGHT = 220;
+
+/**
+ * 제작·가챠 헤더 영역(제목/서브타이틀 또는 잔액칩/확률 안내)이 공유하는 고정 슬롯 높이.
+ * 두 화면 모두 이 높이만큼 확보한 뒤 그 바로 아래에서 stage viewport가 시작해야
+ * 두 stage의 세로 위치가 같아진다.
+ */
+export const FEATURE_HEADER_SLOT_HEIGHT = 112;
+
+/** 헤더 슬롯과 stage viewport 사이 여백. 제작·가챠 모두 동일해야 stage 위치가 같아진다. */
+export const FEATURE_STAGE_TOP_SPACING = 16;
+
+/**
+ * assets/brand/hero-gacha.png 실측 alpha bbox.
+ * 405x395 원본 기준, bbox (6,6,400,390) → top=6, bottom=390.
+ * 제작 가마솥 합성 stage를 이 기준에 맞춰 정렬한다 (cauldronImages의 computeStageAlphaAlignment 참고).
+ */
+export const GACHA_HERO_ALPHA_BOUNDS: AlphaVisibleBounds = {
+    imageHeight: 395,
+    top: 6,
+    bottom: 390,
+};
 
 /**
  * 재료·마스코트·가챠·공유카드: Granite용 data-uri (`brandImageUris.ts`).
