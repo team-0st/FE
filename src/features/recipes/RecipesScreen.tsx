@@ -409,7 +409,7 @@ export function RecipesScreen() {
                             )
                         }
                     />
-                    {tab === 'hidden' ? (
+                    {tab === 'hidden' && hiddenLockedCount > 0 ? (
                         <View style={styles.unlockWrap} testID="recipe-hidden-unlock-wrap">
                             <Button
                                 size="large"
