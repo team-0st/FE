@@ -4,7 +4,6 @@ import {
     type LayoutChangeEvent,
     type NativeScrollEvent,
     type NativeSyntheticEvent,
-    ScrollView,
     StyleSheet,
 } from 'react-native';
 import {
@@ -119,30 +118,27 @@ export function PrivacyPolicyModal({
                     {closeLabel}
                 </BottomSheet.CTA>
             }
+            wrapperProps={{
+                testID: 'privacy-policy-modal-scroll',
+                style: styles.scroll,
+                contentContainerStyle: styles.scrollContent,
+                showsVerticalScrollIndicator: true,
+                onScroll: isConsent ? onScroll : undefined,
+                scrollEventThrottle: 16,
+                onLayout: isConsent ? onScrollLayout : undefined,
+                onContentSizeChange: isConsent
+                    ? (_w: number, height: number) => {
+                          setContentHeight(height);
+                      }
+                    : undefined,
+            }}
         >
-            <ScrollView
-                testID="privacy-policy-modal-scroll"
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator
-                onScroll={isConsent ? onScroll : undefined}
-                scrollEventThrottle={16}
-                onLayout={isConsent ? onScrollLayout : undefined}
-                onContentSizeChange={
-                    isConsent
-                        ? (_w, height) => {
-                              setContentHeight(height);
-                          }
-                        : undefined
-                }
-            >
-                <PrivacyPolicyContent consentActions={consentActions} />
-                {isConsent ? (
-                    <Txt typography="t7" color="grey600" style={styles.hint}>
-                        {activeScopeAgreed ? '동의 화면으로 돌아가려면 아래 버튼을 눌러 주세요.' : '닫으려면 아래 버튼을 눌러 주세요.'}
-                    </Txt>
-                ) : null}
-            </ScrollView>
+            <PrivacyPolicyContent consentActions={consentActions} />
+            {isConsent ? (
+                <Txt typography="t7" color="grey600" style={styles.hint}>
+                    {activeScopeAgreed ? '동의 화면으로 돌아가려면 아래 버튼을 눌러 주세요.' : '닫으려면 아래 버튼을 눌러 주세요.'}
+                </Txt>
+            ) : null}
         </BottomSheet.Root>
     );
 }

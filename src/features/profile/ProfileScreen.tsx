@@ -9,6 +9,8 @@ import { ABOUT_ZEROST_LABELS } from '../../shared/constants/aboutZerost';
 import { PRIVACY_POLICY_LABELS } from '../../shared/constants/privacyPolicy';
 import { TERMS_OF_SERVICE_LABELS } from '../../shared/constants/termsOfService';
 import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
+import { getAvatarOption } from '../../shared/constants/avatarOptions';
+import { AvatarCarouselPicker } from './AvatarCarouselPicker';
 import { getSoupImageSource } from '../../shared/constants/soupAssets';
 import { PROFILE_CARBON_FOOTPRINT_ICON } from '../../shared/constants/profileCarbonIcon';
 import { formatCarbonGrams } from '../missions/carbonReduction';
@@ -69,16 +71,18 @@ export function ProfileScreen({
     onPressAbout,
     onPressRestartOnboarding,
 }: ProfileScreenProps) {
-    const { state, grantTestEcoJam, unlockAllRecipesForTest, updateNickname } = useUser();
+    const { state, grantTestEcoJam, unlockAllRecipesForTest, updateNickname, updateAvatar } = useUser();
     const { showSuccess } = useAppToast();
     const { openConfirm } = useDialog();
     const [privacyVisible, setPrivacyVisible] = useState(false);
     const [termsVisible, setTermsVisible] = useState(false);
     const [detailModal, setDetailModal] = useState<DetailModal>(null);
-    const [settingsVisible, setSettingsVisible] = useState(false);
     const [nicknameEditVisible, setNicknameEditVisible] = useState(false);
     const [nicknameInput, setNicknameInput] = useState('');
     const [nicknameError, setNicknameError] = useState<string | null>(null);
+    const [avatarPickerVisible, setAvatarPickerVisible] = useState(false);
+    const [avatarPreviewId, setAvatarPreviewId] = useState(state.avatarId);
+    const avatarOption = getAvatarOption(state.avatarId);
     const completed = state.completedRecipeIds.length;
     const ecoJamEntries = state.ecoJamLedger;
     const almangEntries = state.almangPointsLedger;
@@ -116,25 +120,9 @@ export function ProfileScreen({
     };
 
     const handleOpenNicknameEdit = () => {
-        setSettingsVisible(false);
         setNicknameInput(state.nickname);
         setNicknameError(null);
         setNicknameEditVisible(true);
-    };
-
-    const handleOpenPrivacy = () => {
-        setSettingsVisible(false);
-        setPrivacyVisible(true);
-    };
-
-    const handleOpenTerms = () => {
-        setSettingsVisible(false);
-        setTermsVisible(true);
-    };
-
-    const handleRestartOnboardingFromSettings = () => {
-        setSettingsVisible(false);
-        handleRestartOnboarding();
     };
 
     const handleSaveNickname = () => {
@@ -150,138 +138,142 @@ export function ProfileScreen({
         })();
     };
 
+    const handleOpenAvatarPicker = () => {
+        setAvatarPreviewId(state.avatarId);
+        setAvatarPickerVisible(true);
+    };
+
+    const handleConfirmAvatar = () => {
+        void (async () => {
+            await updateAvatar(avatarPreviewId);
+            setAvatarPickerVisible(false);
+        })();
+    };
+
     return (
         <Screen scrollable>
-            <View style={styles.topBar}>
+            <View style={styles.hero}>
                 <Pressable
-                    onPress={() => setSettingsVisible(true)}
+                    onPress={handleOpenAvatarPicker}
                     accessibilityRole="button"
-                    accessibilityLabel="설정"
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={styles.settingsButton}
+                    accessibilityLabel="프로필 이미지 변경"
                 >
-                    <Txt typography="t4">⚙️</Txt>
+                    <BrandEmojiImage
+                        source={avatarOption.source}
+                        size={104}
+                        containerStyle={styles.avatarCircle}
+                        accessibilityLabel="프로필"
+                    />
                 </Pressable>
             </View>
-            <View style={styles.hero}>
-                <Txt typography="t2" fontWeight="bold">
-                    {state.nickname}
-                </Txt>
-            </View>
-            <View style={styles.row}>
-                <View style={styles.card}>
-                    <BrandEmojiImage
-                        source={BRAND_EMOJI.ecoJam}
-                        size={48}
-                        containerStyle={styles.cardIcon}
-                        accessibilityLabel="에코잼"
-                    />
-                    <View style={styles.almangLabelRow}>
-                        <Txt typography="t7" color="grey600" style={styles.almangLabelText}>
-                            에코잼
+            <View style={styles.infoCard}>
+                <ListRow
+                    onPress={handleOpenNicknameEdit}
+                    contents={<ListRow.Texts type="1RowTypeA" top="닉네임" />}
+                    right={
+                        <Txt typography="t6" color="grey600">
+                            {state.nickname}
                         </Txt>
-                        <View style={styles.ecoJamInfoAnchor}>
+                    }
+                    withArrow
+                />
+            </View>
+            <View style={styles.infoCard}>
+                <ListRow
+                    onPress={() => setDetailModal('ecoJam')}
+                    left={
+                        <BrandEmojiImage
+                            source={BRAND_EMOJI.ecoJam}
+                            size={32}
+                            accessibilityLabel="에코잼"
+                        />
+                    }
+                    contents={
+                        <View style={styles.statLabelRow}>
+                            <Txt typography="t6" fontWeight="bold">
+                                에코잼
+                            </Txt>
                             <ProbabilityInfoButton
                                 title={ECO_JAM_INFO_TITLE}
                                 lines={ECO_JAM_INFO_LINES}
                                 footnote={null}
                             />
                         </View>
-                    </View>
-                    <Pressable
-                        onPress={() => setDetailModal('ecoJam')}
-                        accessibilityRole="button"
-                        accessibilityLabel={`에코잼 ${state.ecoJam}, 내역 보기`}
-                        style={({ pressed }) => [
-                            styles.almangTapArea,
-                            pressed && styles.cardPressed,
-                        ]}
-                    >
-                        <Txt typography="t4" fontWeight="bold">
+                    }
+                    right={
+                        <Txt typography="t6" color="grey600">
                             {state.ecoJam}
                         </Txt>
-                        <Txt typography="t7" color="blue500">
-                            내역 보기
-                        </Txt>
-                    </Pressable>
-                </View>
-                <View style={styles.card}>
-                    <BrandEmojiImage
-                        source={BRAND_EMOJI.almangPoint}
-                        size={48}
-                        containerStyle={styles.cardIcon}
-                        accessibilityLabel="알맹 포인트"
-                    />
-                    <View style={styles.almangLabelRow}>
-                        <Txt typography="t7" color="grey600" style={styles.almangLabelText}>
-                            알맹 포인트
-                        </Txt>
-                        <View style={styles.almangInfoAnchor}>
+                    }
+                    withArrow
+                />
+                <ListRow
+                    onPress={() => setDetailModal('almang')}
+                    left={
+                        <BrandEmojiImage
+                            source={BRAND_EMOJI.almangPoint}
+                            size={32}
+                            accessibilityLabel="알맹 포인트"
+                        />
+                    }
+                    contents={
+                        <View style={styles.statLabelRow}>
+                            <Txt typography="t6" fontWeight="bold">
+                                알맹 포인트
+                            </Txt>
                             <ProbabilityInfoButton
                                 title={ALMANG_UI_COPY.bannerTitle}
                                 lines={ALMANG_STORE_INFO_LINES}
                                 footnote={null}
                             />
                         </View>
-                    </View>
-                    <Pressable
-                        onPress={() => setDetailModal('almang')}
-                        accessibilityRole="button"
-                        accessibilityLabel={`알맹 포인트 ${state.totalPoints}P, 내역 보기`}
-                        style={({ pressed }) => [
-                            styles.almangTapArea,
-                            pressed && styles.cardPressed,
-                        ]}
-                    >
-                        <Txt typography="t4" fontWeight="bold">
-                            {state.totalPoints}P
-                        </Txt>
-                        {state.almangPayoutConsent === 'declined' ? (
-                            <Txt typography="t7" color="grey600">
-                                매장 연동 대기
+                    }
+                    right={
+                        <View style={styles.statValueCol}>
+                            <Txt typography="t6" color="grey600">
+                                {state.totalPoints}P
                             </Txt>
-                        ) : null}
-                        <Txt typography="t7" color="blue500">
-                            내역 보기
-                        </Txt>
-                    </Pressable>
-                </View>
-                <Pressable
-                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+                            {state.almangPayoutConsent === 'declined' ? (
+                                <Txt typography="t7" color="grey500">
+                                    매장 연동 대기
+                                </Txt>
+                            ) : null}
+                        </View>
+                    }
+                    withArrow
+                />
+                <ListRow
                     onPress={() => setDetailModal('soups')}
-                    accessibilityRole="button"
-                    accessibilityLabel={`완성 스프 ${completed}개, 목록 보기`}
-                >
-                    <BrandEmojiImage
-                        source={BRAND_EMOJI.completedSoups}
-                        size={48}
-                        containerStyle={styles.cardIcon}
-                        accessibilityLabel="완성 스프"
-                    />
-                    <Txt typography="t7" color="grey600">
-                        완성 스프
-                    </Txt>
-                    <Txt typography="t4" fontWeight="bold">
-                        {completed}개
-                    </Txt>
-                    <Txt typography="t7" color="blue500">
-                        목록 보기
-                    </Txt>
-                </Pressable>
-                <View style={styles.card}>
-                    <BrandEmojiImage
-                        source={PROFILE_CARBON_FOOTPRINT_ICON}
-                        size={48}
-                        containerStyle={styles.cardIcon}
-                        accessibilityLabel="탄소 절감량"
-                    />
-                    <Txt typography="t7" color="grey600">
-                        탄소 절감량
-                    </Txt>
-                    <Txt typography="t4" fontWeight="bold">
-                        {formatCarbonGrams(state.totalCo2ReductionGrams)}
-                    </Txt>
-                </View>
+                    left={
+                        <BrandEmojiImage
+                            source={BRAND_EMOJI.completedSoups}
+                            size={32}
+                            accessibilityLabel="완성 스프"
+                        />
+                    }
+                    contents={<ListRow.Texts type="1RowTypeA" top="완성 스프" />}
+                    right={
+                        <Txt typography="t6" color="grey600">
+                            {completed}개
+                        </Txt>
+                    }
+                    withArrow
+                />
+                <ListRow
+                    left={
+                        <BrandEmojiImage
+                            source={PROFILE_CARBON_FOOTPRINT_ICON}
+                            size={32}
+                            accessibilityLabel="탄소 절감량"
+                        />
+                    }
+                    contents={<ListRow.Texts type="1RowTypeA" top="탄소 절감량" />}
+                    right={
+                        <Txt typography="t6" color="grey600">
+                            {formatCarbonGrams(state.totalCo2ReductionGrams)}
+                        </Txt>
+                    }
+                />
             </View>
             {state.pendingRealRewards.length > 0 ? (
                 <View style={styles.section}>
@@ -313,6 +305,40 @@ export function ProfileScreen({
                         {ABOUT_ZEROST_LABELS.myPageEntry}
                     </Txt>
                 </View>
+            ) : null}
+            <View style={styles.legalLinkRow}>
+                <Txt
+                    typography="t6"
+                    color="blue500"
+                    style={styles.policyLink}
+                    onPress={() => setPrivacyVisible(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={PRIVACY_POLICY_LABELS.myPageEntry}
+                >
+                    {PRIVACY_POLICY_LABELS.myPageEntry}
+                </Txt>
+                <Txt
+                    typography="t6"
+                    color="blue500"
+                    style={styles.policyLink}
+                    onPress={() => setTermsVisible(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={TERMS_OF_SERVICE_LABELS.myPageEntry}
+                >
+                    {TERMS_OF_SERVICE_LABELS.myPageEntry}
+                </Txt>
+            </View>
+            {onPressRestartOnboarding != null ? (
+                <Txt
+                    typography="t7"
+                    color="blue500"
+                    style={styles.restartOnboarding}
+                    onPress={handleRestartOnboarding}
+                    accessibilityRole="button"
+                    accessibilityLabel="처음부터 다시 시작"
+                >
+                    처음부터 다시 시작
+                </Txt>
             ) : null}
             {DEV_TEST_TOOLS_ENABLED ? (
                 <View style={styles.devBox}>
@@ -351,67 +377,6 @@ export function ProfileScreen({
             ) : null}
             <PrivacyPolicyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
             <TermsOfServiceModal visible={termsVisible} onClose={() => setTermsVisible(false)} />
-            <Modal
-                visible={settingsVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setSettingsVisible(false)}
-            >
-                <Pressable style={styles.overlay} onPress={() => setSettingsVisible(false)}>
-                    <View style={styles.sheet} onStartShouldSetResponder={() => true}>
-                        <Txt typography="t5" fontWeight="bold" style={styles.sheetTitle}>
-                            설정
-                        </Txt>
-                        <ListRow
-                            onPress={handleOpenNicknameEdit}
-                            contents={
-                                <ListRow.Texts
-                                    type="1RowTypeA"
-                                    top="닉네임 수정"
-                                    topProps={{ fontWeight: 'bold' }}
-                                />
-                            }
-                            withArrow
-                        />
-                        <ListRow
-                            onPress={handleOpenPrivacy}
-                            contents={
-                                <ListRow.Texts type="1RowTypeA" top={PRIVACY_POLICY_LABELS.myPageEntry} />
-                            }
-                            withArrow
-                        />
-                        <ListRow
-                            onPress={handleOpenTerms}
-                            contents={
-                                <ListRow.Texts type="1RowTypeA" top={TERMS_OF_SERVICE_LABELS.myPageEntry} />
-                            }
-                            withArrow
-                        />
-                        {onPressRestartOnboarding != null ? (
-                            <ListRow
-                                onPress={handleRestartOnboardingFromSettings}
-                                contents={
-                                    <ListRow.Texts
-                                        type="1RowTypeA"
-                                        top="처음부터 다시 시작"
-                                        topProps={{ color: 'red500' }}
-                                    />
-                                }
-                                withArrow
-                            />
-                        ) : null}
-                        <Button
-                            size="medium"
-                            type="dark"
-                            style="weak"
-                            display="block"
-                            onPress={() => setSettingsVisible(false)}
-                        >
-                            닫기
-                        </Button>
-                    </View>
-                </Pressable>
-            </Modal>
             <Modal
                 visible={nicknameEditVisible}
                 transparent
@@ -458,6 +423,37 @@ export function ProfileScreen({
                         </Button>
                     </View>
                 </Pressable>
+            </Modal>
+            <Modal
+                visible={avatarPickerVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setAvatarPickerVisible(false)}
+            >
+                <View style={styles.overlay}>
+                    <Pressable
+                        style={StyleSheet.absoluteFillObject}
+                        onPress={() => setAvatarPickerVisible(false)}
+                    />
+                    <View style={styles.sheet}>
+                        <Txt typography="t5" fontWeight="bold" style={styles.sheetTitle}>
+                            프로필 이미지 선택
+                        </Txt>
+                        <AvatarCarouselPicker selectedId={avatarPreviewId} onChange={setAvatarPreviewId} />
+                        <Button size="medium" type="primary" display="block" onPress={handleConfirmAvatar}>
+                            선택
+                        </Button>
+                        <Button
+                            size="medium"
+                            type="dark"
+                            style="weak"
+                            display="block"
+                            onPress={() => setAvatarPickerVisible(false)}
+                        >
+                            취소
+                        </Button>
+                    </View>
+                </View>
             </Modal>
             <ProfileListModal
                 visible={detailModal === 'ecoJam'}
@@ -511,77 +507,35 @@ export function ProfileScreen({
 }
 
 const styles = StyleSheet.create({
-    topBar: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        paddingTop: 12,
-        marginBottom: 12,
-    },
-    settingsButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     hero: {
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
         gap: 4,
     },
-    row: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-        width: '100%',
-        marginBottom: 12,
-    },
-    card: {
-        flex: 1,
-        minWidth: '45%',
-        backgroundColor: colors.primaryLight,
-        borderRadius: 16,
-        padding: 16,
-        alignItems: 'center',
-        gap: 6,
-        borderWidth: 1,
+    avatarCircle: {
+        width: 120,
+        height: 120,
+        borderRadius: 24,
+        borderWidth: 2,
         borderColor: colors.border,
     },
-    cardPressed: {
-        opacity: 0.85,
-        borderColor: colors.primary,
-    },
-    cardIcon: {
-        marginRight: 0,
-        marginBottom: 2,
-    },
-    almangLabelRow: {
+    infoCard: {
         width: '100%',
-        position: 'relative',
+        borderRadius: 16,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: 12,
+        overflow: 'hidden',
+    },
+    statLabelRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 20,
+        gap: 6,
     },
-    almangLabelText: {
-        textAlign: 'center',
-        width: '100%',
-    },
-    almangInfoAnchor: {
-        position: 'absolute',
-        left: '50%',
-        marginLeft: 40,
-        top: 1,
-    },
-    ecoJamInfoAnchor: {
-        position: 'absolute',
-        left: '50%',
-        marginLeft: 26,
-        top: 1,
-    },
-    almangTapArea: {
-        alignItems: 'center',
+    statValueCol: {
+        alignItems: 'flex-end',
         gap: 2,
-        width: '100%',
     },
     section: {
         width: '100%',
@@ -613,7 +567,18 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 24,
     },
+    legalLinkRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 16,
+        marginTop: 12,
+    },
     policyLink: {
+        textDecorationLine: 'underline',
+    },
+    restartOnboarding: {
+        marginTop: 24,
+        textAlign: 'center',
         textDecorationLine: 'underline',
     },
     overlay: {

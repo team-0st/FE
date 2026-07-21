@@ -42,6 +42,7 @@ export type AppUserState = {
     deviceId: string | null;
     onboardingCompleted: boolean;
     nickname: string;
+    avatarId: string;
     phoneMasked: string | null;
     /** BE 온보딩용 `010-1234-5678`. 동의 시에만 저장 */
     phoneNumber: string | null;

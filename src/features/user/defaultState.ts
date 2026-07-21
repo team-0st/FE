@@ -1,11 +1,13 @@
 import type { AppUserState } from './types';
 import { ECO_JAM_STARTING_BALANCE } from '../../shared/constants/ecoJamPolicy';
+import { DEFAULT_AVATAR_ID } from '../../shared/constants/avatarOptions';
 
 export const DEFAULT_USER_STATE: AppUserState = {
     userId: null,
     deviceId: null,
     onboardingCompleted: false,
     nickname: '',
+    avatarId: DEFAULT_AVATAR_ID,
     phoneMasked: null,
     phoneNumber: null,
     almangPayoutConsent: 'declined',

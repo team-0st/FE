@@ -1,5 +1,5 @@
 import { BottomSheet, Txt } from '@toss/tds-react-native';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import {
     TERMS_OF_SERVICE_LABELS,
     TERMS_OF_SERVICE_META,
@@ -28,36 +28,35 @@ export function TermsOfServiceModal({ visible, onClose }: TermsOfServiceModalPro
                     {TERMS_OF_SERVICE_LABELS.close}
                 </BottomSheet.CTA>
             }
+            wrapperProps={{
+                style: styles.scroll,
+                contentContainerStyle: styles.scrollContent,
+                showsVerticalScrollIndicator: true,
+            }}
         >
-            <ScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator
-            >
-                <Txt typography="t6" color="grey600" style={styles.line}>
-                    {`시행일: ${TERMS_OF_SERVICE_META.updatedAt}`}
-                </Txt>
-                <Txt typography="t7" color="grey700" style={styles.line}>
-                    {`서비스명: ${TERMS_OF_SERVICE_META.serviceName}`}
-                </Txt>
-                {TERMS_OF_SERVICE_SECTIONS.map((section) => (
-                    <View key={section.heading} style={styles.section}>
-                        <Txt typography="t5" fontWeight="bold">
-                            {section.heading}
+            <Txt typography="t6" color="grey600" style={styles.line}>
+                {`시행일: ${TERMS_OF_SERVICE_META.updatedAt}`}
+            </Txt>
+            <Txt typography="t7" color="grey700" style={styles.line}>
+                {`서비스명: ${TERMS_OF_SERVICE_META.serviceName}`}
+            </Txt>
+            {TERMS_OF_SERVICE_SECTIONS.map((section) => (
+                <View key={section.heading} style={styles.section}>
+                    <Txt typography="t5" fontWeight="bold">
+                        {section.heading}
+                    </Txt>
+                    {section.paragraphs.map((paragraph) => (
+                        <Txt
+                            key={`${section.heading}:${paragraph.slice(0, 32)}`}
+                            typography="t6"
+                            color="grey700"
+                            style={styles.line}
+                        >
+                            {paragraph}
                         </Txt>
-                        {section.paragraphs.map((paragraph) => (
-                            <Txt
-                                key={`${section.heading}:${paragraph.slice(0, 32)}`}
-                                typography="t6"
-                                color="grey700"
-                                style={styles.line}
-                            >
-                                {paragraph}
-                            </Txt>
-                        ))}
-                    </View>
-                ))}
-            </ScrollView>
+                    ))}
+                </View>
+            ))}
         </BottomSheet.Root>
     );
 }
