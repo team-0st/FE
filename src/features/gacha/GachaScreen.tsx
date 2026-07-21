@@ -1,11 +1,12 @@
 import { getIngredientById } from '@api/mock/ingredients';
 import { Button, Txt } from '@toss/tds-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useReducer, useRef } from 'react';
 import { Image, Platform, StyleSheet, Vibration, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import {
     BRAND_ASSET,
     BRAND_EMOJI,
+    FEATURE_HEADER_SLOT_HEIGHT,
     GACHA_FAIL_ASSETS,
 } from '../../shared/constants/brandAssets';
 import {
@@ -14,7 +15,9 @@ import {
 } from '../../shared/constants/probabilityInfo';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { buildGachaShareMessage } from '../../shared/feedback/shareResult';
+import { CenteredFeatureStage } from '../../shared/ui/CenteredFeatureStage';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
+import { FixedHeightHeaderSlot } from '../../shared/ui/Screen';
 import { ShareResultButton } from '../../shared/ui/ShareResultButton';
 import { toBrandImageSource } from '../../shared/ui/toBrandImageSource';
 import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
@@ -24,13 +27,18 @@ import {
     GACHA_PULL_COST_ECO_JAM,
     GACHA_TEST_ECO_JAM_GRANT,
 } from './gachaConfig';
-import { formatGachaRewardMessage } from './gachaLogic';
+import {
+    createInitialGachaTabState,
+    formatGachaRewardMessage,
+    isGachaPullOutcomeCurrent,
+    reduceGachaTabState,
+} from './gachaLogic';
 import type { GachaReward } from './gachaTypes';
 
-type GachaPhase = 'idle' | 'pulling' | 'result';
-
-/** 하단 CTA·헤더를 침범하지 않는 선에서 최대한 큰 고정 스테이지 */
-const STAGE_SIZE = 220;
+type GachaScreenProps = {
+    /** 이 화면이 현재 보이는 탭인지 여부. true→false로 바뀌는 즉시 idle 화면으로 초기화한다. */
+    active: boolean;
+};
 
 /** 공유 버튼 자리 — 유무와 관계없이 확보해 뽑기 버튼 위치 고정 */
 const SHARE_SLOT_HEIGHT = 48;
@@ -134,16 +142,12 @@ type StageArtProps = {
 };
 
 /**
- * 스테이지 높이는 STAGE_SIZE로 고정, 가로는 원본 비율 유지.
+ * CenteredFeatureStage의 stage viewport(고정 높이, overflow hidden)를 그대로 채우고,
+ * 가로는 원본 비율을 유지한다.
  * (정사각 contain이면 여백 많은 에셋이 더 작게 보여 보상마다 높이가 들쭉날쭉해짐)
  */
 function StageArt({ source, phaseKey, accessibilityLabel }: StageArtProps) {
     const uriSource = toBrandImageSource(source);
-    const [aspectRatio, setAspectRatio] = useState(1);
-
-    useEffect(() => {
-        setAspectRatio(1);
-    }, [phaseKey]);
 
     if (uriSource == null) {
         return <View style={styles.stageSlot} />;
@@ -152,31 +156,51 @@ function StageArt({ source, phaseKey, accessibilityLabel }: StageArtProps) {
         <View style={styles.stageSlot}>
             <Image
                 key={phaseKey}
+                testID="gacha-stage-image"
                 source={uriSource}
-                style={[styles.stageImage, { aspectRatio }]}
+                style={styles.stageImage}
                 resizeMode="contain"
-                onLoad={(event) => {
-                    const { width, height } = event.nativeEvent.source;
-                    if (width > 0 && height > 0) {
-                        setAspectRatio(width / height);
-                    }
-                }}
                 accessibilityLabel={accessibilityLabel}
             />
         </View>
     );
 }
 
-export function GachaScreen() {
+export function GachaScreen({ active }: GachaScreenProps) {
     const { state, pullGacha, grantTestEcoJam } = useUser();
     const toast = useAppToast();
-    const [lastReward, setLastReward] = useState<GachaReward | null>(null);
-    const [phase, setPhase] = useState<GachaPhase>('idle');
-    const [failArt, setFailArt] = useState<ImageSourcePropType>(GACHA_FAIL_ASSETS[0]);
+
+    const [tabState, dispatch] = useReducer(
+        reduceGachaTabState,
+        undefined,
+        () => createInitialGachaTabState(active, GACHA_FAIL_ASSETS[0]),
+    );
+    // active prop 변화를 페인트 전에 즉시 반영 — 탭 이탈 순간 다음 페인트부터 idle 화면을 보여준다.
+    const renderState =
+        tabState.active === active
+            ? tabState
+            : reduceGachaTabState(tabState, { type: 'TAB_ACTIVE_CHANGED', active });
+    const { phase, lastReward, failArt, isPullPending } = renderState;
+
+    const generationRef = useRef(renderState.generation);
+    useLayoutEffect(() => {
+        generationRef.current = renderState.generation;
+    }, [renderState.generation]);
+
+    useLayoutEffect(() => {
+        if (tabState.active !== active) {
+            dispatch({ type: 'TAB_ACTIVE_CHANGED', active });
+        }
+    }, [active, tabState.active]);
+
     const isBusy = phase === 'pulling';
-    const canPull = state.ecoJam >= GACHA_PULL_COST_ECO_JAM && !isBusy;
+    const canPull = state.ecoJam >= GACHA_PULL_COST_ECO_JAM && !isPullPending;
     const pullLabel = `에코잼 ${GACHA_PULL_COST_ECO_JAM}개로 뽑기`;
     const canShareLast = lastReward != null && lastReward.type !== 'FAIL' && phase === 'result';
+    const shareMessage =
+        canShareLast && lastReward != null
+            ? buildGachaShareMessage(formatGachaRewardMessage(lastReward, state))
+            : '';
 
     const heroSource = useMemo(() => {
         if (phase === 'pulling') {
@@ -210,13 +234,21 @@ export function GachaScreen() {
             toast.showError(`에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`);
             return;
         }
-        setPhase('pulling');
+        const startGeneration = generationRef.current;
+        dispatch({ type: 'PULL_STARTED' });
         vibratePulling();
         try {
             await sleep(PHASE_MS.pulling);
             const result = await pullGacha();
+
+            // 이탈 중(다른 generation) 시작된 pull은 서버 반영은 그대로 두고 화면·토스트만 막는다.
+            if (!isGachaPullOutcomeCurrent(startGeneration, generationRef.current)) {
+                dispatch({ type: 'PULL_ABANDONED_SETTLED' });
+                return;
+            }
+
             if (!result.ok) {
-                setPhase('idle');
+                dispatch({ type: 'PULL_SETTLED', outcome: 'idle' });
                 if (result.reason === 'network_error') {
                     toast.showError('가챠를 진행하지 못했어요. 잠시 후 다시 시도해 주세요.');
                 } else {
@@ -224,72 +256,89 @@ export function GachaScreen() {
                 }
                 return;
             }
-            setLastReward(result.reward);
 
             // 빵(펑) 이펙트는 격자 이슈로 스킵 — 뽑기 연출 후 바로 결과
             if (result.reward.type === 'FAIL') {
-                setFailArt(pickFailAsset());
-                setPhase('result');
+                dispatch({
+                    type: 'PULL_SETTLED',
+                    outcome: 'result',
+                    reward: result.reward,
+                    failArt: pickFailAsset(),
+                });
                 toast.show(formatGachaRewardMessage(result.reward, state));
                 return;
             }
 
-            setPhase('result');
+            dispatch({ type: 'PULL_SETTLED', outcome: 'result', reward: result.reward });
             toast.showSuccess(formatGachaRewardMessage(result.reward, state));
         } catch {
-            setPhase('idle');
+            if (!isGachaPullOutcomeCurrent(startGeneration, generationRef.current)) {
+                dispatch({ type: 'PULL_ABANDONED_SETTLED' });
+                return;
+            }
+            dispatch({ type: 'PULL_SETTLED', outcome: 'idle' });
             toast.showError('가챠를 진행하지 못했어요. 잠시 후 다시 시도해 주세요.');
         }
     }, [canPull, pullGacha, state, toast]);
 
     return (
-        <View style={styles.root}>
-            <View style={styles.header}>
-                <View style={styles.titleRow}>
-                    <View style={styles.chips}>
-                        <BalanceChip
-                            source={BRAND_EMOJI.ecoJam}
-                            value={`${state.ecoJam}`}
-                            accessibilityLabel={`보유 에코잼 ${state.ecoJam}개`}
-                        />
-                        <BalanceChip
-                            source={BRAND_EMOJI.almangPoint}
-                            value={`${state.totalPoints}P`}
-                            accessibilityLabel={`알맹 포인트 ${state.totalPoints}P`}
-                        />
+        <View style={styles.root} testID="gacha-root">
+            <View style={styles.body} testID="gacha-body">
+                <FixedHeightHeaderSlot
+                    height={FEATURE_HEADER_SLOT_HEIGHT}
+                    testID="gacha-header-slot"
+                >
+                    <View style={styles.headerContent}>
+                        <View style={styles.titleRow}>
+                            <View style={styles.chips}>
+                                <BalanceChip
+                                    source={BRAND_EMOJI.ecoJam}
+                                    value={`${state.ecoJam}`}
+                                    accessibilityLabel={`보유 에코잼 ${state.ecoJam}개`}
+                                />
+                                <BalanceChip
+                                    source={BRAND_EMOJI.almangPoint}
+                                    value={`${state.totalPoints}P`}
+                                    accessibilityLabel={`알맹 포인트 ${state.totalPoints}P`}
+                                />
+                            </View>
+                        </View>
+                        <View style={styles.probRow}>
+                            <ProbabilityInfoRow
+                                label="가챠·보상"
+                                title={GACHA_PROBABILITY_TITLE}
+                                lines={GACHA_PROBABILITY_LINES}
+                            />
+                        </View>
                     </View>
-                </View>
-                <View style={styles.probRow}>
-                    <ProbabilityInfoRow
-                        label="가챠·보상"
-                        title={GACHA_PROBABILITY_TITLE}
-                        lines={GACHA_PROBABILITY_LINES}
-                    />
-                </View>
-            </View>
-
-            <View style={styles.body}>
-                <View style={styles.pot}>
-                    <StageArt
-                        source={heroSource}
-                        phaseKey={stageKey}
-                        accessibilityLabel={heroLabel}
-                    />
-                    <Txt typography="t6" color="grey600" style={styles.potHint}>
-                        {potHint}
-                    </Txt>
-                </View>
+                </FixedHeightHeaderSlot>
+                <CenteredFeatureStage
+                    testID="gacha-centered-stage"
+                    stageTestID="gacha-stage-viewport"
+                    belowTestID="gacha-below"
+                    stage={
+                        <StageArt source={heroSource} phaseKey={stageKey} accessibilityLabel={heroLabel} />
+                    }
+                    below={
+                        <Txt typography="t6" color="grey600" style={styles.potHint}>
+                            {potHint}
+                        </Txt>
+                    }
+                />
             </View>
 
             <View style={styles.footer}>
-                <View style={styles.shareSlot}>
-                    {canShareLast ? (
-                        <ShareResultButton
-                            message={buildGachaShareMessage(
-                                formatGachaRewardMessage(lastReward!, state),
-                            )}
-                        />
-                    ) : null}
+                <View
+                    style={[
+                        styles.shareSlot,
+                        canShareLast ? styles.shareSlotVisible : styles.shareSlotHidden,
+                    ]}
+                    pointerEvents={canShareLast ? 'auto' : 'none'}
+                    accessibilityElementsHidden={!canShareLast}
+                    importantForAccessibility={canShareLast ? 'auto' : 'no-hide-descendants'}
+                    testID="gacha-share-slot"
+                >
+                    <ShareResultButton message={shareMessage} />
                 </View>
                 <Button
                     size="large"
@@ -327,13 +376,17 @@ const styles = StyleSheet.create({
     root: {
         flex: 1,
         backgroundColor: colors.background,
-        paddingHorizontal: 20,
     },
-    header: {
-        paddingTop: 0,
+    body: {
+        flex: 1,
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 20,
+    },
+    headerContent: {
+        width: '100%',
     },
     titleRow: {
         flexDirection: 'row',
@@ -370,30 +423,15 @@ const styles = StyleSheet.create({
         marginTop: 8,
         marginBottom: 4,
     },
-    body: {
-        flex: 1,
-        width: '100%',
-        maxWidth: 400,
-        alignSelf: 'center',
-        justifyContent: 'center',
-    },
-    pot: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 12,
-        gap: 12,
-        minHeight: STAGE_SIZE + 56,
-    },
     stageSlot: {
         width: '100%',
-        height: STAGE_SIZE,
+        height: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden',
     },
     stageImage: {
-        height: STAGE_SIZE,
-        maxWidth: '100%',
+        width: '100%',
+        height: '100%',
     },
     potHint: {
         textAlign: 'center',
@@ -402,13 +440,22 @@ const styles = StyleSheet.create({
     },
     footer: {
         width: '100%',
-        maxWidth: 400,
+        maxWidth: 440,
         alignSelf: 'center',
         gap: 10,
+        paddingHorizontal: 20,
         paddingBottom: 8,
+        paddingTop: 8,
+        backgroundColor: colors.background,
     },
     shareSlot: {
         minHeight: SHARE_SLOT_HEIGHT,
         justifyContent: 'center',
+    },
+    shareSlotVisible: {
+        opacity: 1,
+    },
+    shareSlotHidden: {
+        opacity: 0,
     },
 });

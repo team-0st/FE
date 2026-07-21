@@ -1046,7 +1046,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                     };
                     next = appendEcoJamLedger(
                         next,
-                        '희귀 레시피 해금',
+                        '히든 레시피 해금',
                         -ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST,
                     );
                     next = unlockHiddenRecipe(next, slug);
@@ -1071,7 +1071,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                 const spent = spendEcoJam(
                     current,
                     ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST,
-                    '희귀 레시피 해금',
+                    '히든 레시피 해금',
                 );
                 if (spent == null) {
                     return { ok: false, reason: 'insufficient_eco_jam' };

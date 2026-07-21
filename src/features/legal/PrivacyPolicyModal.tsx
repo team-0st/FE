@@ -19,10 +19,11 @@ type PrivacyPolicyModalProps = {
     visible: boolean;
     onClose: () => void;
     /**
-     * consent: 필수/선택 각각 동의 가능 (온보딩)
+     * consent: consentScope에 해당하는 동의만 가능 (온보딩)
      * read: 열람만 (마이 등)
      */
     mode?: 'read' | 'consent';
+    consentScope?: 'required' | 'optional';
     requiredAgreed?: boolean;
     optionalAgreed?: boolean;
     onAgreeRequired?: () => void;
@@ -35,6 +36,7 @@ export function PrivacyPolicyModal({
     visible,
     onClose,
     mode = 'read',
+    consentScope = 'required',
     requiredAgreed = false,
     optionalAgreed = false,
     onAgreeRequired,
@@ -79,10 +81,28 @@ export function PrivacyPolicyModal({
         setViewportHeight(event.nativeEvent.layout.height);
     };
 
+    const activeScopeAgreed =
+        consentScope === 'required' ? requiredAgreed : optionalAgreed;
     const closeLabel =
-        isConsent && requiredAgreed
+        isConsent && activeScopeAgreed
             ? PRIVACY_POLICY_LABELS.confirmRead
             : PRIVACY_POLICY_LABELS.close;
+    const consentActions = !isConsent
+        ? undefined
+        : consentScope === 'required'
+          ? {
+                consentScope,
+                agreed: requiredAgreed,
+                canAgree: readToEnd,
+                onAgree: () => onAgreeRequired?.(),
+            }
+          : {
+                consentScope,
+                agreed: optionalAgreed,
+                canAgree: readToEnd,
+                onAgree: () => onAgreeOptional?.(),
+                onDecline: () => onDeclineOptional?.(),
+            };
 
     if (!visible) {
         return null;
@@ -101,6 +121,7 @@ export function PrivacyPolicyModal({
             }
         >
             <ScrollView
+                testID="privacy-policy-modal-scroll"
                 style={styles.scroll}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator
@@ -115,25 +136,10 @@ export function PrivacyPolicyModal({
                         : undefined
                 }
             >
-                <PrivacyPolicyContent
-                    consentActions={
-                        isConsent
-                            ? {
-                                  requiredAgreed,
-                                  optionalAgreed,
-                                  canAgreeRequired: readToEnd,
-                                  onAgreeRequired: () => onAgreeRequired?.(),
-                                  onAgreeOptional: () => onAgreeOptional?.(),
-                                  onDeclineOptional: () => {
-                                      onDeclineOptional?.();
-                                  },
-                              }
-                            : undefined
-                    }
-                />
+                <PrivacyPolicyContent consentActions={consentActions} />
                 {isConsent ? (
                     <Txt typography="t7" color="grey600" style={styles.hint}>
-                        {requiredAgreed ? '동의 화면으로 돌아가려면 아래 버튼을 눌러 주세요.' : '닫으려면 아래 버튼을 눌러 주세요.'}
+                        {activeScopeAgreed ? '동의 화면으로 돌아가려면 아래 버튼을 눌러 주세요.' : '닫으려면 아래 버튼을 눌러 주세요.'}
                     </Txt>
                 ) : null}
             </ScrollView>

@@ -43,6 +43,48 @@ const HIDDEN_LOCKED_MESSAGE =
     '히든 레시피는 아직 밝혀지지 않았어요. 조합을 맞추거나 에코잼으로 랜덤 해금할 수 있어요.';
 const LEGENDARY_LOCKED_MESSAGE = '전설 레시피는 아직 밝혀지지 않았어요. 조합을 맞추면 공개돼요.';
 const SCROLL_BOTTOM_THRESHOLD = 24;
+export const BODY_CONTENT_PADDING_BOTTOM = 28;
+
+export const HIDDEN_RECIPE_ALL_UNLOCKED_TOAST = '히든 레시피를 모두 열었어요.';
+
+export function canRecipeListScrollMore({
+    contentHeight,
+    viewportHeight,
+    scrollY,
+    contentPaddingBottom,
+    threshold,
+}: {
+    contentHeight: number;
+    viewportHeight: number;
+    scrollY: number;
+    contentPaddingBottom: number;
+    threshold: number;
+}): boolean {
+    const recipeContentHeight = Math.max(0, contentHeight - contentPaddingBottom);
+    return (
+        recipeContentHeight > viewportHeight + threshold &&
+        scrollY + viewportHeight < recipeContentHeight - threshold
+    );
+}
+
+/** 히든 레시피 랜덤 해금 버튼 문구 — 완료/해금 중/기본 상태별 순수 계산 */
+export function hiddenRecipeUnlockButtonLabel({
+    hiddenLockedCount,
+    unlockLoading,
+    unlockCost,
+}: {
+    hiddenLockedCount: number;
+    unlockLoading: boolean;
+    unlockCost: number;
+}): string {
+    if (hiddenLockedCount === 0) {
+        return '히든 레시피 모두 해금됨';
+    }
+    if (unlockLoading) {
+        return '해금 중…';
+    }
+    return `히든 레시피 랜덤 해금 · 에코잼 ${unlockCost}`;
+}
 
 /** 스프는 재료보다 크게 — 기준의 1.5배 (작은 폰 ~84, 일반 ~102, 넓은 기기 ~120) */
 function recipeSoupThumbSize(windowWidth: number): number {
@@ -204,9 +246,13 @@ export function RecipesScreen() {
     const showWeeklyProb = tab === 'today' || tab === 'beginner';
     const showSecretProb = tab === 'hidden' || tab === 'legendary';
 
-    const canScrollMore =
-        contentHeight > viewportHeight + SCROLL_BOTTOM_THRESHOLD &&
-        scrollY + viewportHeight < contentHeight - SCROLL_BOTTOM_THRESHOLD;
+    const canScrollMore = canRecipeListScrollMore({
+        contentHeight,
+        viewportHeight,
+        scrollY,
+        contentPaddingBottom: BODY_CONTENT_PADDING_BOTTOM,
+        threshold: SCROLL_BOTTOM_THRESHOLD,
+    });
 
     const onBodyLayout = useCallback((event: LayoutChangeEvent) => {
         setViewportHeight(event.nativeEvent.layout.height);
@@ -298,12 +344,13 @@ export function RecipesScreen() {
                         </Txt>
                     </View>
                 )}
-                <View style={styles.tabs}>
+                <View style={styles.tabs} accessibilityRole="tablist">
                     {RECIPE_TABS.map((item) => {
                         const selected = tab === item.id;
                         return (
                             <Pressable
                                 key={item.id}
+                                testID={`recipe-tab-${item.id}`}
                                 onPress={() => onPressTab(item.id)}
                                 style={[styles.tab, selected ? styles.tabSelected : undefined]}
                                 accessibilityRole="tab"
@@ -342,6 +389,7 @@ export function RecipesScreen() {
             <View style={styles.bodyWrap} onLayout={onBodyLayout}>
                 <ScrollView
                     style={styles.body}
+                    contentContainerStyle={styles.bodyContent}
                     showsVerticalScrollIndicator={false}
                     onScroll={onScroll}
                     scrollEventThrottle={16}
@@ -362,7 +410,7 @@ export function RecipesScreen() {
                         }
                     />
                     {tab === 'hidden' ? (
-                        <View style={styles.unlockWrap}>
+                        <View style={styles.unlockWrap} testID="recipe-hidden-unlock-wrap">
                             <Button
                                 size="large"
                                 type="primary"
@@ -381,7 +429,7 @@ export function RecipesScreen() {
                                                     return;
                                                 }
                                                 if (result.reason === 'all_unlocked') {
-                                                    show('희귀 레시피를 모두 열었어요.');
+                                                    show(HIDDEN_RECIPE_ALL_UNLOCKED_TOAST);
                                                     return;
                                                 }
                                                 showError('지금은 해금할 수 없어요.');
@@ -396,11 +444,11 @@ export function RecipesScreen() {
                                     })();
                                 }}
                             >
-                                {hiddenLockedCount === 0
-                                    ? '희귀 레시피 모두 해금됨'
-                                    : unlockLoading
-                                      ? '해금 중…'
-                                      : `희귀 레시피 랜덤 해금 · 에코잼 ${ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST}`}
+                                {hiddenRecipeUnlockButtonLabel({
+                                    hiddenLockedCount,
+                                    unlockLoading,
+                                    unlockCost: ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST,
+                                })}
                             </Button>
                         </View>
                     ) : null}
@@ -514,6 +562,9 @@ const styles = StyleSheet.create({
         maxWidth: 400,
         alignSelf: 'center',
     },
+    bodyContent: {
+        paddingBottom: BODY_CONTENT_PADDING_BOTTOM,
+    },
     bodyWrap: {
         flex: 1,
         width: '100%',
@@ -542,7 +593,7 @@ const styles = StyleSheet.create({
     },
     unlockWrap: {
         marginTop: 12,
-        marginBottom: 4,
+        marginBottom: 16,
     },
     recipeContents: {
         flex: 1,

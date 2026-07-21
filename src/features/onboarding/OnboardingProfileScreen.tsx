@@ -60,8 +60,12 @@ export function OnboardingProfileScreen({
     const [termsModalVisible, setTermsModalVisible] = useState(false);
     const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
     const [policyButtonPulse, setPolicyButtonPulse] = useState(false);
+    /** 선택(전화) 단계에서 별도로 처리방침을 끝까지 확인했는지 — 필수 단계의 확인을 재사용하지 않는다 */
+    const [optionalPolicyAcknowledged, setOptionalPolicyAcknowledged] = useState(false);
+    const [optionalPolicyButtonPulse, setOptionalPolicyButtonPulse] = useState(false);
     const [privacyConsentAt, setPrivacyConsentAt] = useState<string | null>(null);
     const policyButtonOpacity = useAttentionPulse(policyButtonPulse);
+    const optionalPolicyButtonOpacity = useAttentionPulse(optionalPolicyButtonPulse);
 
     useEffect(() => {
         if (policyAcknowledged) {
@@ -69,9 +73,20 @@ export function OnboardingProfileScreen({
         }
     }, [policyAcknowledged]);
 
+    useEffect(() => {
+        if (optionalPolicyAcknowledged) {
+            setOptionalPolicyButtonPulse(false);
+        }
+    }, [optionalPolicyAcknowledged]);
+
     const nudgeReadPolicy = () => {
         setPrivacyError(PRIVACY_POLICY_LABELS.mustReadBeforeConsent);
         setPolicyButtonPulse(true);
+    };
+
+    const nudgeReadOptionalPolicy = () => {
+        setPhoneError(PRIVACY_POLICY_LABELS.mustReadBeforeConsent);
+        setOptionalPolicyButtonPulse(true);
     };
 
     const submitNickname = () => {
@@ -119,9 +134,8 @@ export function OnboardingProfileScreen({
             return;
         }
         if (!phoneConsentChecked) {
-            setPhoneError(
-                '매장 포인트 연동에 동의해 주세요. 원하지 않으면 「나중에 할게요」를 눌러 주세요.',
-            );
+            setPhoneError('전화번호를 등록하려면 선택 항목에 동의해 주세요.');
+            setOptionalPolicyButtonPulse(true);
             return;
         }
         const phoneResult = validatePhoneBody(phoneBody);
@@ -170,8 +184,10 @@ export function OnboardingProfileScreen({
     };
 
     const agreeOptionalFromPolicy = () => {
+        setOptionalPolicyAcknowledged(true);
         setPhoneConsentChecked(true);
         setPhoneError(null);
+        setOptionalPolicyButtonPulse(false);
     };
 
     const declineOptionalFromPolicy = () => {
@@ -196,22 +212,35 @@ export function OnboardingProfileScreen({
     };
 
     const handlePhoneConsentChange = (checked: boolean) => {
+        if (checked && !optionalPolicyAcknowledged) {
+            nudgeReadOptionalPolicy();
+            return;
+        }
         setPhoneConsentChecked(checked);
         setPhoneError(null);
     };
 
-    const policyModal = (
-        <PrivacyPolicyModal
-            visible={policyModalVisible}
-            onClose={() => setPolicyModalVisible(false)}
-            mode="consent"
-            requiredAgreed={policyChecked && serviceChecked && policyAcknowledged}
-            optionalAgreed={phoneConsentChecked}
-            onAgreeRequired={agreeRequiredFromPolicy}
-            onAgreeOptional={agreeOptionalFromPolicy}
-            onDeclineOptional={declineOptionalFromPolicy}
-        />
-    );
+    const policyModal =
+        step === 'privacy' ? (
+            <PrivacyPolicyModal
+                visible={policyModalVisible}
+                onClose={() => setPolicyModalVisible(false)}
+                mode="consent"
+                consentScope="required"
+                requiredAgreed={policyChecked && serviceChecked && policyAcknowledged}
+                onAgreeRequired={agreeRequiredFromPolicy}
+            />
+        ) : (
+            <PrivacyPolicyModal
+                visible={policyModalVisible}
+                onClose={() => setPolicyModalVisible(false)}
+                mode="consent"
+                consentScope="optional"
+                optionalAgreed={phoneConsentChecked}
+                onAgreeOptional={agreeOptionalFromPolicy}
+                onDeclineOptional={declineOptionalFromPolicy}
+            />
+        );
 
     if (step === 'nickname') {
         return (
@@ -319,6 +348,7 @@ export function OnboardingProfileScreen({
                     <View style={styles.checklist}>
                         <Checkbox.Line
                             checked={policyChecked}
+                            accessibilityLabel={ONBOARDING_PRIVACY_CHECKBOX.policy}
                             onCheckedChange={(checked) => handleRequiredConsentChange('policy', checked)}
                         >
                             <Txt typography="t6" color="grey800" style={styles.consentLabel}>
@@ -328,6 +358,7 @@ export function OnboardingProfileScreen({
                         <View style={styles.checklistItem}>
                             <Checkbox.Line
                                 checked={serviceChecked}
+                                accessibilityLabel={ONBOARDING_PRIVACY_CHECKBOX.service}
                                 onCheckedChange={(checked) =>
                                     handleRequiredConsentChange('service', checked)
                                 }
@@ -392,16 +423,26 @@ export function OnboardingProfileScreen({
                     <Txt typography="t7" color="grey600" style={styles.noticeLine}>
                         {`보유  ${PHONE_CONSENT_SUMMARY.retention}`}
                     </Txt>
-                    <Pressable
-                        onPress={() => setPolicyModalVisible(true)}
-                        accessibilityRole="link"
-                        accessibilityLabel={PRIVACY_POLICY_LABELS.viewFull}
-                        hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                    >
-                        <Txt typography="t7" color="blue500" style={styles.policyLink}>
-                            {PRIVACY_POLICY_LABELS.viewFullLink}
-                        </Txt>
-                    </Pressable>
+                    <Animated.View style={{ opacity: optionalPolicyButtonOpacity }}>
+                        <Pressable
+                            onPress={() => {
+                                setOptionalPolicyButtonPulse(false);
+                                setPolicyModalVisible(true);
+                            }}
+                            accessibilityRole="link"
+                            accessibilityLabel={PRIVACY_POLICY_LABELS.viewFull}
+                            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                        >
+                            <Txt
+                                typography="t7"
+                                fontWeight="bold"
+                                color={optionalPolicyButtonPulse ? 'red500' : 'blue500'}
+                                style={styles.policyLink}
+                            >
+                                {PRIVACY_POLICY_LABELS.viewFullLink}
+                            </Txt>
+                        </Pressable>
+                    </Animated.View>
                     <Txt typography="t7" color="grey500" style={styles.softHint}>
                         {ALMANG_COMPLIANCE.noCashInAppOneLine}
                     </Txt>
@@ -413,6 +454,7 @@ export function OnboardingProfileScreen({
                     <View style={styles.checklistItem}>
                         <Checkbox.Line
                             checked={phoneConsentChecked}
+                            accessibilityLabel={ONBOARDING_PRIVACY_CHECKBOX.phone}
                             onCheckedChange={handlePhoneConsentChange}
                         >
                             <Txt typography="t6" color="grey800" style={styles.consentLabel}>

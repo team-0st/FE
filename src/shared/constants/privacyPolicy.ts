@@ -195,7 +195,7 @@ export const PRIVACY_POLICY_LABELS = {
     viewFull: '개인정보 처리방침 보기',
     viewFullLink: '개인정보 처리방침 보기 →',
     mustReadHint: '처리방침을 확인한 뒤 동의할 수 있어요.',
-    mustReadBeforeConsent: '처리방침을 먼저 확인해 주세요.',
+    mustReadBeforeConsent: '개인정보 처리방침을 끝까지 확인해 주세요.',
     readToEndHint: '아래까지 모두 읽으면 동의할 수 있어요.',
     policyConfirmed: '처리방침을 확인했어요.',
     confirmRead: '확인했어요',

@@ -95,6 +95,7 @@ export function IngredientsScreen({
     const [ownedMeasuredRowHeights, setOwnedMeasuredRowHeights] = useState<
         Record<string, number>
     >({});
+    const [ownedCanScroll, setOwnedCanScroll] = useState(false);
 
     const filledCount = getFilledIngredientIds(slots).length;
     const canBrew = isValidBrewFillCount(filledCount) && !brewing && !animating;
@@ -130,6 +131,10 @@ export function IngredientsScreen({
             }),
         [ownedIngredients, ownedMeasuredRowHeights],
     );
+
+    const handleOwnedScrollabilityChange = useCallback((canScroll: boolean) => {
+        setOwnedCanScroll(canScroll);
+    }, []);
 
     const handleScrollLayout = useCallback((event: LayoutChangeEvent) => {
         setScrollViewportHeight(event.nativeEvent.layout.height);
@@ -392,7 +397,7 @@ export function IngredientsScreen({
                                 />
                             }
                             titleAction={
-                                ownedIngredients.length > ownedVisibleRows ? (
+                                ownedCanScroll ? (
                                     <Txt
                                         typography="t7"
                                         color="blue500"
@@ -407,6 +412,7 @@ export function IngredientsScreen({
                             itemCount={ownedIngredients.length}
                             rowHeight={ownedRowHeight}
                             visibleRows={ownedVisibleRows}
+                            onScrollabilityChange={handleOwnedScrollabilityChange}
                         >
                             {ownedIngredients.map((item) => {
                                 const owned = state.ingredientInventory[item.id] ?? 0;

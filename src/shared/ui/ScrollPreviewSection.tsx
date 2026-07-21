@@ -1,5 +1,7 @@
 import { Txt } from '@toss/tds-react-native';
 import type { ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { LayoutChangeEvent } from 'react-native';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
 
@@ -8,6 +10,7 @@ export const PREVIEW_VISIBLE_ROWS = 3;
 export const ADAPTIVE_VISIBLE_ROWS_MIN = 3;
 export const ADAPTIVE_VISIBLE_ROWS_MAX = 5;
 export const ROW_HEIGHT_CHANGE_TOLERANCE = 1;
+export const SCROLL_OVERFLOW_TOLERANCE = 1;
 
 export const SCROLL_PREVIEW_HINT = '아래로 스크롤하면 더 볼 수 있어요.';
 
@@ -97,6 +100,38 @@ export function computeAdaptiveVisibleRows({
     return Math.min(max, Math.max(min, rowsThatFit));
 }
 
+type HasScrollOverflowParams = {
+    /** ScrollView onContentSizeChange로 측정한 실제 콘텐츠 높이. 아직 측정 전이면 null */
+    contentHeight: number | null;
+    /** ScrollView onLayout으로 측정한 실제 뷰포트 높이. 아직 측정 전이면 null */
+    viewportHeight: number | null;
+    itemCount: number;
+    tolerance?: number;
+};
+
+/**
+ * itemCount > visibleRows 추정이 아니라 ScrollView의 실측 content/viewport 높이를 비교해
+ * 내부 스크롤이 실제로 필요한지 판단한다 (순수 함수).
+ * 측정 전(null)이거나 항목이 0개면 안내 문구·인디케이터 초기 깜빡임을 막기 위해 false를 반환한다.
+ */
+export function hasScrollOverflow({
+    contentHeight,
+    viewportHeight,
+    itemCount,
+    tolerance = SCROLL_OVERFLOW_TOLERANCE,
+}: HasScrollOverflowParams): boolean {
+    if (itemCount <= 0) {
+        return false;
+    }
+    if (contentHeight == null || viewportHeight == null) {
+        return false;
+    }
+    if (!Number.isFinite(contentHeight) || !Number.isFinite(viewportHeight)) {
+        return false;
+    }
+    return contentHeight - viewportHeight > tolerance;
+}
+
 type ScrollPreviewSectionProps = {
     title?: string;
     titleExtra?: ReactNode;
@@ -110,7 +145,17 @@ type ScrollPreviewSectionProps = {
     rowHeight?: number;
     /** 미리보기 노출 행 수. 기본 PREVIEW_VISIBLE_ROWS(3) */
     visibleRows?: number;
+    /** 실제 overflow(스크롤 필요) 여부가 바뀔 때마다 호출된다. 예: 보유 재료 "모두 보기" 노출 제어 */
+    onScrollabilityChange?: (canScroll: boolean) => void;
     children: ReactNode;
+};
+
+type ScrollMeasurements = {
+    itemCount: number;
+    previewMaxHeight: number;
+    generation: number;
+    contentHeight: number | null;
+    viewportHeight: number | null;
 };
 
 export function ScrollPreviewSection({
@@ -123,10 +168,64 @@ export function ScrollPreviewSection({
     showScrollHint = true,
     rowHeight = PREVIEW_ROW_HEIGHT,
     visibleRows = PREVIEW_VISIBLE_ROWS,
+    onScrollabilityChange,
     children,
 }: ScrollPreviewSectionProps) {
-    const canScroll = itemCount > visibleRows;
     const previewMaxHeight = rowHeight * visibleRows;
+    const [storedMeasurements, setMeasurements] = useState<ScrollMeasurements>(() => ({
+        itemCount,
+        previewMaxHeight,
+        generation: 0,
+        contentHeight: null,
+        viewportHeight: null,
+    }));
+    let measurements = storedMeasurements;
+    if (
+        measurements.itemCount !== itemCount ||
+        measurements.previewMaxHeight !== previewMaxHeight
+    ) {
+        measurements = {
+            itemCount,
+            previewMaxHeight,
+            generation: measurements.generation + 1,
+            contentHeight: null,
+            viewportHeight: null,
+        };
+        setMeasurements(measurements);
+    }
+    const measurementGeneration = measurements.generation;
+    const canScroll = hasScrollOverflow({
+        contentHeight: measurements.contentHeight,
+        viewportHeight: measurements.viewportHeight,
+        itemCount,
+    });
+
+    useEffect(() => {
+        onScrollabilityChange?.(canScroll);
+    }, [canScroll, onScrollabilityChange]);
+
+    const handleContentSizeChange = useCallback(
+        (_width: number, height: number) => {
+            setMeasurements((current) =>
+                current.generation === measurementGeneration
+                    ? { ...current, contentHeight: height }
+                    : current,
+            );
+        },
+        [measurementGeneration],
+    );
+
+    const handleViewportLayout = useCallback(
+        (event: LayoutChangeEvent) => {
+            const height = event.nativeEvent.layout.height;
+            setMeasurements((current) =>
+                current.generation === measurementGeneration
+                    ? { ...current, viewportHeight: height }
+                    : current,
+            );
+        },
+        [measurementGeneration],
+    );
 
     return (
         <View style={styles.section}>
@@ -138,7 +237,7 @@ export function ScrollPreviewSection({
                         </Txt>
                         {titleExtra != null ? titleExtra : null}
                     </View>
-                    {titleAction != null ? titleAction : null}
+                    {titleAction != null && canScroll ? titleAction : null}
                 </View>
             ) : null}
             {hint != null ? (
@@ -155,9 +254,12 @@ export function ScrollPreviewSection({
                 <>
                     <View style={[styles.previewBox, { maxHeight: previewMaxHeight }]}>
                         <ScrollView
+                            key={measurementGeneration}
                             style={{ maxHeight: previewMaxHeight }}
                             nestedScrollEnabled
                             showsVerticalScrollIndicator={canScroll}
+                            onLayout={handleViewportLayout}
+                            onContentSizeChange={handleContentSizeChange}
                         >
                             {children}
                         </ScrollView>

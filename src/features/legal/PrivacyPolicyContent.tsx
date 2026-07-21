@@ -14,15 +14,20 @@ import { colors } from '../../shared/theme/colors';
 type PrivacyPolicyContentProps = {
     showSummary?: boolean;
     /** 온보딩: 전문 하단에서만 동의 (스크롤 완료 후) */
-    consentActions?: {
-        requiredAgreed: boolean;
-        optionalAgreed: boolean;
-        /** false면 필수 동의 버튼 비활성 */
-        canAgreeRequired: boolean;
-        onAgreeRequired: () => void;
-        onAgreeOptional: () => void;
-        onDeclineOptional: () => void;
-    };
+    consentActions?:
+        | {
+              consentScope: 'required';
+              agreed: boolean;
+              canAgree: boolean;
+              onAgree: () => void;
+          }
+        | {
+              consentScope: 'optional';
+              agreed: boolean;
+              canAgree: boolean;
+              onAgree: () => void;
+              onDecline: () => void;
+          };
 };
 
 function ConsentSummaryCard({
@@ -68,6 +73,8 @@ export function PrivacyPolicyContent({
     showSummary = true,
     consentActions,
 }: PrivacyPolicyContentProps) {
+    const consentScope = consentActions?.consentScope;
+
     return (
         <View style={styles.root}>
             <Txt typography="t6" color="grey600">
@@ -95,20 +102,24 @@ export function PrivacyPolicyContent({
             </Pressable>
             {showSummary ? (
                 <>
-                    <ConsentSummaryCard
-                        title={PRIVACY_POLICY_LABELS.requiredSection}
-                        purpose={SERVICE_CONSENT_NOTICE.purpose}
-                        items={SERVICE_CONSENT_NOTICE.items}
-                        retention={SERVICE_CONSENT_NOTICE.retention}
-                        refuse={SERVICE_CONSENT_NOTICE.refuse}
-                    />
-                    <ConsentSummaryCard
-                        title={PRIVACY_POLICY_LABELS.optionalSection}
-                        purpose={PHONE_CONSENT_NOTICE.purpose}
-                        items={PHONE_CONSENT_NOTICE.items}
-                        retention={PHONE_CONSENT_NOTICE.retention}
-                        refuse={PHONE_CONSENT_NOTICE.refuse}
-                    />
+                    {consentScope !== 'optional' ? (
+                        <ConsentSummaryCard
+                            title={PRIVACY_POLICY_LABELS.requiredSection}
+                            purpose={SERVICE_CONSENT_NOTICE.purpose}
+                            items={SERVICE_CONSENT_NOTICE.items}
+                            retention={SERVICE_CONSENT_NOTICE.retention}
+                            refuse={SERVICE_CONSENT_NOTICE.refuse}
+                        />
+                    ) : null}
+                    {consentScope !== 'required' ? (
+                        <ConsentSummaryCard
+                            title={PRIVACY_POLICY_LABELS.optionalSection}
+                            purpose={PHONE_CONSENT_NOTICE.purpose}
+                            items={PHONE_CONSENT_NOTICE.items}
+                            retention={PHONE_CONSENT_NOTICE.retention}
+                            refuse={PHONE_CONSENT_NOTICE.refuse}
+                        />
+                    ) : null}
                 </>
             ) : null}
             {PRIVACY_POLICY_SECTIONS.map((section) => (
@@ -149,27 +160,28 @@ export function PrivacyPolicyContent({
             </View>
             {consentActions != null ? (
                 <View style={styles.consentFooter}>
-                    {!consentActions.canAgreeRequired && !consentActions.requiredAgreed ? (
+                    {!consentActions.canAgree && !consentActions.agreed ? (
                         <Txt typography="t7" color="grey600" style={styles.scrollHint}>
                             {PRIVACY_POLICY_LABELS.readToEndHint}
                         </Txt>
                     ) : null}
-                    {consentActions.requiredAgreed ? (
-                        <Txt typography="t7" color={colors.success} fontWeight="semibold">
-                            {`✓ ${PRIVACY_POLICY_LABELS.requiredAgreed}`}
-                        </Txt>
-                    ) : (
-                        <Button
-                            size="medium"
-                            type="primary"
-                            display="block"
-                            disabled={!consentActions.canAgreeRequired}
-                            onPress={consentActions.onAgreeRequired}
-                        >
-                            {PRIVACY_POLICY_LABELS.agreeRequired}
-                        </Button>
-                    )}
-                    {consentActions.optionalAgreed ? (
+                    {consentActions.consentScope === 'required' ? (
+                        consentActions.agreed ? (
+                            <Txt typography="t7" color={colors.success} fontWeight="semibold">
+                                {`✓ ${PRIVACY_POLICY_LABELS.requiredAgreed}`}
+                            </Txt>
+                        ) : (
+                            <Button
+                                size="medium"
+                                type="primary"
+                                display="block"
+                                disabled={!consentActions.canAgree}
+                                onPress={consentActions.onAgree}
+                            >
+                                {PRIVACY_POLICY_LABELS.agreeRequired}
+                            </Button>
+                        )
+                    ) : consentActions.agreed ? (
                         <Txt typography="t7" color={colors.success} fontWeight="semibold">
                             {`✓ ${PRIVACY_POLICY_LABELS.optionalAgreed}`}
                         </Txt>
@@ -180,8 +192,8 @@ export function PrivacyPolicyContent({
                                 type="primary"
                                 style="weak"
                                 display="block"
-                                disabled={!consentActions.canAgreeRequired}
-                                onPress={consentActions.onAgreeOptional}
+                                disabled={!consentActions.canAgree}
+                                onPress={consentActions.onAgree}
                             >
                                 {PRIVACY_POLICY_LABELS.agreeOptional}
                             </Button>
@@ -190,7 +202,7 @@ export function PrivacyPolicyContent({
                                 type="dark"
                                 style="weak"
                                 display="block"
-                                onPress={consentActions.onDeclineOptional}
+                                onPress={consentActions.onDecline}
                             >
                                 {PRIVACY_POLICY_LABELS.declineOptional}
                             </Button>
