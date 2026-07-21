@@ -333,7 +333,6 @@ export function GachaScreen({ active }: GachaScreenProps) {
                     stageTestID="gacha-stage-viewport"
                     belowTestID="gacha-below"
                     belowScrollable={false}
-                    stageHeight={130}
                     belowGap={8}
                     stage={
                         <StageArt source={heroSource} phaseKey={stageKey} accessibilityLabel={heroLabel} />
