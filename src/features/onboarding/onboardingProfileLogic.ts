@@ -6,8 +6,14 @@ export type PhoneValidationResult =
     | { ok: true; digits: string; masked: string }
     | { ok: false; message: string };
 
+export type PasswordValidationResult =
+    | { ok: true; password: string }
+    | { ok: false; message: string };
+
 const NICKNAME_MIN = 2;
 const NICKNAME_MAX = 12;
+const PASSWORD_MIN = 8;
+const PASSWORD_MAX = 64;
 
 /** 국내 휴대전화 전체 자리 (예: 01012345678) */
 export const PHONE_DIGITS_LENGTH = 11;
@@ -62,6 +68,16 @@ export function validatePhoneBody(raw: string): PhoneValidationResult {
         return { ok: false, message: '올바른 휴대전화번호를 입력해 주세요.' };
     }
     return { ok: true, digits, masked: maskPhone(digits) };
+}
+
+export function validatePassword(password: string): PasswordValidationResult {
+    if (password.length < PASSWORD_MIN) {
+        return { ok: false, message: `비밀번호는 ${PASSWORD_MIN}자 이상 입력해 주세요.` };
+    }
+    if (password.length > PASSWORD_MAX) {
+        return { ok: false, message: `비밀번호는 ${PASSWORD_MAX}자까지 입력할 수 있어요.` };
+    }
+    return { ok: true, password };
 }
 
 /** @deprecated validatePhoneBody 사용 */

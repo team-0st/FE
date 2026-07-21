@@ -67,7 +67,3 @@ export async function getOrCreateDeviceId(): Promise<string> {
     await writeJson(STORAGE_KEYS.deviceId, deviceId);
     return deviceId;
 }
-
-export function getDeviceIdHeader(deviceId: string): Record<string, string> {
-    return { 'X-Device-Id': normalizeDeviceId(deviceId) };
-}

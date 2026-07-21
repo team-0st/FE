@@ -8,7 +8,6 @@ import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 import { captureMissionVerifyPhoto } from './captureMissionVerifyPhoto';
 import {
-    clearPendingMissionVerifyPhoto,
     peekPendingMissionVerifyPhoto,
     setPendingMissionVerifyPhoto,
     type MissionVerifyPhoto,
@@ -62,6 +61,7 @@ export function MissionVerifyScreen({
         }
     }, [capturing, mission.id, onCaptureError, submitting]);
 
+    /** 성공 시 결과 화면(MissionResultScreen)이 인증 사진을 보여준 뒤 store를 비운다 */
     const handleSubmit = useCallback(async () => {
         if (photo == null || submitting) {
             return;
@@ -69,7 +69,6 @@ export function MissionVerifyScreen({
         setSubmitting(true);
         try {
             await onSubmit(photo);
-            clearPendingMissionVerifyPhoto(mission.id);
         } finally {
             setSubmitting(false);
         }

@@ -145,7 +145,7 @@ function CoopMissionRow({
     const isCompleted = unlocked && status === 'completed';
     const rightLabel = unlocked
         ? status === 'available'
-            ? formatMissionIngredientReward(mission.id)
+            ? '재료 1종'
             : missionStatusLabel(status)
         : '잠금';
 
@@ -177,7 +177,7 @@ function CoopMissionRow({
                             bottom={
                                 unlocked ? mission.description : (coopUnlockHint(mission) ?? mission.description)
                             }
-                            bottomProps={{ color: unlocked ? undefined : 'grey500', numberOfLines: 2 }}
+                            bottomProps={{ color: unlocked ? undefined : 'grey500', numberOfLines: 3 }}
                         />
                     </View>
                 }

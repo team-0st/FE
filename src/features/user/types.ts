@@ -39,12 +39,13 @@ export type CameraConsent = 'granted' | 'declined';
 
 export type AppUserState = {
     userId: number | null;
+    /** 로컬 설치 식별용 레거시 값이며 BE 인증에는 사용하지 않음 */
     deviceId: string | null;
     onboardingCompleted: boolean;
     nickname: string;
     avatarId: string;
     phoneMasked: string | null;
-    /** BE 온보딩용 `010-1234-5678`. 동의 시에만 저장 */
+    /** BE 계정 로그인용 `010-1234-5678`. 온보딩 완료 전에는 null */
     phoneNumber: string | null;
     almangPayoutConsent: AlmangPayoutConsent;
     almangConsentAt: string | null;

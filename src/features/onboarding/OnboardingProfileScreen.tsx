@@ -13,21 +13,23 @@ import {
 } from '../../shared/constants/privacyPolicy';
 import { TERMS_OF_SERVICE_LABELS } from '../../shared/constants/termsOfService';
 import { ALMANG_COMPLIANCE } from '../../shared/constants/almangComplianceCopy';
-import { colors } from '../../shared/theme/colors';
 import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
 import { useAttentionPulse } from '../../shared/hooks/useAttentionPulse';
 import {
     normalizePhoneDigits,
     validateNickname,
+    validatePassword,
     validatePhoneBody,
 } from './onboardingProfileLogic';
 
 export type OnboardingProfilePayload = {
     nickname: string;
-    phoneMasked: string | null;
-    /** BE용 `010XXXXXXXX` digits. 스킵 시 null */
-    phoneDigits: string | null;
+    phoneMasked: string;
+    /** BE용 `010XXXXXXXX` digits */
+    phoneDigits: string;
+    /** BE 온보딩 완료 요청에만 사용하고 앱 상태에는 저장하지 않음 */
+    password: string;
     almangPayoutConsent: AlmangPayoutConsent;
     /** 서비스 개인정보 동의 시각 (필수 단계 완료) */
     privacyConsentAt: string;
@@ -52,13 +54,14 @@ export function OnboardingProfileScreen({
     const [privacyError, setPrivacyError] = useState<string | null>(null);
     const [phoneBody, setPhoneBody] = useState('');
     const [phoneError, setPhoneError] = useState<string | null>(null);
+    const [password, setPassword] = useState('');
+    const [passwordError, setPasswordError] = useState<string | null>(null);
     const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
     const [policyChecked, setPolicyChecked] = useState(false);
     const [serviceChecked, setServiceChecked] = useState(false);
     const [phoneConsentChecked, setPhoneConsentChecked] = useState(false);
     const [policyModalVisible, setPolicyModalVisible] = useState(false);
     const [termsModalVisible, setTermsModalVisible] = useState(false);
-    const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
     const [policyButtonPulse, setPolicyButtonPulse] = useState(false);
     /** 선택(전화) 단계에서 별도로 처리방침을 끝까지 확인했는지 — 필수 단계의 확인을 재사용하지 않는다 */
     const [optionalPolicyAcknowledged, setOptionalPolicyAcknowledged] = useState(false);
@@ -133,46 +136,25 @@ export function OnboardingProfileScreen({
             setPrivacyError('개인정보 동의를 먼저 완료해 주세요.');
             return;
         }
-        if (!phoneConsentChecked) {
-            setPhoneError('전화번호를 등록하려면 선택 항목에 동의해 주세요.');
-            setOptionalPolicyButtonPulse(true);
-            return;
-        }
         const phoneResult = validatePhoneBody(phoneBody);
         if (!phoneResult.ok) {
             setPhoneError(phoneResult.message);
+            return;
+        }
+        const passwordResult = validatePassword(password);
+        if (!passwordResult.ok) {
+            setPasswordError(passwordResult.message);
             return;
         }
         onComplete({
             nickname: nick,
             phoneMasked: phoneResult.masked,
             phoneDigits: phoneResult.digits,
-            almangPayoutConsent: 'granted',
+            password: passwordResult.password,
+            almangPayoutConsent: phoneConsentChecked ? 'granted' : 'declined',
             privacyConsentAt,
-            consentAt: new Date().toISOString(),
+            consentAt: phoneConsentChecked ? new Date().toISOString() : null,
         });
-    };
-
-    const finishSkipped = () => {
-        const nick = requireValidNickname();
-        if (nick == null) {
-            return;
-        }
-        if (privacyConsentAt == null) {
-            setStep('privacy');
-            setPrivacyError('개인정보 동의를 먼저 완료해 주세요.');
-            setSkipConfirmVisible(false);
-            return;
-        }
-        onComplete({
-            nickname: nick,
-            phoneMasked: null,
-            phoneDigits: null,
-            almangPayoutConsent: 'declined',
-            privacyConsentAt,
-            consentAt: null,
-        });
-        setSkipConfirmVisible(false);
     };
 
     const agreeRequiredFromPolicy = () => {
@@ -484,19 +466,28 @@ export function OnboardingProfileScreen({
                         {phoneError}
                     </Txt>
                 ) : null}
+                <TextField
+                    variant="line"
+                    label="비밀번호"
+                    placeholder="8자 이상 입력해 주세요"
+                    value={password}
+                    onChangeText={(value) => {
+                        setPassword(value);
+                        setPasswordError(null);
+                    }}
+                    secureTextEntry
+                    maxLength={64}
+                    help="로그인할 때 사용할 비밀번호예요."
+                />
+                {passwordError != null ? (
+                    <Txt typography="t7" color="red500">
+                        {passwordError}
+                    </Txt>
+                ) : null}
             </ScrollView>
             <View style={styles.footer}>
                 <Button size="large" type="primary" display="block" onPress={finishWithPhone}>
-                    동의하고 계속
-                </Button>
-                <Button
-                    size="large"
-                    type="dark"
-                    style="weak"
-                    display="block"
-                    onPress={() => setSkipConfirmVisible(true)}
-                >
-                    나중에 할게요
+                    계정 만들고 계속
                 </Button>
                 <Button
                     size="medium"
@@ -508,30 +499,6 @@ export function OnboardingProfileScreen({
                     이전
                 </Button>
             </View>
-            {skipConfirmVisible ? (
-                <View style={styles.modalBackdrop}>
-                    <View style={styles.modalCard}>
-                        <Txt typography="t5" fontWeight="bold">
-                            {ONBOARDING_PROFILE_GUIDE.skipModalTitle}
-                        </Txt>
-                        <Txt typography="t6" color="grey700" style={styles.modalBody}>
-                            {ONBOARDING_PROFILE_GUIDE.skipModalBody}
-                        </Txt>
-                        <Button size="medium" type="primary" display="block" onPress={finishSkipped}>
-                            확인했어요
-                        </Button>
-                        <Button
-                            size="medium"
-                            type="dark"
-                            style="weak"
-                            display="block"
-                            onPress={() => setSkipConfirmVisible(false)}
-                        >
-                            돌아가기
-                        </Button>
-                    </View>
-                </View>
-            ) : null}
             {policyModal}
         </Screen>
     );
@@ -596,20 +563,5 @@ const styles = StyleSheet.create({
     footer: {
         padding: 20,
         gap: 10,
-    },
-    modalBackdrop: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        justifyContent: 'center',
-        padding: 24,
-    },
-    modalCard: {
-        borderRadius: 16,
-        backgroundColor: colors.background,
-        padding: 20,
-        gap: 12,
-    },
-    modalBody: {
-        lineHeight: 22,
     },
 });
