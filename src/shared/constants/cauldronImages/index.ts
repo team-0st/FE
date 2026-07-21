@@ -33,8 +33,8 @@ export type CauldronTierLayers = {
     sparkle: { uri: string };
 };
 
-/** 900x864, alpha 포함, 동일 좌표계. 레이어 순서: glow → cauldron_base → soup → stir_stick → sparkle */
-export const CAULDRON_LAYER_ASPECT_RATIO = 900 / 864;
+/** 600x600, alpha 포함, 동일 좌표계. 레이어 순서: glow → cauldron_base → soup → stir_stick → sparkle */
+export const CAULDRON_LAYER_ASPECT_RATIO = 1;
 
 /**
  * CauldronStage는 height = width / CAULDRON_LAYER_ASPECT_RATIO로 높이를 계산한다.
@@ -56,12 +56,12 @@ export type AlphaVisibleBounds = {
 
 /**
  * 랜딩 가마솥 합성(cauldron_base + soup + stir_stick) 실측 alpha bbox.
- * 900x864 원본 기준, union bbox (133,111,900,796) → top=111, bottom=796.
+ * 600x600 원본 기준, union bbox (87,23,579,540) → top=23, bottom=540.
  */
 export const CAULDRON_COMPOSITE_ALPHA_BOUNDS: AlphaVisibleBounds = {
-    imageHeight: 864,
-    top: 111,
-    bottom: 796,
+    imageHeight: 600,
+    top: 23,
+    bottom: 540,
 };
 
 export type StageAlphaAlignment = {

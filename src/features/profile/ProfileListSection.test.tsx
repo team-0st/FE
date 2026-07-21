@@ -19,6 +19,10 @@ import {
     FEATURE_STAGE_HEIGHT,
 } from '../../shared/constants/brandAssets';
 import {
+    CAULDRON_COMPOSITE_ALPHA_BOUNDS,
+    CAULDRON_LAYER_ASPECT_RATIO,
+} from '../../shared/constants/cauldronImages';
+import {
     CENTERED_STAGE_MIN_VISIBLE_BELOW_HEIGHT,
     CenteredFeatureStage,
     shouldUseStackedFallback,
@@ -1203,6 +1207,15 @@ describe('CraftBrewAnimationOverlay stage 계약 (width 240 하드코딩 제거 
         const run = () => new Promise<CraftBrewOutcome>(() => {});
         return render(<CraftBrewAnimationOverlay run={run} onSuccess={jest.fn()} onFailure={jest.fn()} />);
     }
+
+    it('신규 가마솥 레이어는 600×600 정사각 좌표계와 합성 alpha 경계를 사용한다', () => {
+        expect(CAULDRON_LAYER_ASPECT_RATIO).toBe(1);
+        expect(CAULDRON_COMPOSITE_ALPHA_BOUNDS).toEqual({
+            imageHeight: 600,
+            top: 23,
+            bottom: 540,
+        });
+    });
 
     it('가마솥 stage는 CenteredFeatureStage viewport 정중앙에 있고, hint는 below 영역에 있다', () => {
         const { getByTestId, getByLabelText } = renderOverlay();
