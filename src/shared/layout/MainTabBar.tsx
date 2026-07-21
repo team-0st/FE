@@ -1,5 +1,13 @@
 import { Asset, Txt, frameShape } from '@toss/tds-react-native';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import {
+    Animated,
+    type LayoutChangeEvent,
+    Platform,
+    Pressable,
+    StyleSheet,
+    View,
+} from 'react-native';
 import { ROUTES } from '../constants/routes';
 import { TDS_ICON } from '../constants/tdsAssets';
 import { colors } from '../theme/colors';
@@ -27,20 +35,66 @@ export const MAIN_TABS: TabItem[] = [
     { id: 'profile', label: '마이', iconName: TDS_ICON.tabProfile, route: ROUTES.profile },
 ];
 
+/** 탭바 왼쪽→오른쪽 순서 */
+export const MAIN_TAB_ORDER: readonly MainTabId[] = MAIN_TABS.map((tab) => tab.id);
+
+const TAB_COUNT = MAIN_TABS.length;
+const INDICATOR_WIDTH = 44;
+const INDICATOR_HEIGHT = 36;
+
 type MainTabBarProps = {
     activeTab: MainTabId;
-    onPressTab: (route: string) => void;
+    onPressTab: (tab: MainTabId) => void;
+    /** 페이지 스크롤 진행도 (0 ~ TAB_COUNT-1) */
+    scrollProgress: Animated.Value;
     /** 홈 인디케이터 등 하단 safe area */
     bottomInset?: number;
 };
 
-export function MainTabBar({ activeTab, onPressTab, bottomInset = 0 }: MainTabBarProps) {
+export function MainTabBar({
+    activeTab,
+    onPressTab,
+    scrollProgress,
+    bottomInset = 0,
+}: MainTabBarProps) {
+    const [trackWidth, setTrackWidth] = useState(0);
+
+    const onTrackLayout = (event: LayoutChangeEvent) => {
+        const width = event.nativeEvent.layout.width;
+        const horizontalPadding = 12;
+        setTrackWidth(Math.max(0, width - horizontalPadding));
+    };
+
+    const itemWidth = trackWidth > 0 ? trackWidth / TAB_COUNT : 0;
+    const indicatorTranslateX =
+        itemWidth > 0
+            ? scrollProgress.interpolate({
+                  inputRange: MAIN_TABS.map((_, index) => index),
+                  outputRange: MAIN_TABS.map(
+                      (_, index) => index * itemWidth + (itemWidth - INDICATOR_WIDTH) / 2,
+                  ),
+              })
+            : 0;
+
     return (
         <View
             style={[styles.dock, { paddingBottom: Math.max(10, bottomInset) }]}
             pointerEvents="box-none"
         >
-            <View style={styles.bar} accessibilityRole="tablist">
+            <View style={styles.bar} accessibilityRole="tablist" onLayout={onTrackLayout}>
+                {itemWidth > 0 ? (
+                    <Animated.View
+                        pointerEvents="none"
+                        style={[
+                            styles.indicator,
+                            {
+                                width: INDICATOR_WIDTH,
+                                height: INDICATOR_HEIGHT,
+                                transform: [{ translateX: indicatorTranslateX }],
+                            },
+                        ]}
+                    />
+                ) : null}
                 {MAIN_TABS.map((tab) => {
                     const active = tab.id === activeTab;
                     const tint = active ? colors.primary : colors.textSecondary;
@@ -51,7 +105,7 @@ export function MainTabBar({ activeTab, onPressTab, bottomInset = 0 }: MainTabBa
                                 if (active) {
                                     return;
                                 }
-                                onPressTab(tab.route);
+                                onPressTab(tab.id);
                             }}
                             style={styles.item}
                             accessibilityRole="tab"
@@ -85,12 +139,14 @@ const styles = StyleSheet.create({
         paddingTop: 4,
     },
     bar: {
+        position: 'relative',
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.tabBar,
         borderRadius: 28,
         paddingVertical: 10,
         paddingHorizontal: 6,
+        overflow: 'hidden',
         ...Platform.select({
             ios: {
                 shadowColor: '#000000',
@@ -104,10 +160,19 @@ const styles = StyleSheet.create({
             default: {},
         }),
     },
+    indicator: {
+        position: 'absolute',
+        left: 6,
+        top: '50%',
+        marginTop: -INDICATOR_HEIGHT / 2,
+        borderRadius: INDICATOR_HEIGHT / 2,
+        backgroundColor: colors.primaryLight,
+    },
     item: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: 44,
+        zIndex: 1,
     },
 });

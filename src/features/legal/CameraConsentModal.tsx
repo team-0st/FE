@@ -15,9 +15,13 @@ type CameraConsentModalProps = {
 
 /** 카메라 이용 동의 — TDS BottomSheet (심사: 안내·확인은 TDS) */
 export function CameraConsentModal({ visible, onClose, onAgree, onDecline }: CameraConsentModalProps) {
+    if (!visible) {
+        return null;
+    }
+
     return (
         <BottomSheet.Root
-            open={visible}
+            open
             onClose={onClose}
             onDimmerClick={onClose}
             header={<BottomSheet.Header>{CAMERA_POLICY_META.title}</BottomSheet.Header>}

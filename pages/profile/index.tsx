@@ -1,11 +1,8 @@
 import { createRoute } from '@granite-js/react-native';
-import { ProfileScreen } from '../../src/features/profile/ProfileScreen';
-import { useUser } from '../../src/features/user/UserProvider';
-import { useMainTabPress } from '../../src/shared/hooks/useMainTabNavigation';
-import { MainTabShell } from '../../src/shared/layout/MainTabShell';
+import { useMainTabsHostBindings } from '../../src/shared/hooks/useMainTabsHostBindings';
+import { MainTabsHost } from '../../src/shared/layout/MainTabsHost';
 import { mainTabScreenOptions } from '../../src/shared/navigation/tabTransition';
 import { useRootBackClosesApp } from '../../src/shared/navigation/useRootBackClosesApp';
-import { ROUTES } from '../../src/shared/constants/routes';
 
 export const Route = createRoute('/profile', {
     component: Page,
@@ -14,26 +11,8 @@ export const Route = createRoute('/profile', {
 
 function Page() {
     const navigation = Route.useNavigation();
-    const onPressTab = useMainTabPress(navigation, 'profile');
-    const { resetOnboarding } = useUser();
+    const bindings = useMainTabsHostBindings(navigation);
     useRootBackClosesApp();
 
-    return (
-        <MainTabShell activeTab="profile" onPressTab={onPressTab}>
-            <ProfileScreen
-                onPressChangeShop={() => navigation.navigate(ROUTES.shopSelect)}
-                onPressRestartOnboarding={
-                    __DEV__
-                        ? () => {
-                              void (async () => {
-                                  await resetOnboarding();
-                                  // replace 전에 상태가 false여야 useRedirectHomeIfOnboarded에 안 튕김
-                                  navigation.replace(ROUTES.onboarding);
-                              })();
-                          }
-                        : undefined
-                }
-            />
-        </MainTabShell>
-    );
+    return <MainTabsHost initialTab="profile" {...bindings} />;
 }

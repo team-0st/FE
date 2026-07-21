@@ -130,6 +130,10 @@ export function SoupResultScreen({
                     show('이미 리롤을 사용했어요.');
                     return;
                 }
+                if (result.reason === 'network') {
+                    showError('네트워크 오류예요.\n잠시 후 다시 시도해 주세요.');
+                    return;
+                }
                 showError('지금은 리롤할 수 없어요.');
                 return;
             }

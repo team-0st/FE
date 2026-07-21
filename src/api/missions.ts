@@ -1,6 +1,7 @@
 import { ApiClientError, apiRequest, isApiEnabled } from './client';
 import { uploadMissionVerifyPhoto, type MissionVerifyUploadInput } from './files';
 import { pickMissionRewardIngredient } from './mock/ingredients';
+import { getMissionById } from './mock/missions';
 import { missionNumericId, toIngredientDto } from './notion/idMap';
 import type {
     IngredientDto,
@@ -23,17 +24,52 @@ export type MissionVerifyResult =
       }
     | {
           ok: false;
-          code: 'NOT_FOUND' | 'MISSION_ALREADY_COMPLETED' | 'MISSION_UNDER_REVIEW' | 'NETWORK_ERROR';
+          code:
+              | 'NOT_FOUND'
+              | 'MISSION_ALREADY_COMPLETED'
+              | 'MISSION_UNDER_REVIEW'
+              | 'INVALID_FILE_TYPE'
+              | 'INVALID_PHOTO'
+              | 'FILE_TOO_LARGE'
+              | 'NETWORK_ERROR';
       };
 
 let completionSeq = 100;
+let cachedBeMissions: MissionSummaryDto[] | null = null;
 
 /** GET /api/v1/missions */
 export async function getMissions(): Promise<MissionSummaryDto[] | null> {
     if (!isApiEnabled()) {
         return null;
     }
-    return apiRequest<MissionSummaryDto[]>(API_PATHS.missions);
+    const list = await apiRequest<MissionSummaryDto[]>(API_PATHS.missions);
+    cachedBeMissions = list;
+    return list;
+}
+
+/**
+ * BE 미션 id 해석: 제목 매칭 우선 → 일일 미션(1~6) 슬러그 폴백.
+ * 특별/공동은 BE에 없어 undefined (예전 ALL_MISSIONS 순번 7+ 버그 방지).
+ */
+async function resolveBackendMissionId(slug: string): Promise<number | undefined> {
+    const fe = getMissionById(slug);
+    if (fe == null) {
+        return undefined;
+    }
+
+    try {
+        const list = cachedBeMissions ?? (await getMissions());
+        if (list != null) {
+            const byTitle = list.find((item) => item.title.trim() === fe.title.trim());
+            if (byTitle != null) {
+                return byTitle.id;
+            }
+        }
+    } catch {
+        // 폴백
+    }
+
+    return missionNumericId(slug);
 }
 
 /**
@@ -46,10 +82,15 @@ export async function postMissionVerify(
     photo: MissionVerifyUploadInput | null = null,
     random: () => number = Math.random,
 ): Promise<MissionVerifyResult> {
-    const numericId = missionNumericId(missionId);
-
     if (isApiEnabled()) {
+        const numericId = await resolveBackendMissionId(missionId);
         if (numericId == null) {
+            if (__DEV__) {
+                console.warn(
+                    '[postMissionVerify] no BE mission for slug',
+                    missionId,
+                );
+            }
             return { ok: false, code: 'NOT_FOUND' };
         }
         if (photo == null) {
@@ -57,6 +98,9 @@ export async function postMissionVerify(
         }
         try {
             const uploaded = await uploadMissionVerifyPhoto(numericId, photo);
+            if (__DEV__) {
+                console.warn('[postMissionVerify] uploaded', uploaded.fileKey);
+            }
             const data = await apiRequest<{ completionId: number; status: string }>(
                 API_PATHS.missionVerify(numericId),
                 {
@@ -73,6 +117,10 @@ export async function postMissionVerify(
             };
         } catch (error) {
             if (error instanceof ApiClientError) {
+                // Provider에서 재등록·재시도
+                if (error.code === 'USER_NOT_FOUND') {
+                    throw error;
+                }
                 if (error.code === 'MISSION_ALREADY_COMPLETED') {
                     return { ok: false, code: 'MISSION_ALREADY_COMPLETED' };
                 }
@@ -80,13 +128,42 @@ export async function postMissionVerify(
                     return { ok: false, code: 'MISSION_UNDER_REVIEW' };
                 }
                 if (error.code === 'MISSION_NOT_FOUND') {
+                    if (__DEV__) {
+                        console.warn(
+                            '[postMissionVerify] MISSION_NOT_FOUND',
+                            missionId,
+                            'beId=',
+                            numericId,
+                        );
+                    }
                     return { ok: false, code: 'NOT_FOUND' };
                 }
+                if (error.code === 'INVALID_FILE_TYPE') {
+                    return { ok: false, code: 'INVALID_FILE_TYPE' };
+                }
+                if (error.code === 'FILE_TOO_LARGE') {
+                    return { ok: false, code: 'FILE_TOO_LARGE' };
+                }
+                if (
+                    error.code === 'INVALID_INPUT_VALUE' ||
+                    error.code === 'INVALID_FILE_KEY'
+                ) {
+                    return { ok: false, code: 'INVALID_PHOTO' };
+                }
+            }
+            if (__DEV__) {
+                console.warn(
+                    '[postMissionVerify]',
+                    error instanceof ApiClientError
+                        ? `${error.code} ${error.message} status=${error.status}`
+                        : error,
+                );
             }
             return { ok: false, code: 'NETWORK_ERROR' };
         }
     }
 
+    const numericId = missionNumericId(missionId);
     await new Promise((r) => setTimeout(r, 120));
     if (numericId == null) {
         return { ok: false, code: 'NOT_FOUND' };

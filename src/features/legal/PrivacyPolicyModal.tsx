@@ -84,9 +84,13 @@ export function PrivacyPolicyModal({
             ? PRIVACY_POLICY_LABELS.confirmRead
             : PRIVACY_POLICY_LABELS.close;
 
+    if (!visible) {
+        return null;
+    }
+
     return (
         <BottomSheet.Root
-            open={visible}
+            open
             onClose={onClose}
             onDimmerClick={onClose}
             header={<BottomSheet.Header>{PRIVACY_POLICY_META.title}</BottomSheet.Header>}

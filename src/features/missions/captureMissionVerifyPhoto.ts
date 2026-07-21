@@ -18,13 +18,6 @@ export type CaptureMissionVerifyPhotoResult =
 
 const PERMISSION_DENIED_MESSAGE = '카메라 권한이 필요해요.\n설정에서 허용해 주세요.';
 
-function toPreviewUri(dataUri: string): string {
-    if (dataUri.startsWith('data:')) {
-        return dataUri;
-    }
-    return `data:image/jpeg;base64,${dataUri}`;
-}
-
 function errorText(error: unknown): string {
     if (error instanceof Error) {
         return `${error.name} ${error.message}`.toLowerCase();
@@ -126,14 +119,22 @@ async function ensureCameraPermission(): Promise<EnsureCameraResult> {
 }
 
 async function takePhoto(): Promise<Omit<MissionVerifyPhoto, 'missionId'>> {
+    // nginx 413(~1MB) 대비. 1024px는 ~1.2MB로 실패함.
     const { id, dataUri } = await openCamera({
         base64: true,
-        maxWidth: 1024,
+        maxWidth: 512,
     });
+    const rawBase64 = dataUri.startsWith('data:')
+        ? dataUri.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '')
+        : dataUri;
+    // 미리보기는 jpeg로 가정하되, 업로드는 magic으로 jpeg/png 판별
+    const previewUri = dataUri.startsWith('data:')
+        ? dataUri
+        : `data:image/jpeg;base64,${rawBase64}`;
     return {
         photoId: id,
-        previewUri: toPreviewUri(dataUri),
-        uploadPayload: dataUri,
+        previewUri,
+        uploadPayload: rawBase64,
     };
 }
 

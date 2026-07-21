@@ -64,6 +64,24 @@ function Page() {
                     toast.showError('오늘은 이미 완료한 미션이에요.');
                     return;
                 }
+                if (result.code === 'INVALID_FILE_TYPE') {
+                    toast.showError('이 사진 형식은 올릴 수 없어요.\n다시 촬영해 주세요.');
+                    return;
+                }
+                if (result.code === 'FILE_TOO_LARGE') {
+                    toast.showError('사진이 너무 커요.\n다시 촬영해 주세요.');
+                    return;
+                }
+                if (result.code === 'INVALID_PHOTO') {
+                    toast.showError('사진을 준비하지 못했어요.\n다시 촬영해 주세요.');
+                    return;
+                }
+                if (result.code === 'NOT_FOUND') {
+                    toast.showError(
+                        '이 미션은 아직 서버에서 인증할 수 없어요.\n일일 미션으로 시도해 주세요.',
+                    );
+                    return;
+                }
                 toast.showError('제출에 실패했어요.\n다시 시도해 주세요.');
             }}
         />

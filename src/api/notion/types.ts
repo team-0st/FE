@@ -161,6 +161,7 @@ export const API_PATHS = {
     recipeDetail: (id: number) => `/api/v1/recipes/${id}`,
     recipesUnlockHidden: '/api/v1/recipes/unlock/hidden',
     soupsBrew: '/api/v1/soups/brew',
+    soupReroll: (soupId: number) => `/api/v1/soups/${soupId}/reroll`,
     gachasDraw: '/api/v1/gachas/draw',
     gachasHistories: '/api/v1/gachas/histories',
     myPage: '/api/v1/my-page',

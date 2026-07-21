@@ -13,9 +13,13 @@ type TermsOfServiceModalProps = {
 
 /** 이용약관 열람 — TDS BottomSheet */
 export function TermsOfServiceModal({ visible, onClose }: TermsOfServiceModalProps) {
+    if (!visible) {
+        return null;
+    }
+
     return (
         <BottomSheet.Root
-            open={visible}
+            open
             onClose={onClose}
             onDimmerClick={onClose}
             header={<BottomSheet.Header>{TERMS_OF_SERVICE_META.title}</BottomSheet.Header>}

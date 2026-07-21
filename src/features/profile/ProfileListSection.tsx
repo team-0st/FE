@@ -30,8 +30,16 @@ export function ProfileListModal({
 }: ProfileListModalProps) {
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <Pressable style={styles.overlay} onPress={onClose}>
-                <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+            <View style={styles.overlay}>
+                <Pressable
+                    testID="profile-list-dismiss-overlay"
+                    style={styles.dismissOverlay}
+                    onPress={onClose}
+                    accessible={false}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                />
+                <View testID="profile-list-sheet" style={styles.sheet}>
                     <Txt typography="t4" fontWeight="bold" style={styles.sheetTitle}>
                         {title}
                     </Txt>
@@ -40,7 +48,12 @@ export function ProfileListModal({
                             {emptyMessage}
                         </Txt>
                     ) : (
-                        <ScrollView style={styles.expandedScroll} showsVerticalScrollIndicator>
+                        <ScrollView
+                            testID="profile-list-scroll"
+                            style={styles.expandedScroll}
+                            nestedScrollEnabled
+                            showsVerticalScrollIndicator
+                        >
                             {children}
                         </ScrollView>
                     )}
@@ -48,7 +61,7 @@ export function ProfileListModal({
                         닫기
                     </Button>
                 </View>
-            </Pressable>
+            </View>
         </Modal>
     );
 }
@@ -290,6 +303,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 20,
     },
+    dismissOverlay: {
+        ...StyleSheet.absoluteFillObject,
+    },
     sheet: {
         backgroundColor: colors.surface,
         borderRadius: 16,
@@ -304,5 +320,7 @@ const styles = StyleSheet.create({
     },
     expandedScroll: {
         flexGrow: 0,
+        flexShrink: 1,
+        minHeight: 0,
     },
 });

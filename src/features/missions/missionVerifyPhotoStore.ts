@@ -1,11 +1,11 @@
-/** 미션 인증 — 상세에서 촬영 후 verify 화면으로 넘기는 임시 보관 (라우트에 base64 안 실음) */
+/** 미션 인증 — 상세에서 촬영 후 verify 화면으로 넘기는 임시 보관 (라우트에 바이너리 안 넣음) */
 
 export type MissionVerifyPhoto = {
     missionId: string;
     photoId: string;
-    /** RN Image `uri` (data URI) */
+    /** RN Image `uri` (data:image/jpeg;base64,...) */
     previewUri: string;
-    /** 업로드용 페이로드 (openCamera base64:true 시 prefix 없는 base64) */
+    /** 업로드용 JPEG base64 (prefix 없음) */
     uploadPayload: string;
 };
 

@@ -15,6 +15,7 @@ export const ROUTES = {
     shopSelect: '/shop/select',
     shopPartners: '/shop/partners',
     profile: '/profile',
+    about: '/about',
 } as const;
 
 type AppNavigationParams = {

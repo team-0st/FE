@@ -1,18 +1,11 @@
 import { Button, TextButton } from '@toss/tds-react-native';
-import { useCallback, useMemo, useState } from 'react';
-import {
-    SHARE_REWARD_ALREADY_CLAIMED_MESSAGE,
-    SHARE_REWARD_SUCCESS_MESSAGE,
-} from '../constants/shareRewardPolicy';
+import { useCallback, useState } from 'react';
 import { shareZerostResult } from '../feedback/shareResult';
 import { useAppToast } from '../feedback/useAppToast';
-import { useUser } from '../../features/user/UserProvider';
 
 type ShareResultButtonProps = {
     message: string;
     label?: string;
-    /** false면 공유만 (보상 없음) */
-    rewardEnabled?: boolean;
     /**
      * `block`: BottomCTA 안 큰 버튼 (기본)
      * `text`: TDS TextButton — 가챠 등 보조 액션용
@@ -20,27 +13,19 @@ type ShareResultButtonProps = {
     presentation?: 'block' | 'text';
 };
 
+/**
+ * 공유 성공 검증 서버 API가 아직 없어 에코잼 보상 없이 공유만 수행한다.
+ * (보상 문구·지급 로직은 서버 검증 연동 전까지 노출하지 않는다)
+ */
 export function ShareResultButton({
     message,
     label,
-    rewardEnabled = true,
     presentation = 'block',
 }: ShareResultButtonProps) {
     const toast = useAppToast();
-    const { state, claimShareReward } = useUser();
     const [sharing, setSharing] = useState(false);
 
-    const rewardAvailable = rewardEnabled && state.lastShareRewardDate == null;
-
-    const buttonLabel = useMemo(() => {
-        if (label != null) {
-            return label;
-        }
-        if (rewardAvailable) {
-            return '친구에게 공유하고 에코잼 받기';
-        }
-        return '친구에게 결과 공유하기';
-    }, [label, rewardAvailable]);
+    const buttonLabel = label ?? '친구에게 결과 공유하기';
 
     const onPress = useCallback(async () => {
         if (sharing) {
@@ -53,26 +38,13 @@ export function ShareResultButton({
                 toast.show('공유를 취소했어요.');
                 return;
             }
-            if (!rewardEnabled) {
-                toast.showSuccess('공유했어요!');
-                return;
-            }
-            const reward = await claimShareReward();
-            if (reward.ok) {
-                toast.showSuccess(SHARE_REWARD_SUCCESS_MESSAGE(reward.ecoJamGranted));
-                return;
-            }
-            if (reward.reason === 'already_claimed') {
-                toast.show(SHARE_REWARD_ALREADY_CLAIMED_MESSAGE);
-                return;
-            }
             toast.showSuccess('공유했어요!');
         } catch {
             toast.show('공유를 취소했어요.');
         } finally {
             setSharing(false);
         }
-    }, [claimShareReward, message, rewardEnabled, sharing, toast]);
+    }, [message, sharing, toast]);
 
     if (presentation === 'text') {
         return (
