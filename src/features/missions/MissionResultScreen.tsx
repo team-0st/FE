@@ -4,17 +4,22 @@ import {
     getMissionRewardIngredient,
 } from '@api/mock/ingredients';
 import { BottomCTA, Button, Top, Txt } from '@toss/tds-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { buildMissionShareMessage, shareZerostResult } from '../../shared/feedback/shareResult';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
-import { resolveShopName } from '../user/selectors';
+import { resolveShopNameWithRegion } from '../user/selectors';
 import { useUser } from '../user/UserProvider';
+import { computeCheckInStreak } from '../user/userStateLogic';
 import { getCarbonReduction } from './carbonReduction';
 import { MissionShareCard } from './MissionShareCard';
+import {
+    clearPendingMissionVerifyPhoto,
+    peekPendingMissionVerifyPhoto,
+} from './missionVerifyPhotoStore';
 
 type MissionResultScreenProps = {
     mission: Mission;
@@ -44,13 +49,23 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
             : '랜덤 재료';
     const carbonReduction = getCarbonReduction(mission.id);
 
+    /** 라우트에 바이너리를 넣지 않기 위해 verify 화면이 남긴 store에서 인증 사진을 1회 읽는다 */
+    const capturedPhotoUri = useMemo(
+        () => peekPendingMissionVerifyPhoto(mission.id)?.previewUri ?? null,
+        [mission.id],
+    );
+    useEffect(() => {
+        clearPendingMissionVerifyPhoto(mission.id);
+    }, [mission.id]);
+
     const practiceCount = useMemo(
         () =>
             Object.values(state.missionProgress).filter((item) => item.status === 'completed')
                 .length || 1,
         [state.missionProgress],
     );
-    const shopName = resolveShopName(state.shopId);
+    const shopName = resolveShopNameWithRegion(state.shopId);
+    const checkInStreak = computeCheckInStreak(state.checkInDates);
     const dateLabel = formatShareDate(new Date());
     const shareMessage = buildMissionShareMessage(mission.title, rewardLabel);
 
@@ -116,10 +131,12 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
                         <MissionShareCard
                             missionTitle={mission.title}
                             practiceCount={practiceCount}
+                            checkInStreak={checkInStreak}
                             shopName={shopName}
                             dateLabel={dateLabel}
                             rewardLabel={rewardLabel}
                             carbonGrams={carbonReduction?.grams ?? null}
+                            photoUri={capturedPhotoUri}
                         />
                     </>
                 )}
@@ -179,7 +196,7 @@ const styles = StyleSheet.create({
     },
     rewardBox: {
         marginHorizontal: 20,
-        marginTop: 16,
+        marginTop: 4,
         padding: 16,
         borderRadius: 16,
         backgroundColor: colors.heroTint,

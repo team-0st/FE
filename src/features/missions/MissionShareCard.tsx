@@ -1,5 +1,5 @@
 import { Asset, frameShape, Txt } from '@toss/tds-react-native';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { ZEROST_SHARE_HASHTAG } from '../../shared/feedback/shareResult';
 import { formatCarbonGrams } from './carbonReduction';
@@ -9,30 +9,38 @@ const TODAY_PRACTICE_HASHTAG = '#오늘의실천';
 type MissionShareCardProps = {
     missionTitle: string;
     practiceCount: number;
+    checkInStreak: number;
     shopName: string;
     dateLabel: string;
     rewardLabel: string;
     /** 공식 절감량 자료가 있는 미션만 전달 — 없으면 null */
     carbonGrams: number | null;
+    /** 인증 촬영 사진(RN Image uri). 없으면 카메라 아이콘 플레이스홀더 */
+    photoUri?: string | null;
 };
-
-function pineTreeEquivalent(count: number): string {
-    const trees = Math.max(0.1, Math.round((count / 60) * 10) / 10);
-    return `소나무 ${trees}그루가 1년간 하는 일과 같아요`;
-}
 
 /** Figma `12 미션결과 - SNS 인증카드(안)` (193:204) */
 export function MissionShareCard({
     missionTitle,
     practiceCount,
+    checkInStreak,
     shopName,
     dateLabel,
     rewardLabel,
     carbonGrams,
+    photoUri = null,
 }: MissionShareCardProps) {
     return (
         <View style={styles.polaroid}>
             <View style={styles.photo}>
+                {photoUri != null ? (
+                    <Image
+                        source={{ uri: photoUri }}
+                        style={StyleSheet.absoluteFillObject}
+                        resizeMode="cover"
+                        accessibilityLabel="인증 사진"
+                    />
+                ) : null}
                 <View style={styles.heroGlass}>
                     <Txt typography="t1" fontWeight="bold" color="white" style={styles.heroCount}>
                         {practiceCount}
@@ -40,28 +48,32 @@ export function MissionShareCard({
                     <Txt typography="t7" fontWeight="semibold" color="white" style={styles.heroLabel}>
                         개의 일회용품을 아꼈어요
                     </Txt>
-                    <Txt typography="st11" color="white" style={styles.heroSub}>
-                        {pineTreeEquivalent(practiceCount)}
-                    </Txt>
+                    {carbonGrams != null ? (
+                        <Txt typography="st11" color="white" style={styles.heroSub}>
+                            {`이 실천으로 약 ${formatCarbonGrams(carbonGrams)} CO2를 줄였어요`}
+                        </Txt>
+                    ) : null}
                 </View>
 
-                <View style={styles.photoPlaceholder}>
-                    <Asset.Icon
-                        name={TDS_ICON.missionCamera}
-                        frameShape={frameShape.CircleLarge}
-                        backgroundColor="rgba(255,255,255,0.16)"
-                        accessibilityLabel="인증 사진"
-                    />
-                    <Txt typography="t7" color="white" style={styles.photoPlaceholderLabel}>
-                        인증 사진
-                    </Txt>
-                </View>
+                {photoUri == null ? (
+                    <View style={styles.photoPlaceholder}>
+                        <Asset.Icon
+                            name={TDS_ICON.missionCamera}
+                            frameShape={frameShape.CircleLarge}
+                            backgroundColor="rgba(255,255,255,0.16)"
+                            accessibilityLabel="인증 사진"
+                        />
+                        <Txt typography="t7" color="white" style={styles.photoPlaceholderLabel}>
+                            인증 사진
+                        </Txt>
+                    </View>
+                ) : null}
 
                 <View style={styles.dataGlass}>
                     <View style={styles.gridRow}>
                         <View style={styles.gridCell}>
                             <Txt typography="st11" color="white" style={styles.gridLabel}>
-                                오늘 완료 미션
+                                완료 미션
                             </Txt>
                             <Txt typography="t7" fontWeight="semibold" color="white" numberOfLines={1}>
                                 {missionTitle}
@@ -79,10 +91,10 @@ export function MissionShareCard({
                     <View style={styles.gridRow}>
                         <View style={styles.gridCell}>
                             <Txt typography="st11" color="white" style={styles.gridLabel}>
-                                누적 실천
+                                연속 출석
                             </Txt>
                             <Txt typography="t7" fontWeight="semibold" color="white">
-                                {practiceCount}번째 실천
+                                {`${checkInStreak}일째`}
                             </Txt>
                         </View>
                         <View style={styles.gridCell}>
@@ -94,11 +106,6 @@ export function MissionShareCard({
                             </Txt>
                         </View>
                     </View>
-                    {carbonGrams != null ? (
-                        <Txt typography="st11" color="white" style={styles.carbonNote}>
-                            {`이 실천으로 약 ${formatCarbonGrams(carbonGrams)} CO2를 줄였어요`}
-                        </Txt>
-                    ) : null}
                 </View>
             </View>
 
@@ -182,10 +189,6 @@ const styles = StyleSheet.create({
     },
     gridLabel: {
         opacity: 0.7,
-    },
-    carbonNote: {
-        textAlign: 'center',
-        opacity: 0.85,
     },
     hashtags: {
         textAlign: 'center',
