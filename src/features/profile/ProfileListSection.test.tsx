@@ -57,6 +57,13 @@ import {
 import { PartnerShopsScreen } from '../shop/PartnerShopsScreen';
 import { ALMANG_STORE_INFO_LINES } from './ProfileScreen';
 import { ProfileListModal } from './ProfileListSection';
+import type { CoopMission } from '@api/mock';
+import { COOP_MISSIONS, DAILY_MISSIONS, SPECIAL_MISSIONS } from '@api/mock/missions';
+import { ListRow } from '@toss/tds-react-native';
+import { getMissionImageSource } from '../../shared/constants/missionAssets';
+import { TDS_ICON } from '../../shared/constants/tdsAssets';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
+import { MissionsListScreen } from '../missions/MissionsListScreen';
 
 jest.mock('@toss/tds-react-native', () => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -89,10 +96,18 @@ jest.mock('@toss/tds-react-native', () => {
     const MockListRow = Object.assign(() => null, {
         Texts: () => null,
         RightTexts: () => null,
+        Icon: () => null,
     });
+    const MockBadge = ({
+        children,
+        style,
+    }: Pick<ComponentProps<typeof ReactNative.Text>, 'children' | 'style'>) =>
+        React.createElement(ReactNative.Text, { style }, children);
+    const MockBorder = ({ style }: { style?: ComponentProps<typeof ReactNative.View>['style'] }) =>
+        React.createElement(ReactNative.View, { style });
     const MockTop = Object.assign(
         ({ title }: { title?: ReactNode }) => React.createElement(ReactNative.View, null, title),
-        { TitleParagraph: MockText },
+        { TitleParagraph: MockText, SubtitleParagraph: MockText },
     );
     const MockBottomCTA = Object.assign(() => null, {
         Double: ({
@@ -178,6 +193,8 @@ jest.mock('@toss/tds-react-native', () => {
     });
 
     return {
+        Badge: MockBadge,
+        Border: MockBorder,
         BottomCTA: MockBottomCTA,
         BottomSheet: MockBottomSheet,
         Button: MockButton,
@@ -1409,17 +1426,41 @@ describe('RecipesScreen (분류 탭 고정 · 목록 영역만 스크롤)', () =
         return render(<RecipesScreen />);
     }
 
-    it('입문/히든/전설 탭은 ScrollView 밖 고정 영역에 렌더되고, ScrollView 안에는 탭이 없다', () => {
+    it('입문/일반/히든/전설 탭은 이 순서로 ScrollView 밖 고정 영역에 렌더되고, ScrollView 안에는 탭이 없다', () => {
         const { UNSAFE_getByType, UNSAFE_getAllByProps } = renderRecipes();
 
         const scrollView = UNSAFE_getByType(ScrollView);
         expect(scrollView.findAllByProps({ accessibilityRole: 'tab' })).toHaveLength(0);
 
         const allTabs = UNSAFE_getAllByProps({ accessibilityRole: 'tab' });
-        const tabIds = ['recipe-tab-beginner', 'recipe-tab-hidden', 'recipe-tab-legendary'];
-        for (const tabId of tabIds) {
-            expect(allTabs.some((tab) => tab.props.testID === tabId)).toBe(true);
-        }
+        const orderedTabIds = [...new Set(allTabs.map((tab) => tab.props.testID))];
+        expect(orderedTabIds).toEqual([
+            'recipe-tab-beginner',
+            'recipe-tab-today',
+            'recipe-tab-hidden',
+            'recipe-tab-legendary',
+        ]);
+
+        const labelById = new Map(
+            allTabs.map((tab) => [tab.props.testID, tab.findByType(Text).props.children]),
+        );
+        expect(orderedTabIds.map((tabId) => labelById.get(tabId))).toEqual([
+            '입문',
+            '일반',
+            '히든',
+            '전설',
+        ]);
+    });
+
+    it('첫 진입 시 기본 선택 탭은 입문(beginner)이다', () => {
+        const { getByTestId } = renderRecipes();
+
+        expect(getByTestId('recipe-tab-beginner').props.accessibilityState).toEqual({
+            selected: true,
+        });
+        expect(getByTestId('recipe-tab-today').props.accessibilityState).toEqual({
+            selected: false,
+        });
     });
 
     it('히든 탭을 눌러도 탭 목록은 그대로 고정 영역에 남고 목록만 다시 그려진다', () => {
@@ -1768,5 +1809,90 @@ describe('NearbyShopsSection 위치 미동의 안내 (본문 대신 info 버튼)
 
         expect(screen.queryByText('위치 정보')).toBeNull();
         expect(screen.queryByLabelText('주변 상점 위치 정보 안내')).toBeNull();
+    });
+});
+
+describe('미션 아이콘 — 미션별 개별 asset', () => {
+    const ALL_MISSION_IDS = [...DAILY_MISSIONS, ...SPECIAL_MISSIONS, ...COOP_MISSIONS].map(
+        (mission) => mission.id,
+    );
+
+    it('12개 미션 id 모두 PNG data URI source를 가지며 서로 다른 이미지로 매핑된다', () => {
+        expect(ALL_MISSION_IDS).toHaveLength(12);
+
+        const sources = ALL_MISSION_IDS.map((id) => getMissionImageSource(id));
+        for (const source of sources) {
+            expect(source.uri).toMatch(/^data:image\/png;base64,/);
+        }
+
+        const uniqueUris = new Set(sources.map((source) => source.uri));
+        expect(uniqueUris.size).toBe(ALL_MISSION_IDS.length);
+    });
+
+    it('알 수 없는 미션 id는 안전한 폴백 이미지를 반환한다', () => {
+        expect(getMissionImageSource('unknown-mission-id')).toEqual(getMissionImageSource('unknown-mission-id'));
+        expect(ALL_MISSION_IDS).not.toContain('unknown-mission-id');
+        expect(getMissionImageSource('unknown-mission-id').uri).toMatch(/^data:image\/png;base64,/);
+    });
+
+    function renderMissionsList() {
+        mockUseUser.mockReturnValue({
+            state: DEFAULT_USER_STATE,
+        } as unknown as ReturnType<typeof useUser>);
+        mockUseAppToast.mockReturnValue({
+            show: jest.fn(),
+            showSuccess: jest.fn(),
+            showError: jest.fn(),
+        });
+
+        return render(<MissionsListScreen onPressMission={jest.fn()} />);
+    }
+
+    it('일반/특별 미션 행은 공통 카메라 아이콘 대신 미션별 이미지를 렌더한다', () => {
+        const { UNSAFE_getAllByType } = renderMissionsList();
+
+        const listRows = UNSAFE_getAllByType(ListRow);
+        // 렌더 순서: 공동 미션(3) → 일반 미션(6) → 특별 미션(3)
+        const dailyAndSpecialRows = listRows.slice(COOP_MISSIONS.length);
+        const dailyAndSpecialMissions = [...DAILY_MISSIONS, ...SPECIAL_MISSIONS];
+        expect(dailyAndSpecialRows).toHaveLength(dailyAndSpecialMissions.length);
+
+        dailyAndSpecialRows.forEach((row, index) => {
+            const mission = dailyAndSpecialMissions[index]!;
+            expect(row.props.left.type).toBe(BrandEmojiImage);
+            expect(row.props.left.props.source).toEqual(getMissionImageSource(mission.id));
+            expect(row.props.left.props.accessibilityLabel).toBe(`${mission.title} 아이콘`);
+        });
+    });
+
+    it('해금된 공동 미션은 개별 이미지를, 잠긴 공동 미션은 기존 잠금 아이콘을 유지한다', () => {
+        const { UNSAFE_getAllByType } = renderMissionsList();
+
+        const listRows = UNSAFE_getAllByType(ListRow);
+        const coopRows = listRows.slice(0, COOP_MISSIONS.length);
+        expect(coopRows).toHaveLength(COOP_MISSIONS.length);
+
+        // 기본 상태에서는 unlockAfter가 없는 첫 공동 미션만 해금돼요.
+        const [firstMission, secondMission, thirdMission] = COOP_MISSIONS as [
+            CoopMission,
+            CoopMission,
+            CoopMission,
+        ];
+        expect(firstMission.unlockAfter).toBeNull();
+        expect(secondMission.unlockAfter).not.toBeNull();
+        expect(thirdMission.unlockAfter).not.toBeNull();
+
+        const [unlockedRow, lockedRowA, lockedRowB] = coopRows as [
+            (typeof coopRows)[number],
+            (typeof coopRows)[number],
+            (typeof coopRows)[number],
+        ];
+        expect(unlockedRow.props.left.type).toBe(BrandEmojiImage);
+        expect(unlockedRow.props.left.props.source).toEqual(getMissionImageSource(firstMission.id));
+
+        for (const lockedRow of [lockedRowA, lockedRowB]) {
+            expect(lockedRow.props.left.type).toBe(ListRow.Icon);
+            expect(lockedRow.props.left.props.name).toBe(TDS_ICON.missionLock);
+        }
     });
 });

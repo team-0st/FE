@@ -9,6 +9,8 @@ import type { MissionProgressStatus } from '../user/types';
 import { coopDifficultyStars, coopUnlockHint, isCoopMissionUnlocked } from './coopMissionLogic';
 import { RecipeListRowShell } from '../recipes/RecipeCompletedStamp';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
+import { getMissionImageSource } from '../../shared/constants/missionAssets';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
 import { useAppToast } from '../../shared/feedback/useAppToast';
@@ -31,17 +33,6 @@ function statusBadgeType(status: MissionProgressStatus): StatusBadgeType {
         return 'red';
     }
     return 'blue';
-}
-
-/** 인증 방식에 맞는 TDS 아이콘 — photo/receipt/attendance_7d */
-function coopAuthIcon(authType: CoopMission['authType']) {
-    if (authType === 'receipt') {
-        return TDS_ICON.receipt;
-    }
-    if (authType === 'attendance_7d') {
-        return TDS_ICON.check;
-    }
-    return TDS_ICON.missionCamera;
 }
 
 /**
@@ -109,7 +100,14 @@ function MissionRow({
         <RecipeListRowShell done={isCompleted}>
             <ListRow
                 onPress={onPress}
-                left={<ListRow.Icon name={TDS_ICON.missionCamera} />}
+                left={
+                    <BrandEmojiImage
+                        source={getMissionImageSource(mission.id)}
+                        size={48}
+                        containerStyle={styles.rowIcon}
+                        accessibilityLabel={`${mission.title} 아이콘`}
+                    />
+                }
                 contents={
                     <ListRow.Texts
                         type="2RowTypeA"
@@ -156,10 +154,16 @@ function CoopMissionRow({
             <ListRow
                 onPress={onPress}
                 left={
-                    <ListRow.Icon
-                        name={unlocked ? coopAuthIcon(mission.authType) : TDS_ICON.missionLock}
-                        color={unlocked ? undefined : colors.textSecondary}
-                    />
+                    unlocked ? (
+                        <BrandEmojiImage
+                            source={getMissionImageSource(mission.id)}
+                            size={48}
+                            containerStyle={styles.rowIcon}
+                            accessibilityLabel={`${mission.title} 아이콘`}
+                        />
+                    ) : (
+                        <ListRow.Icon name={TDS_ICON.missionLock} color={colors.textSecondary} />
+                    )
                 }
                 contents={
                     <View>
@@ -307,5 +311,8 @@ const styles = StyleSheet.create({
     difficultyStars: {
         marginBottom: 2,
         letterSpacing: 1,
+    },
+    rowIcon: {
+        marginRight: 8,
     },
 });

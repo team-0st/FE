@@ -94,8 +94,8 @@ function recipeSoupThumbSize(windowWidth: number): number {
 type RecipeTabId = 'today' | 'beginner' | 'hidden' | 'legendary';
 
 const RECIPE_TABS: { id: RecipeTabId; label: string }[] = [
-    { id: 'today', label: '이번 주 레시피' },
     { id: 'beginner', label: '입문' },
+    { id: 'today', label: '일반' },
     { id: 'hidden', label: '히든' },
     { id: 'legendary', label: '전설' },
 ];
@@ -193,7 +193,7 @@ export function RecipesScreen() {
     const { show, showSuccess, showError } = useAppToast();
     const { width: windowWidth } = useWindowDimensions();
     const soupThumbSize = recipeSoupThumbSize(windowWidth);
-    const [tab, setTab] = useState<RecipeTabId>('today');
+    const [tab, setTab] = useState<RecipeTabId>('beginner');
     const [unlockLoading, setUnlockLoading] = useState(false);
     const [viewportHeight, setViewportHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
