@@ -11,7 +11,7 @@ export type CauldronStageLayers = {
 
 type CauldronStageProps = {
     layers: CauldronStageLayers;
-    /** 가로 크기(px). 세로는 900x864 비율로 계산한다. */
+    /** 가로 크기(px). 세로는 600x600 비율로 계산한다. */
     width?: number;
     /** 저어주기 단계 — stir_stick·soup에 약한 움직임을 준다 */
     stirring?: boolean;
