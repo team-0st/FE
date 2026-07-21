@@ -174,6 +174,10 @@ export function updateNickname(state: AppUserState, nickname: string): AppUserSt
     return { ...state, nickname };
 }
 
+export function updateAvatar(state: AppUserState, avatarId: string): AppUserState {
+    return { ...state, avatarId };
+}
+
 export function getMissionStatus(state: AppUserState, missionId: string): MissionProgressStatus {
     return state.missionProgress[missionId]?.status ?? 'available';
 }

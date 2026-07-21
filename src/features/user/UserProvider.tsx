@@ -80,6 +80,7 @@ import {
     submitMissionPendingReview,
     spendEcoJam,
     unlockHiddenRecipe,
+    updateAvatar as updateAvatarState,
     updateNickname as updateNicknameState,
     claimShareReward as applyShareRewardState,
     formatDateKey,
@@ -101,6 +102,7 @@ type UserContextValue = {
     }) => Promise<void>;
     resetOnboarding: () => Promise<void>;
     updateNickname: (nickname: string) => Promise<void>;
+    updateAvatar: (avatarId: string) => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
     setLocationConsent: (consent: LocationConsent) => Promise<void>;
     setCameraConsent: (consent: CameraConsent) => Promise<void>;
@@ -513,6 +515,9 @@ export function UserProvider({ children }: PropsWithChildren) {
             },
             updateNickname: async (nickname) => {
                 await persist((prev) => updateNicknameState(prev, nickname));
+            },
+            updateAvatar: async (avatarId) => {
+                await persist((prev) => updateAvatarState(prev, avatarId));
             },
             selectShop: async (shopId) => {
                 await persist((prev) => setShopId(prev, shopId));
