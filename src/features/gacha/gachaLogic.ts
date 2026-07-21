@@ -1,6 +1,7 @@
 import { getIngredientById } from '@api/mock/ingredients';
 import type { ImageSourcePropType } from 'react-native';
 import { getAlmangRewardMessage } from '../user/almangPayoutCopy';
+import { appendGachaHistory } from '../user/gachaHistory';
 import type { AppUserState } from '../user/types';
 import {
     GACHA_COMMON_INGREDIENT_POOL,
@@ -112,7 +113,7 @@ export function applyGachaReward(state: AppUserState, reward: GachaReward): AppU
             next = { ...next, totalPoints: next.totalPoints + reward.amount };
             break;
     }
-    return next;
+    return appendGachaHistory(next, formatGachaRewardMessage(reward), reward.type !== 'FAIL');
 }
 
 export function applyGachaPull(

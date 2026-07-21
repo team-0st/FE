@@ -38,6 +38,7 @@ export const DEFAULT_USER_STATE: AppUserState = {
     missionProgress: {},
     ecoJamLedger: [],
     almangPointsLedger: [],
+    gachaHistory: [],
     pendingRealRewards: [],
     lastShareRewardDate: null,
     hiddenTodayRecipePinId: null,

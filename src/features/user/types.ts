@@ -20,6 +20,13 @@ export type PointsLedgerEntry = {
 
 export type EcoJamLedgerEntry = PointsLedgerEntry;
 
+export type GachaHistoryEntry = {
+    id: string;
+    at: string;
+    label: string;
+    positive: boolean;
+};
+
 export type PendingRealReward = {
     id: string;
     recipeId: string;
@@ -79,6 +86,7 @@ export type AppUserState = {
     missionProgress: Record<string, MissionProgress>;
     ecoJamLedger: PointsLedgerEntry[];
     almangPointsLedger: PointsLedgerEntry[];
+    gachaHistory: GachaHistoryEntry[];
     pendingRealRewards: PendingRealReward[];
     /** SNS 공유 리워드 수령일 — 있으면 계정당 1회 보상 완료 (YYYY-MM-DD) */
     lastShareRewardDate: string | null;

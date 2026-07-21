@@ -1,6 +1,6 @@
 import { getIngredientById } from '@api/mock/ingredients';
 import { Button, Txt } from '@toss/tds-react-native';
-import { useCallback, useLayoutEffect, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet, Vibration, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import {
@@ -15,6 +15,7 @@ import {
 } from '../../shared/constants/probabilityInfo';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { buildGachaShareMessage } from '../../shared/feedback/shareResult';
+import { ProfileLedgerRow, ProfileListModal } from '../profile/ProfileListSection';
 import { CenteredFeatureStage } from '../../shared/ui/CenteredFeatureStage';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { FixedHeightHeaderSlot } from '../../shared/ui/Screen';
@@ -166,9 +167,15 @@ function StageArt({ source, phaseKey, accessibilityLabel }: StageArtProps) {
     );
 }
 
+function formatGachaHistoryTime(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export function GachaScreen({ active }: GachaScreenProps) {
     const { state, pullGacha, grantTestEcoJam } = useUser();
     const toast = useAppToast();
+    const [historyVisible, setHistoryVisible] = useState(false);
 
     const [tabState, dispatch] = useReducer(
         reduceGachaTabState,
@@ -309,6 +316,15 @@ export function GachaScreen({ active }: GachaScreenProps) {
                                 title={GACHA_PROBABILITY_TITLE}
                                 lines={GACHA_PROBABILITY_LINES}
                             />
+                            <Txt
+                                typography="t7"
+                                color="blue500"
+                                onPress={() => setHistoryVisible(true)}
+                                accessibilityRole="button"
+                                accessibilityLabel="가챠 기록 보기"
+                            >
+                                가챠 기록
+                            </Txt>
                         </View>
                     </View>
                 </FixedHeightHeaderSlot>
@@ -317,6 +333,7 @@ export function GachaScreen({ active }: GachaScreenProps) {
                     stageTestID="gacha-stage-viewport"
                     belowTestID="gacha-below"
                     belowScrollable={false}
+                    belowGap={8}
                     stage={
                         <StageArt source={heroSource} phaseKey={stageKey} accessibilityLabel={heroLabel} />
                     }
@@ -369,6 +386,23 @@ export function GachaScreen({ active }: GachaScreenProps) {
                     </Button>
                 ) : null}
             </View>
+            <ProfileListModal
+                visible={historyVisible}
+                title="가챠 기록"
+                emptyMessage="아직 가챠 기록이 없어요."
+                itemCount={state.gachaHistory.length}
+                onClose={() => setHistoryVisible(false)}
+            >
+                {state.gachaHistory.map((entry) => (
+                    <ProfileLedgerRow
+                        key={entry.id}
+                        label={entry.label}
+                        time={formatGachaHistoryTime(entry.at)}
+                        deltaLabel={entry.positive ? '당첨' : '꽝'}
+                        deltaPositive={entry.positive}
+                    />
+                ))}
+            </ProfileListModal>
         </View>
     );
 }
@@ -421,6 +455,9 @@ const styles = StyleSheet.create({
         color: colors.primaryDark,
     },
     probRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginTop: 8,
         marginBottom: 4,
     },
