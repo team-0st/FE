@@ -3,7 +3,8 @@ import { getRecipeById } from '@api/mock/recipes';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { BottomCTA, Button, Txt } from '@toss/tds-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import { FEATURE_STAGE_HEIGHT } from '../../shared/constants/brandAssets';
 import { getSoupImageSource } from '../../shared/constants/soupAssets';
 import {
     getSoupFailImageSource,
@@ -12,7 +13,7 @@ import {
 import { getSoupRerollArtSource } from '../../shared/constants/soupRerollAssets';
 import { buildSoupShareMessage } from '../../shared/feedback/shareResult';
 import { useAppToast } from '../../shared/feedback/useAppToast';
-import { CenteredFeatureStage } from '../../shared/ui/CenteredFeatureStage';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { ShareResultButton } from '../../shared/ui/ShareResultButton';
 import { toBrandImageSource } from '../../shared/ui/toBrandImageSource';
 import { colors } from '../../shared/theme/colors';
@@ -90,6 +91,12 @@ export function SoupResultScreen({
     const rerollArtUri = toBrandImageSource(getSoupRerollArtSource(kind));
     const showUndercookedSoupChip =
         isFail && isUndercookedFailPhrase(failPhrase) && soupThumbUri != null;
+    const rewardIngredient =
+        grade === 'INGREDIENT' && craft.rewardIngredientId != null
+            ? getIngredientById(craft.rewardIngredientId)
+            : undefined;
+    const rewardIngredientCount =
+        rewardIngredient == null ? 0 : Math.max(1, Math.floor(craft.rewardAmount ?? 1));
 
     const mainTitle = isFail ? failPhrase : SOUP_GRADE_LABEL[grade];
 
@@ -100,9 +107,8 @@ export function SoupResultScreen({
             }
             return displayName;
         }
-        if (grade === 'INGREDIENT' && craft.rewardIngredientId != null) {
-            const item = getIngredientById(craft.rewardIngredientId);
-            return item != null ? `${item.name} 1개` : '재료 1개';
+        if (rewardIngredient != null) {
+            return `${rewardIngredient.name} ${rewardIngredientCount}개`;
         }
         if (craft.rewardType === 'REAL_ITEM') {
             return craft.rewardDescription ?? '리워드 지급 예정';
@@ -114,7 +120,7 @@ export function SoupResultScreen({
             return `에코잼 +${craft.rewardAmount ?? 0}개`;
         }
         return displayName;
-    }, [isFail, failPhrase, displayName, grade, craft]);
+    }, [isFail, failPhrase, displayName, craft, rewardIngredient, rewardIngredientCount]);
 
     const shareRewardLabel = isFail ? failPhrase : oneLineSub;
 
@@ -155,93 +161,104 @@ export function SoupResultScreen({
 
     return (
         <View style={styles.root}>
-            <View style={styles.body} testID="soup-result-body">
-                <CenteredFeatureStage
-                    testID="soup-result-centered-stage"
-                    stageTestID="soup-result-stage-viewport"
-                    belowTestID="soup-result-below"
-                    stage={
-                        heroUri != null ? (
+            <ScrollView
+                testID="soup-result-scroll"
+                style={styles.body}
+                contentContainerStyle={styles.bodyContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.heroStage}>
+                    {heroUri != null ? (
+                        <Image
+                            testID="soup-result-hero-image"
+                            source={heroUri}
+                            style={[styles.hero, { aspectRatio: heroAspectRatio }]}
+                            resizeMode="contain"
+                            onLoad={(event) => {
+                                const { width, height } = event.nativeEvent.source;
+                                if (width > 0 && height > 0) {
+                                    setHeroAspectRatio(width / height);
+                                }
+                            }}
+                            accessibilityLabel={isFail ? failPhrase : displayName}
+                        />
+                    ) : null}
+                </View>
+                <View style={styles.details} testID="soup-result-details">
+                    {showUndercookedSoupChip ? (
+                        <View style={styles.soupChip}>
                             <Image
-                                testID="soup-result-hero-image"
-                                source={heroUri}
-                                style={[styles.hero, { aspectRatio: heroAspectRatio }]}
+                                source={soupThumbUri}
+                                style={styles.soupThumb}
                                 resizeMode="contain"
-                                onLoad={(event) => {
-                                    const { width, height } = event.nativeEvent.source;
-                                    if (width > 0 && height > 0) {
-                                        setHeroAspectRatio(width / height);
-                                    }
-                                }}
-                                accessibilityLabel={isFail ? failPhrase : displayName}
+                                accessibilityLabel={displayName}
                             />
-                        ) : null
-                    }
-                    below={
-                        <View style={styles.details}>
-                            {showUndercookedSoupChip ? (
-                                <View style={styles.soupChip}>
-                                    <Image
-                                        source={soupThumbUri}
-                                        style={styles.soupThumb}
-                                        resizeMode="contain"
-                                        accessibilityLabel={displayName}
-                                    />
-                                    <Txt typography="t7" color="grey600" numberOfLines={1}>
-                                        {displayName}
+                            <Txt typography="t7" color="grey600" numberOfLines={1}>
+                                {displayName}
+                            </Txt>
+                        </View>
+                    ) : null}
+
+                    <Txt typography="t2" fontWeight="bold" style={styles.mainTitle}>
+                        {mainTitle}
+                    </Txt>
+
+                    {rewardIngredient != null ? (
+                        <View style={styles.ingredientRewards}>
+                            {Array.from({ length: rewardIngredientCount }, (_, index) => (
+                                <View key={`${rewardIngredient.id}-${index}`} style={styles.ingredientReward}>
+                                    {rewardIngredient.imageSource != null ? (
+                                        <BrandEmojiImage
+                                            source={rewardIngredient.imageSource}
+                                            size={56}
+                                            containerStyle={styles.ingredientImage}
+                                            accessibilityLabel={`${rewardIngredient.name} 보상 ${index + 1}`}
+                                        />
+                                    ) : null}
+                                    <Txt typography="t7" color="grey700" fontWeight="semibold">
+                                        {rewardIngredient.name}
                                     </Txt>
                                 </View>
-                            ) : null}
-
-                            <Txt typography="t2" fontWeight="bold" style={styles.mainTitle}>
-                                {mainTitle}
-                            </Txt>
-
-                            <Txt typography="t6" color="grey600" style={styles.oneLine}>
-                                {oneLineSub}
-                            </Txt>
-
-                            {showRerollButton ? (
-                                <View style={styles.rerollBlock}>
-                                    <View style={styles.rerollRow}>
-                                        {rerollArtUri != null ? (
-                                            <Image
-                                                source={rerollArtUri}
-                                                style={styles.rerollArt}
-                                                resizeMode="contain"
-                                                accessibilityLabel={actionName}
-                                            />
-                                        ) : null}
-                                        <View style={styles.rerollButtonWrap}>
-                                            <Button
-                                                size="large"
-                                                type="dark"
-                                                style="weak"
-                                                display="block"
-                                                disabled={rerollLoading || !canReroll}
-                                                onPress={() => {
-                                                    void handleReroll();
-                                                }}
-                                            >
-                                                {rerollLoading
-                                                    ? '리롤 중…'
-                                                    : canReroll
-                                                      ? `${actionName} · ${rerollCost}잼`
-                                                      : `에코잼 부족 · ${rerollCost}잼`}
-                                            </Button>
-                                        </View>
-                                    </View>
-                                </View>
-                            ) : alreadyUsed ? (
-                                <Txt typography="t7" color="grey500" style={styles.rerollUsed}>
-                                    {`${actionName}은 이미 사용했어요.`}
-                                </Txt>
-                            ) : null}
+                            ))}
                         </View>
-                    }
-                />
-            </View>
+                    ) : (
+                        <Txt typography="t6" color="grey600" style={styles.oneLine}>
+                            {oneLineSub}
+                        </Txt>
+                    )}
+                </View>
+            </ScrollView>
             <View testID="soup-result-footer" style={styles.footer}>
+                {showRerollButton ? (
+                    <View style={styles.rerollRow}>
+                        {rerollArtUri != null ? (
+                            <Image
+                                source={rerollArtUri}
+                                style={styles.rerollArt}
+                                resizeMode="contain"
+                                accessibilityLabel={actionName}
+                            />
+                        ) : null}
+                        <View style={styles.rerollButtonWrap}>
+                            <Button
+                                size="large"
+                                type="dark"
+                                style="weak"
+                                display="block"
+                                disabled={rerollLoading || !canReroll}
+                                onPress={() => {
+                                    void handleReroll();
+                                }}
+                            >
+                                {rerollLoading
+                                    ? '리롤 중…'
+                                    : canReroll
+                                      ? `${actionName} · ${rerollCost}잼`
+                                      : `에코잼 부족 · ${rerollCost}잼`}
+                            </Button>
+                        </View>
+                    </View>
+                ) : null}
                 <BottomCTA.Double
                     leftButton={
                         <ShareResultButton
@@ -269,7 +286,19 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
+    },
+    bodyContent: {
         paddingHorizontal: 24,
+        paddingTop: 20,
+        paddingBottom: 24,
+        alignItems: 'center',
+    },
+    heroStage: {
+        width: '100%',
+        height: FEATURE_STAGE_HEIGHT,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
     },
     hero: {
         height: '100%',
@@ -278,7 +307,6 @@ const styles = StyleSheet.create({
     details: {
         width: '100%',
         alignItems: 'center',
-        paddingBottom: 24,
         gap: 12,
     },
     soupChip: {
@@ -302,9 +330,20 @@ const styles = StyleSheet.create({
     oneLine: {
         textAlign: 'center',
     },
-    rerollBlock: {
+    ingredientRewards: {
         width: '100%',
-        marginTop: 20,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        gap: 16,
+    },
+    ingredientReward: {
+        alignItems: 'center',
+        gap: 6,
+    },
+    ingredientImage: {
+        marginRight: 0,
     },
     rerollRow: {
         width: '100%',
@@ -320,14 +359,14 @@ const styles = StyleSheet.create({
         flex: 1,
         minWidth: 0,
     },
-    rerollUsed: {
-        textAlign: 'center',
-        marginTop: 16,
-    },
     footer: {
+        width: '100%',
+        maxWidth: 440,
+        alignSelf: 'center',
         paddingHorizontal: 20,
         paddingTop: 16,
         paddingBottom: 16,
         gap: 10,
+        backgroundColor: colors.background,
     },
 });

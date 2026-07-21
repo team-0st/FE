@@ -45,6 +45,11 @@ export type BeCheckInStatusResponse = {
 export type RegisterUserResponse = {
     userId: number;
     onboardingCompleted: boolean;
+    accessToken: string;
+    refreshToken: string;
+    tokenType: string;
+    accessTokenExpiresIn: number;
+    refreshTokenExpiresIn: number;
 };
 
 export type MissionVerifyPendingResponse = {
@@ -147,6 +152,7 @@ export type EcoJamHistoryItem = {
 /** BE 실제 prefix는 `/api/v1` */
 export const API_PATHS = {
     usersRegister: '/api/v1/users/register',
+    authLogin: '/api/v1/auth/login',
     shops: '/api/v1/shops',
     onboardingComplete: '/api/v1/onboarding/complete',
     checkIn: '/api/v1/check-in',
