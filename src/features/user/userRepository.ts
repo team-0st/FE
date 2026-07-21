@@ -98,6 +98,7 @@ export async function loadUserState(): Promise<AppUserState> {
         missionProgress: normalizeMissionProgress(missionProgress),
         ecoJamLedger: rest.ecoJamLedger ?? [],
         almangPointsLedger: rest.almangPointsLedger ?? [],
+        gachaHistory: rest.gachaHistory ?? [],
         pendingRealRewards: rest.pendingRealRewards ?? [],
         lastShareRewardDate: rest.lastShareRewardDate ?? null,
         hiddenTodayRecipePinId: rest.hiddenTodayRecipePinId ?? null,
