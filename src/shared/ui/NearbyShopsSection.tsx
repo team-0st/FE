@@ -8,7 +8,6 @@ import {
     formatStraightLineDistance,
     getNearbyShops,
     LOCATION_CONSENT_DENIED_LIST_HINT,
-    LOCATION_CONSENT_NOTICE,
     STRAIGHT_LINE_DISTANCE_HINT,
 } from '../../features/shop/nearbyShopLogic';
 import { ProbabilityInfoButton } from './ProbabilityInfoButton';
@@ -18,6 +17,12 @@ const HOME_NEARBY_LIMIT = 2;
 const NEARBY_DISTANCE_INFO_LINES = [
     '가장 가까운 상점이에요.',
     ...STRAIGHT_LINE_DISTANCE_HINT.split('\n').map((line) => line.trim()).filter(Boolean),
+];
+
+const LOCATION_CONSENT_INFO_LINES = [
+    '위치 동의 후 가까운 제로·재사용 상점과 직선 거리를 볼 수 있어요.',
+    '동의하지 않아도 목록은 확인할 수 있어요.',
+    LOCATION_CONSENT_DENIED_LIST_HINT,
 ];
 
 type NearbyShopsSectionProps = {
@@ -61,16 +66,13 @@ export function NearbyShopsSection({
             </View>
             {!locationConsentGranted ? (
                 <>
-                    <Txt typography="t7" color="grey600" style={styles.notice}>
-                        {LOCATION_CONSENT_NOTICE}
-                    </Txt>
                     <View style={styles.locationInfoRow}>
                         <Txt typography="t7" color="grey600">
                             위치 정보
                         </Txt>
                         <ProbabilityInfoButton
                             title="주변 상점 위치 정보"
-                            lines={[LOCATION_CONSENT_DENIED_LIST_HINT]}
+                            lines={LOCATION_CONSENT_INFO_LINES}
                             footnote={null}
                         />
                     </View>
@@ -135,9 +137,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 6,
         paddingVertical: 4,
-    },
-    notice: {
-        lineHeight: 20,
     },
     locationInfoRow: {
         flexDirection: 'row',
