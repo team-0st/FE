@@ -64,9 +64,16 @@ export function NearbyShopsSection({
                     <Txt typography="t7" color="grey600" style={styles.notice}>
                         {LOCATION_CONSENT_NOTICE}
                     </Txt>
-                    <Txt typography="t7" color="grey500" style={styles.deniedHint}>
-                        {LOCATION_CONSENT_DENIED_LIST_HINT}
-                    </Txt>
+                    <View style={styles.locationInfoRow}>
+                        <Txt typography="t7" color="grey600">
+                            위치 정보
+                        </Txt>
+                        <ProbabilityInfoButton
+                            title="주변 상점 위치 정보"
+                            lines={[LOCATION_CONSENT_DENIED_LIST_HINT]}
+                            footnote={null}
+                        />
+                    </View>
                     <Button size="medium" type="primary" style="weak" display="block" onPress={onPressRequestConsent}>
                         위치 동의하고 가까운 상점 보기
                     </Button>
@@ -132,6 +139,11 @@ const styles = StyleSheet.create({
     notice: {
         lineHeight: 20,
     },
+    locationInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
     listCard: {
         width: '100%',
         backgroundColor: colors.surface,
@@ -139,10 +151,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.border,
         overflow: 'hidden',
-    },
-    deniedHint: {
-        textAlign: 'center',
-        lineHeight: 20,
     },
     viewAll: {
         textAlign: 'center',

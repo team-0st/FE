@@ -52,12 +52,11 @@ const ECO_JAM_INFO_LINES = [
 ];
 
 /** 한 줄 = 한 문장 */
-const ALMANG_STORE_INFO_LINES = [
+export const ALMANG_STORE_INFO_LINES = [
     '포인트가 앱에 적립됐어요.',
     '앱에서 현금으로 바꾸거나 환불할 수 없어요.',
     '알맹상점에 방문해 본인 확인 후 매장 포인트로 이용해 주세요.',
     '앱 안에서는 현금으로 바꾸거나 환불·출금할 수 없어요.',
-    '알맹 포인트는 제휴 매장(알맹상점)에서만 이용해요.',
 ];
 
 function formatLedgerTime(iso: string): string {
