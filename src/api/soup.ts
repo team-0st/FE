@@ -231,7 +231,7 @@ export function mapSoupRerollResponse(
 }
 
 /**
- * POST /api/v1/soups/{soupId}/reroll — body 없음, X-Device-Id는 공통 client가 처리.
+ * POST /api/v1/soups/{soupId}/reroll — body 없음, Bearer 토큰은 공통 client가 처리.
  * USER_NOT_FOUND 등 여기서 다루지 않는 오류 코드는 그대로 다시 던져
  * 호출측(UserProvider)의 등록 복구·재시도 로직이 처리하도록 한다.
  */

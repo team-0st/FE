@@ -9,6 +9,7 @@ import {
     type PropsWithChildren,
 } from 'react';
 import { postCheckIn, getCheckInStatus, type CheckInResult } from '@api/checkIn';
+import { postLogin } from '@api/auth';
 import { ApiClientError, isApiEnabled } from '@api/client';
 import { postGacha } from '@api/gacha';
 import { mockPostGacha } from '@api/mock/gachaMock';
@@ -40,6 +41,7 @@ import { getMyPage } from '@api/profile';
 import { postUnlockHiddenRecipe } from '@api/recipes';
 import { postSoupCraft, postSoupReroll } from '@api/soup';
 import { postRegisterUser } from '@api/users';
+import { getAuthSession } from '@api/authSession';
 import type { MissionVerifyUploadInput } from '@api/files';
 import { getOrCreateDeviceId } from '../../shared/device/deviceId';
 import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
@@ -91,11 +93,14 @@ type UserContextValue = {
     state: AppUserState;
     checkInToday: () => Promise<CheckInResult>;
     /** API 활성 시 BE 온보딩 실패하면 ok:false (로컬 완료하지 않음) */
-    finishOnboarding: (shopId: string) => Promise<{ ok: true } | { ok: false; code: 'SYNC_FAILED' | 'NOT_READY' }>;
+    finishOnboarding: (
+        shopId: string,
+        password?: string,
+    ) => Promise<{ ok: true } | { ok: false; code: 'SYNC_FAILED' | 'NOT_READY' }>;
     saveOnboardingProfile: (payload: {
         nickname: string;
-        phoneMasked: string | null;
-        phoneDigits?: string | null;
+        phoneMasked: string;
+        phoneDigits: string;
         almangPayoutConsent: AlmangPayoutConsent;
         consentAt: string | null;
         privacyConsentAt: string;
@@ -182,12 +187,13 @@ export function UserProvider({ children }: PropsWithChildren) {
             options?: { force?: boolean },
         ): Promise<AppUserState> => {
             const deviceId = await getOrCreateDeviceId();
-            if (base.userId != null && options?.force !== true) {
+            const hasAuthSession = !isApiEnabled() || (await getAuthSession()) != null;
+            if (base.userId != null && options?.force !== true && hasAuthSession) {
                 return { ...base, deviceId };
             }
             try {
                 const registered = await postRegisterUser();
-                return applyRegisterUser(
+                const registeredState = applyRegisterUser(
                     { ...base, userId: options?.force === true ? null : base.userId },
                     {
                         userId: registered.userId,
@@ -196,6 +202,13 @@ export function UserProvider({ children }: PropsWithChildren) {
                             registered.onboardingCompleted || base.onboardingCompleted,
                     },
                 );
+                if (
+                    isApiEnabled() &&
+                    (options?.force === true || (base.userId != null && !hasAuthSession))
+                ) {
+                    return { ...registeredState, onboardingCompleted: false };
+                }
+                return registeredState;
             } catch {
                 if (isApiEnabled()) {
                     // 실서버 모드: 가짜 userId(1001)로 진행하지 않음
@@ -257,7 +270,7 @@ export function UserProvider({ children }: PropsWithChildren) {
                     next = syncCheckedInToday(next, today);
                 }
             } catch (error) {
-                // 로컬 userId만 있고 BE에 유저 없음 → 멱등 재등록
+                // 토큰이 가리키는 유저가 없으면 새 임시 계정으로 복구
                 if (
                     isApiEnabled() &&
                     error instanceof ApiClientError &&
@@ -419,48 +432,64 @@ export function UserProvider({ children }: PropsWithChildren) {
                 }
                 return { ok: false, code: 'USER_NOT_FOUND' };
             },
-            finishOnboarding: async (shopId) => {
+            finishOnboarding: async (shopId, password) => {
                 let current = stateRef.current;
-                // 로컬 userId만 남은 경우에도 BE에 멱등 등록 (온보딩 완료 직전)
                 if (isApiEnabled()) {
-                    current = await ensureRegistered(
-                        { ...current, userId: null },
-                        { force: true },
-                    );
-                    // 방금 등록해도 로컬 온보딩 플래그는 아직 false — 아래에서 완료 처리
-                    current = { ...current, onboardingCompleted: false };
+                    current = await ensureRegistered(current);
                     stateRef.current = current;
                     setState(current);
                     await saveUserState(current);
-                    if (current.userId == null) {
+                    if (current.userId == null || password == null || password.length === 0) {
                         return { ok: false, code: 'NOT_READY' };
                     }
                 }
                 const numericShopId = shopNumericId(shopId);
-                if (
-                    isApiEnabled() &&
-                    current.phoneNumber != null &&
-                    current.phoneNumber.length > 0 &&
-                    numericShopId != null
-                ) {
+                if (isApiEnabled()) {
+                    if (
+                        current.phoneNumber == null ||
+                        current.phoneNumber.length === 0 ||
+                        numericShopId == null ||
+                        password == null
+                    ) {
+                        return { ok: false, code: 'NOT_READY' };
+                    }
                     try {
                         await postOnboardingComplete({
                             nickname: current.nickname,
                             phoneNumber: current.phoneNumber,
+                            password,
                             shopId: numericShopId,
                         });
-                    } catch {
-                        return { ok: false, code: 'SYNC_FAILED' };
+                    } catch (error) {
+                        if (
+                            error instanceof ApiClientError &&
+                            error.code === 'DUPLICATE_PHONE_NUMBER'
+                        ) {
+                            try {
+                                const loggedIn = await postLogin(current.phoneNumber, password);
+                                current = {
+                                    ...current,
+                                    userId: loggedIn.userId,
+                                    nickname: loggedIn.nickname,
+                                    phoneNumber: loggedIn.phoneNumber,
+                                    onboardingCompleted: loggedIn.onboardingCompleted,
+                                };
+                                stateRef.current = current;
+                                setState(current);
+                                await saveUserState(current);
+                            } catch {
+                                return { ok: false, code: 'SYNC_FAILED' };
+                            }
+                        } else {
+                            return { ok: false, code: 'SYNC_FAILED' };
+                        }
                     }
                 }
                 await persist((prev) => finishOnboardingState(prev, shopId));
                 return { ok: true };
             },
             saveOnboardingProfile: async (payload) => {
-                const phoneNumber =
-                    payload.phoneDigits != null && payload.phoneDigits.length > 0
-                        ? formatPhoneForApi(payload.phoneDigits)
-                        : null;
+                const phoneNumber = formatPhoneForApi(payload.phoneDigits);
                 await persist((prev) =>
                     saveOnboardingProfileState(prev, {
                         nickname: payload.nickname,
@@ -474,8 +503,7 @@ export function UserProvider({ children }: PropsWithChildren) {
             },
             resetOnboarding: async () => {
                 const prev = stateRef.current;
-                // 로컬만 초기화. deviceId/userId는 유지해 재등록으로 BE onboardingCompleted=true 가
-                // 다시 덮어쓰여 홈으로 튕기는 것(온보딩 진입 불가)을 막는다.
+                // 로컬 온보딩만 초기화하고 현재 계정과 인증 세션은 유지한다.
                 let next: AppUserState = {
                     ...resetOnboardingState(prev),
                     deviceId: prev.deviceId,

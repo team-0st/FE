@@ -1,4 +1,4 @@
-import { getDeviceIdHeader, getOrCreateDeviceId } from '../shared/device/deviceId';
+import { getAuthSession, refreshAuthSession } from './authSession';
 
 export type ApiEnvelope<T> = {
     success: boolean;
@@ -34,18 +34,13 @@ export function isApiEnabled(): boolean {
 type ApiRequestOptions = {
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
-    /** false면 X-Device-Id 생략 (register만) */
-    withDeviceId?: boolean;
+    /** false면 Authorization 생략 (register/login/refresh) */
+    withAuth?: boolean;
     /** multipart 등 — Content-Type을 직접 넣지 않음 */
     formData?: FormData;
 };
 
-export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
-    const base = getApiBaseUrl();
-    if (base == null) {
-        throw new ApiClientError('API_DISABLED', 'EXPO_PUBLIC_API_BASE_URL이 비어 있습니다.', 0);
-    }
-
+function requestHeaders(options: ApiRequestOptions, accessToken?: string): Record<string, string> {
     const headers: Record<string, string> = {
         Accept: 'application/json',
     };
@@ -53,17 +48,23 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     if (options.formData == null) {
         headers['Content-Type'] = 'application/json';
     }
-
-    if (options.withDeviceId !== false) {
-        const deviceId = await getOrCreateDeviceId();
-        Object.assign(headers, getDeviceIdHeader(deviceId));
+    if (accessToken != null && accessToken.length > 0) {
+        headers.Authorization = `Bearer ${accessToken}`;
     }
+    return headers;
+}
 
+async function executeRequest<T>(
+    base: string,
+    path: string,
+    options: ApiRequestOptions,
+    accessToken?: string,
+): Promise<{ status: number; envelope: ApiEnvelope<T> }> {
     let response: Response;
     try {
         response = await fetch(`${base}${path}`, {
             method: options.method ?? 'GET',
-            headers,
+            headers: requestHeaders(options, accessToken),
             body:
                 options.formData != null
                     ? (options.formData as unknown as BodyInit_)
@@ -81,14 +82,36 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     } catch {
         throw new ApiClientError('NETWORK_ERROR', '응답을 해석하지 못했습니다.', response.status);
     }
+    return { status: response.status, envelope };
+}
 
+function unwrapEnvelope<T>(status: number, envelope: ApiEnvelope<T>): T {
     if (!envelope.success) {
         throw new ApiClientError(
             envelope.error?.code ?? 'NETWORK_ERROR',
             envelope.error?.message ?? '요청에 실패했습니다.',
-            response.status,
+            status,
         );
     }
-
     return envelope.data as T;
+}
+
+export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+    const base = getApiBaseUrl();
+    if (base == null) {
+        throw new ApiClientError('API_DISABLED', 'EXPO_PUBLIC_API_BASE_URL이 비어 있습니다.', 0);
+    }
+
+    const withAuth = options.withAuth !== false;
+    const session = withAuth ? await getAuthSession() : null;
+    let result = await executeRequest<T>(base, path, options, session?.accessToken);
+
+    if (withAuth && result.status === 401) {
+        const refreshed = await refreshAuthSession(base);
+        if (refreshed != null) {
+            result = await executeRequest<T>(base, path, options, refreshed.accessToken);
+        }
+    }
+
+    return unwrapEnvelope(result.status, result.envelope);
 }

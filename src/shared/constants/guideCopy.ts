@@ -21,8 +21,8 @@ export const ONBOARDING_PROFILE_GUIDE = {
     nicknameSubtitle: '앱에서 사용할 이름이에요.\n실명은 필요하지 않아요.',
     nicknamePlaceholder: '예) 펭귄탐험가',
     privacyTitle: '필수 개인정보 동의',
-    phoneTitle: '선택 · 휴대전화번호',
-    phoneHelp: '나중에 입력해도 괜찮아요.',
+    phoneTitle: '계정 정보 입력',
+    phoneHelp: '로그인에 사용할 휴대전화번호예요.',
     phonePlaceholder: '01012345678',
     skipModalTitle: '나중에 입력해도 괜찮아요',
     skipModalBody:

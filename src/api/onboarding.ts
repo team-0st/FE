@@ -5,6 +5,7 @@ export type OnboardingCompleteRequest = {
     nickname: string;
     /** `010-1234-5678` */
     phoneNumber: string;
+    password: string;
     shopId: number;
 };
 

@@ -40,7 +40,7 @@ function Page() {
     const handleComplete = async (payload: OnboardingProfilePayload) => {
         await saveOnboardingProfile(payload);
         // 당분간 샵 선택 온보딩 생략 — 파일럿 단골 샵으로 완료
-        const result = await finishOnboarding(DEFAULT_PILOT_SHOP_ID);
+        const result = await finishOnboarding(DEFAULT_PILOT_SHOP_ID, payload.password);
         if (!result.ok) {
             showError(
                 result.code === 'NOT_READY'

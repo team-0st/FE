@@ -4,7 +4,7 @@ import {
     isApiEnabled,
     type ApiEnvelope,
 } from './client';
-import { getDeviceIdHeader, getOrCreateDeviceId } from '../shared/device/deviceId';
+import { getAuthSession, refreshAuthSession } from './authSession';
 import { API_PATHS } from './notion/types';
 
 export type FileUploadResponse = {
@@ -289,12 +289,14 @@ export async function uploadMissionVerifyPhoto(
         imageBytes,
     );
 
-    const deviceId = await getOrCreateDeviceId();
-    const headers: Record<string, string> = {
+    const session = await getAuthSession();
+    const baseHeaders: Record<string, string> = {
         Accept: 'application/json',
         'Content-Type': contentType,
-        ...getDeviceIdHeader(deviceId),
     };
+    if (session != null) {
+        baseHeaders.Authorization = `Bearer ${session.accessToken}`;
+    }
 
     const url = `${base}${API_PATHS.filesUpload}?missionId=${missionNumericId}`;
 
@@ -309,32 +311,39 @@ export async function uploadMissionVerifyPhoto(
         );
     }
 
-    let status: number;
-    let text: string;
-    try {
-        const xhrResult = await postMultipartXhr(url, headers, body);
-        status = xhrResult.status;
-        text = xhrResult.text;
-    } catch (error) {
-        if (__DEV__) {
-            console.warn('[uploadMissionVerifyPhoto] xhr failed, try fetch', error);
-        }
-        // 폴백: fetch + ArrayBuffer
+    const send = async (headers: Record<string, string>): Promise<{ status: number; text: string }> => {
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers,
-                body: toArrayBuffer(body) as unknown as BodyInit_,
-            });
-            status = response.status;
-            text = await response.text();
-        } catch (fetchError) {
+            return await postMultipartXhr(url, headers, body);
+        } catch (error) {
             if (__DEV__) {
-                console.warn('[uploadMissionVerifyPhoto] fetch failed', fetchError);
+                console.warn('[uploadMissionVerifyPhoto] xhr failed, try fetch', error);
             }
-            throw new ApiClientError('NETWORK_ERROR', '네트워크 요청에 실패했습니다.', 0);
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers,
+                    body: toArrayBuffer(body) as unknown as BodyInit_,
+                });
+                return { status: response.status, text: await response.text() };
+            } catch (fetchError) {
+                if (__DEV__) {
+                    console.warn('[uploadMissionVerifyPhoto] fetch failed', fetchError);
+                }
+                throw new ApiClientError('NETWORK_ERROR', '네트워크 요청에 실패했습니다.', 0);
+            }
+        }
+    };
+
+    let result = await send(baseHeaders);
+    if (result.status === 401) {
+        const refreshed = await refreshAuthSession(base);
+        if (refreshed != null) {
+            result = await send({
+                ...baseHeaders,
+                Authorization: `Bearer ${refreshed.accessToken}`,
+            });
         }
     }
 
-    return parseUploadEnvelope(status, text);
+    return parseUploadEnvelope(result.status, result.text);
 }
