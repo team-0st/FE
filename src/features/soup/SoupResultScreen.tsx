@@ -241,30 +241,19 @@ export function SoupResultScreen({
                     }
                 />
             </View>
-            <View style={styles.footer}>
-                {grade !== 'FAIL' ? (
-                    <BottomCTA.Double
-                        leftButton={
-                            <ShareResultButton
-                                message={buildSoupShareMessage(displayName, shareRewardLabel)}
-                            />
-                        }
-                        rightButton={
-                            <Button size="large" type="primary" display="block" onPress={onPressDone}>
-                                확인
-                            </Button>
-                        }
-                    />
-                ) : (
-                    <BottomCTA.Single
-                        size="large"
-                        type="primary"
-                        display="block"
-                        onPress={onPressDone}
-                    >
-                        확인
-                    </BottomCTA.Single>
-                )}
+            <View testID="soup-result-footer" style={styles.footer}>
+                <BottomCTA.Double
+                    leftButton={
+                        <ShareResultButton
+                            message={buildSoupShareMessage(displayName, shareRewardLabel)}
+                        />
+                    }
+                    rightButton={
+                        <Button size="large" type="primary" display="block" onPress={onPressDone}>
+                            확인
+                        </Button>
+                    }
+                />
             </View>
         </View>
     );
@@ -337,6 +326,7 @@ const styles = StyleSheet.create({
     },
     footer: {
         paddingHorizontal: 20,
+        paddingTop: 16,
         paddingBottom: 16,
         gap: 10,
     },

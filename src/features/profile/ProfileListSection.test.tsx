@@ -1,4 +1,5 @@
 import type { SoupCraftResponse } from '@api/notion/types';
+import { getRecommendedRecipes } from '@api/mock/recipes';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -68,6 +69,8 @@ import { getMissionImageSource } from '../../shared/constants/missionAssets';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { MissionsListScreen } from '../missions/MissionsListScreen';
+import { CommunityGoalSection } from '../../shared/ui/CommunityGoalSection';
+import { EcoCopyCard } from '../../shared/ui/EcoCopyCard';
 
 jest.mock('@toss/tds-react-native', () => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -204,6 +207,7 @@ jest.mock('@toss/tds-react-native', () => {
         Button: MockButton,
         Checkbox: MockCheckbox,
         ListRow: MockListRow,
+        ProgressBar: () => null,
         TextButton: MockButton,
         TextField: MockTextField,
         Top: MockTop,
@@ -555,6 +559,27 @@ describe('ScrollPreviewSection (ScrollView 실측 기반 overflow 표시)', () =
 describe('brewStatusMessage (제작 탭 하단 상태 문구)', () => {
     it('재료가 없을 때 2개 이상 넣으라고 안내한다', () => {
         expect(brewStatusMessage(0, null)).toBe('재료를 2개 이상 넣으면 만들 수 있어요.');
+    });
+});
+
+describe('getRecommendedRecipes (완성한 스프 추천 제외)', () => {
+    it('재료가 충분해도 completedRecipeIds에 포함된 레시피는 추천하지 않는다', () => {
+        const inventory = {
+            tomato: 10,
+            onion: 10,
+            carrot: 10,
+            broccoli: 10,
+            mushroom: 10,
+            cabbage: 10,
+            paprika: 10,
+        };
+
+        expect(getRecommendedRecipes(inventory, []).map((recipe) => recipe.id)).toContain(
+            'beginner-warm',
+        );
+        expect(
+            getRecommendedRecipes(inventory, ['beginner-warm']).map((recipe) => recipe.id),
+        ).not.toContain('beginner-warm');
     });
 });
 
@@ -1278,6 +1303,7 @@ describe('SoupResultScreen stage/below 계약 (hero 220 viewport contain 중앙 
 
     function renderSoupResult(
         session: { recipeId: string; craft: SoupCraftResponse; rerollUsed: boolean } | null = null,
+        craft: SoupCraftResponse = BASE_CRAFT,
     ) {
         mockUseUser.mockReturnValue({
             state: { ...DEFAULT_USER_STATE, ecoJam: 300, lastSoupSession: session },
@@ -1289,7 +1315,7 @@ describe('SoupResultScreen stage/below 계약 (hero 220 viewport contain 중앙 
             showError: jest.fn(),
         });
         return render(
-            <SoupResultScreen recipeId="beginner-warm" craft={BASE_CRAFT} onPressDone={jest.fn()} />,
+            <SoupResultScreen recipeId="beginner-warm" craft={craft} onPressDone={jest.fn()} />,
         );
     }
 
@@ -1345,7 +1371,22 @@ describe('SoupResultScreen stage/below 계약 (hero 220 viewport contain 중앙 
     });
 
     it('CTA footer는 기존과 동일하게 body 밖에 고정된 상태로 유지된다', () => {
-        const { getByLabelText } = renderSoupResult();
+        const { getByLabelText, getByTestId } = renderSoupResult();
+
+        expect(getByLabelText('친구에게 결과 공유하기')).toBeTruthy();
+        expect(getByLabelText('확인')).toBeTruthy();
+        expect(StyleSheet.flatten(getByTestId('soup-result-footer').props.style).paddingTop).toBe(16);
+    });
+
+    it('실패 결과에서도 리롤 사용 여부와 무관하게 공유 버튼을 노출한다', () => {
+        const failCraft: SoupCraftResponse = {
+            ...BASE_CRAFT,
+            result: 'FAIL',
+            rewardGrade: 'FAIL',
+            rewardAmount: 0,
+            rewardDescription: '조금 덜 익은 스프',
+        };
+        const { getByLabelText } = renderSoupResult(null, failCraft);
 
         expect(getByLabelText('친구에게 결과 공유하기')).toBeTruthy();
         expect(getByLabelText('확인')).toBeTruthy();
@@ -1797,11 +1838,11 @@ describe('NearbyShopsSection 위치 미동의 안내 (본문 대신 info 버튼)
             screen.queryAllByText(new RegExp(LOCATION_CONSENT_DENIED_LIST_HINT)),
         ).toHaveLength(0);
         expect(screen.getByText('위치 정보')).toBeTruthy();
-        expect(screen.getByText(LOCATION_CONSENT_NOTICE)).toBeTruthy();
+        expect(screen.queryByText(LOCATION_CONSENT_NOTICE)).toBeNull();
         expect(screen.getByLabelText('위치 동의하고 가까운 상점 보기')).toBeTruthy();
     });
 
-    it('위치 미동의 상태에서는 info 버튼을 누른 뒤 안내 문장 한 줄만 보여준다', () => {
+    it('위치 미동의 상태에서는 info 버튼을 누른 뒤 위치 동의 안내와 거리 제한 안내를 문장별로 보여준다', () => {
         const screen = renderNearbyShops();
 
         fireEvent.press(screen.getByLabelText('주변 상점 위치 정보 안내'));
@@ -1813,8 +1854,12 @@ describe('NearbyShopsSection 위치 미동의 안내 (본문 대신 info 버튼)
             .UNSAFE_getByType(Modal)
             .findAllByType(Text)
             .filter((node) => StyleSheet.flatten(node.props.style)?.lineHeight === 22);
-        expect(infoLines).toHaveLength(1);
-        expect(infoLines[0]?.props.children).toEqual(['· ', LOCATION_CONSENT_DENIED_LIST_HINT]);
+        expect(infoLines).toHaveLength(3);
+        expect(infoLines.map((line) => line.props.children)).toEqual([
+            ['· ', '위치 동의 후 가까운 제로·재사용 상점과 직선 거리를 볼 수 있어요.'],
+            ['· ', '동의하지 않아도 목록은 확인할 수 있어요.'],
+            ['· ', LOCATION_CONSENT_DENIED_LIST_HINT],
+        ]);
     });
 
     it('위치 동의 상태에서는 "위치 정보" info 버튼을 노출하지 않는다', () => {
@@ -1822,6 +1867,46 @@ describe('NearbyShopsSection 위치 미동의 안내 (본문 대신 info 버튼)
 
         expect(screen.queryByText('위치 정보')).toBeNull();
         expect(screen.queryByLabelText('주변 상점 위치 정보 안내')).toBeNull();
+    });
+});
+
+describe('CommunityGoalSection 참여 안내 (본문 대신 info 버튼)', () => {
+    it('참여 안내를 본문에 노출하지 않고 info 버튼 안에 보여준다', () => {
+        const screen = render(<CommunityGoalSection />);
+
+        expect(screen.queryByText('참여자 실천이 모이면 목표가 채워져요.')).toBeNull();
+
+        fireEvent.press(screen.getByLabelText('공동 목표 안내'));
+
+        expect(screen.getByText(/참여자 실천이 모이면 목표가 채워져요/)).toBeTruthy();
+    });
+});
+
+describe('EcoCopyCard 환경 이야기 (홈 한 줄 + 스크롤 팝업)', () => {
+    it('홈에서는 한 줄 진입부만 보여주고 누르면 분류된 전체 이야기를 스크롤로 보여준다', () => {
+        const screen = render(<EcoCopyCard />);
+
+        expect(screen.getByText('오늘의 환경 이야기')).toBeTruthy();
+        expect(screen.queryByText('환경 소식')).toBeNull();
+        expect(screen.queryByText('실천 팁')).toBeNull();
+
+        fireEvent.press(screen.getByLabelText('오늘의 환경 이야기 모두 보기'));
+
+        expect(screen.getByText('환경 소식')).toBeTruthy();
+        expect(screen.getByText('실천 팁')).toBeTruthy();
+        expect(screen.UNSAFE_getByType(ScrollView)).toBeTruthy();
+    });
+
+    it('배경 닫기 Pressable은 ScrollView와 분리되어 스크롤 제스처를 가로채지 않는다', () => {
+        const screen = render(<EcoCopyCard />);
+
+        fireEvent.press(screen.getByLabelText('오늘의 환경 이야기 모두 보기'));
+
+        const dismissOverlay = screen.getByTestId('eco-copy-dismiss-overlay', {
+            includeHiddenElements: true,
+        });
+        expect(dismissOverlay.findAllByType(ScrollView)).toHaveLength(0);
+        expect(screen.getByTestId('eco-copy-sheet').findAllByType(ScrollView)).toHaveLength(1);
     });
 });
 
