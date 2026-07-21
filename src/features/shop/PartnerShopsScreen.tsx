@@ -14,6 +14,7 @@ import { useAppToast } from '../../shared/feedback/useAppToast';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { colors } from '../../shared/theme/colors';
 import { ShopCategoryChips } from '../../shared/ui/ShopCategoryChips';
+import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import {
     formatStraightLineDistance,
     getNearbyShops,
@@ -146,9 +147,16 @@ export function PartnerShopsScreen() {
                 </View>
                 {!locationConsentGranted ? (
                     <>
-                        <Txt typography="t7" color="grey600">
-                            {LOCATION_CONSENT_DENIED_LIST_HINT}
-                        </Txt>
+                        <View style={styles.locationInfoRow}>
+                            <Txt typography="t7" color="grey600">
+                                위치 정보
+                            </Txt>
+                            <ProbabilityInfoButton
+                                title="주변 상점 위치 정보"
+                                lines={[LOCATION_CONSENT_DENIED_LIST_HINT]}
+                                footnote={null}
+                            />
+                        </View>
                         <Button
                             size="medium"
                             type="primary"
@@ -225,6 +233,11 @@ const styles = StyleSheet.create({
     modeRow: {
         flexDirection: 'row',
         gap: 8,
+    },
+    locationInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
     },
     modeChip: {
         flex: 1,
