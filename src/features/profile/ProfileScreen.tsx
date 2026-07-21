@@ -15,7 +15,6 @@ import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import { formatLedgerDelta } from '../user/ecoJamLedger';
 import { useUser } from '../user/UserProvider';
-import { resolveShopName } from '../user/selectors';
 import { ALMANG_UI_COPY } from '../../shared/constants/almangComplianceCopy';
 import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
 import { ECO_JAM_TEST_GRANT } from '../../shared/constants/ecoJamPolicy';
@@ -29,7 +28,6 @@ import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
 type ProfileScreenProps = {
-    onPressChangeShop?: () => void;
     onPressAbout?: () => void;
     onPressRestartOnboarding?: () => void;
 };
@@ -51,7 +49,6 @@ function formatLedgerTime(iso: string): string {
 }
 
 export function ProfileScreen({
-    onPressChangeShop,
     onPressAbout,
     onPressRestartOnboarding,
 }: ProfileScreenProps) {
@@ -61,7 +58,6 @@ export function ProfileScreen({
     const [privacyVisible, setPrivacyVisible] = useState(false);
     const [termsVisible, setTermsVisible] = useState(false);
     const [detailModal, setDetailModal] = useState<DetailModal>(null);
-    const shopName = resolveShopName(state.shopId);
     const completed = state.completedRecipeIds.length;
     const ecoJamEntries = state.ecoJamLedger;
     const almangEntries = state.almangPointsLedger;
@@ -104,20 +100,6 @@ export function ProfileScreen({
                 <Txt typography="t2" fontWeight="bold">
                     {state.nickname}
                 </Txt>
-                <Txt typography="t6" color="grey600">
-                    {shopName}
-                </Txt>
-                {onPressChangeShop != null ? (
-                    <Txt
-                        typography="t7"
-                        color="blue500"
-                        onPress={onPressChangeShop}
-                        accessibilityRole="button"
-                        accessibilityLabel="단골 샵 변경"
-                    >
-                        단골 샵 변경
-                    </Txt>
-                ) : null}
             </View>
             <View style={styles.row}>
                 <Pressable

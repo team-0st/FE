@@ -103,7 +103,6 @@ export function MainTabsHost({
                             <RecipesScreen />
                         ) : (
                             <ProfileScreen
-                                onPressChangeShop={onPressChangeShop}
                                 onPressAbout={onPressAbout}
                                 onPressRestartOnboarding={onPressRestartOnboarding}
                             />
