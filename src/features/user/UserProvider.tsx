@@ -80,6 +80,7 @@ import {
     submitMissionPendingReview,
     spendEcoJam,
     unlockHiddenRecipe,
+    updateNickname as updateNicknameState,
     claimShareReward as applyShareRewardState,
     formatDateKey,
 } from './userStateLogic';
@@ -99,6 +100,7 @@ type UserContextValue = {
         privacyConsentAt: string;
     }) => Promise<void>;
     resetOnboarding: () => Promise<void>;
+    updateNickname: (nickname: string) => Promise<void>;
     selectShop: (shopId: string) => Promise<void>;
     setLocationConsent: (consent: LocationConsent) => Promise<void>;
     setCameraConsent: (consent: CameraConsent) => Promise<void>;
@@ -508,6 +510,9 @@ export function UserProvider({ children }: PropsWithChildren) {
                     setState(next);
                     await saveUserState(next);
                 }
+            },
+            updateNickname: async (nickname) => {
+                await persist((prev) => updateNicknameState(prev, nickname));
             },
             selectShop: async (shopId) => {
                 await persist((prev) => setShopId(prev, shopId));

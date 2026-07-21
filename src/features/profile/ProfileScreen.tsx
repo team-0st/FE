@@ -1,7 +1,8 @@
 import { findRecipeInCatalog } from '@api/mock/recipeCatalog';
-import { Button, Txt, useDialog } from '@toss/tds-react-native';
+import { Button, ListRow, TextField, Txt, useDialog } from '@toss/tds-react-native';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { validateNickname } from '../onboarding/onboardingProfileLogic';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { TermsOfServiceModal } from '../legal/TermsOfServiceModal';
 import { ABOUT_ZEROST_LABELS } from '../../shared/constants/aboutZerost';
@@ -15,10 +16,15 @@ import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import { formatLedgerDelta } from '../user/ecoJamLedger';
 import { useUser } from '../user/UserProvider';
-import { resolveShopName } from '../user/selectors';
 import { ALMANG_UI_COPY } from '../../shared/constants/almangComplianceCopy';
 import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
-import { ECO_JAM_TEST_GRANT } from '../../shared/constants/ecoJamPolicy';
+import {
+    ECO_JAM_GACHA_CONSOLATION,
+    ECO_JAM_GACHA_PULL_COST,
+    ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST,
+    ECO_JAM_TEST_GRANT,
+    ECO_JAM_WEEKLY_RECIPE_BASE,
+} from '../../shared/constants/ecoJamPolicy';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import {
     ProfileLedgerRow,
@@ -29,12 +35,21 @@ import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
 type ProfileScreenProps = {
-    onPressChangeShop?: () => void;
     onPressAbout?: () => void;
     onPressRestartOnboarding?: () => void;
 };
 
 type DetailModal = 'ecoJam' | 'almang' | 'soups' | null;
+
+const ECO_JAM_INFO_TITLE = '에코잼 사용처';
+
+/** 한 줄 = 한 문장 */
+const ECO_JAM_INFO_LINES = [
+    `가챠 뽑기 1회에 ${ECO_JAM_GACHA_PULL_COST}개를 사용해요.`,
+    `히든 레시피 해금에 ${ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST}개를 사용해요.`,
+    `이번주 레시피를 완성하면 ${ECO_JAM_WEEKLY_RECIPE_BASE}개를 받아요.`,
+    `가챠가 꽝이어도 위로로 ${ECO_JAM_GACHA_CONSOLATION}개를 받아요.`,
+];
 
 /** 한 줄 = 한 문장 */
 const ALMANG_STORE_INFO_LINES = [
@@ -51,17 +66,19 @@ function formatLedgerTime(iso: string): string {
 }
 
 export function ProfileScreen({
-    onPressChangeShop,
     onPressAbout,
     onPressRestartOnboarding,
 }: ProfileScreenProps) {
-    const { state, grantTestEcoJam, unlockAllRecipesForTest } = useUser();
+    const { state, grantTestEcoJam, unlockAllRecipesForTest, updateNickname } = useUser();
     const { showSuccess } = useAppToast();
     const { openConfirm } = useDialog();
     const [privacyVisible, setPrivacyVisible] = useState(false);
     const [termsVisible, setTermsVisible] = useState(false);
     const [detailModal, setDetailModal] = useState<DetailModal>(null);
-    const shopName = resolveShopName(state.shopId);
+    const [settingsVisible, setSettingsVisible] = useState(false);
+    const [nicknameEditVisible, setNicknameEditVisible] = useState(false);
+    const [nicknameInput, setNicknameInput] = useState('');
+    const [nicknameError, setNicknameError] = useState<string | null>(null);
     const completed = state.completedRecipeIds.length;
     const ecoJamEntries = state.ecoJamLedger;
     const almangEntries = state.almangPointsLedger;
@@ -98,50 +115,96 @@ export function ProfileScreen({
         })();
     };
 
+    const handleOpenNicknameEdit = () => {
+        setSettingsVisible(false);
+        setNicknameInput(state.nickname);
+        setNicknameError(null);
+        setNicknameEditVisible(true);
+    };
+
+    const handleOpenPrivacy = () => {
+        setSettingsVisible(false);
+        setPrivacyVisible(true);
+    };
+
+    const handleOpenTerms = () => {
+        setSettingsVisible(false);
+        setTermsVisible(true);
+    };
+
+    const handleRestartOnboardingFromSettings = () => {
+        setSettingsVisible(false);
+        handleRestartOnboarding();
+    };
+
+    const handleSaveNickname = () => {
+        const result = validateNickname(nicknameInput);
+        if (!result.ok) {
+            setNicknameError(result.message);
+            return;
+        }
+        void (async () => {
+            await updateNickname(result.nickname);
+            setNicknameEditVisible(false);
+            showSuccess('닉네임을 변경했어요.');
+        })();
+    };
+
     return (
         <Screen scrollable>
+            <View style={styles.topBar}>
+                <Pressable
+                    onPress={() => setSettingsVisible(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="설정"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.settingsButton}
+                >
+                    <Txt typography="t4">⚙️</Txt>
+                </Pressable>
+            </View>
             <View style={styles.hero}>
                 <Txt typography="t2" fontWeight="bold">
                     {state.nickname}
                 </Txt>
-                <Txt typography="t6" color="grey600">
-                    {shopName}
-                </Txt>
-                {onPressChangeShop != null ? (
-                    <Txt
-                        typography="t7"
-                        color="blue500"
-                        onPress={onPressChangeShop}
-                        accessibilityRole="button"
-                        accessibilityLabel="단골 샵 변경"
-                    >
-                        단골 샵 변경
-                    </Txt>
-                ) : null}
             </View>
             <View style={styles.row}>
-                <Pressable
-                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-                    onPress={() => setDetailModal('ecoJam')}
-                    accessibilityRole="button"
-                    accessibilityLabel={`에코잼 ${state.ecoJam}, 내역 보기`}
-                >
+                <View style={styles.card}>
                     <BrandEmojiImage
                         source={BRAND_EMOJI.ecoJam}
                         size={48}
                         containerStyle={styles.cardIcon}
                         accessibilityLabel="에코잼"
                     />
-                    <Txt typography="t7" color="grey600">
-                        에코잼
-                    </Txt>
-                    <Txt typography="t4" fontWeight="bold">
-                        {state.ecoJam}
-                    </Txt>
-                    <Txt typography="t7" color="blue500">
-                        내역 보기
-                    </Txt>
-                </Pressable>
+                    <View style={styles.almangLabelRow}>
+                        <Txt typography="t7" color="grey600" style={styles.almangLabelText}>
+                            에코잼
+                        </Txt>
+                        <View style={styles.ecoJamInfoAnchor}>
+                            <ProbabilityInfoButton
+                                title={ECO_JAM_INFO_TITLE}
+                                lines={ECO_JAM_INFO_LINES}
+                                footnote={null}
+                            />
+                        </View>
+                    </View>
+                    <Pressable
+                        onPress={() => setDetailModal('ecoJam')}
+                        accessibilityRole="button"
+                        accessibilityLabel={`에코잼 ${state.ecoJam}, 내역 보기`}
+                        style={({ pressed }) => [
+                            styles.almangTapArea,
+                            pressed && styles.cardPressed,
+                        ]}
+                    >
+                        <Txt typography="t4" fontWeight="bold">
+                            {state.ecoJam}
+                        </Txt>
+                        <Txt typography="t7" color="blue500">
+                            내역 보기
+                        </Txt>
+                    </Pressable>
+                </View>
                 <View style={styles.card}>
                     <BrandEmojiImage
                         source={BRAND_EMOJI.almangPoint}
@@ -251,28 +314,6 @@ export function ProfileScreen({
                     </Txt>
                 </View>
             ) : null}
-            <View style={styles.legalLinkRow}>
-                <Txt
-                    typography="t6"
-                    color="blue500"
-                    style={styles.policyLink}
-                    onPress={() => setPrivacyVisible(true)}
-                    accessibilityRole="button"
-                    accessibilityLabel={PRIVACY_POLICY_LABELS.myPageEntry}
-                >
-                    {PRIVACY_POLICY_LABELS.myPageEntry}
-                </Txt>
-                <Txt
-                    typography="t6"
-                    color="blue500"
-                    style={styles.policyLink}
-                    onPress={() => setTermsVisible(true)}
-                    accessibilityRole="button"
-                    accessibilityLabel={TERMS_OF_SERVICE_LABELS.myPageEntry}
-                >
-                    {TERMS_OF_SERVICE_LABELS.myPageEntry}
-                </Txt>
-            </View>
             {DEV_TEST_TOOLS_ENABLED ? (
                 <View style={styles.devBox}>
                     <Txt typography="t7" fontWeight="semibold" color="grey700">
@@ -308,20 +349,116 @@ export function ProfileScreen({
                     </Button>
                 </View>
             ) : null}
-            {onPressRestartOnboarding != null ? (
-                <Txt
-                    typography="t7"
-                    color="blue500"
-                    style={styles.restartOnboarding}
-                    onPress={handleRestartOnboarding}
-                    accessibilityRole="button"
-                    accessibilityLabel="처음부터 다시 시작"
-                >
-                    처음부터 다시 시작
-                </Txt>
-            ) : null}
             <PrivacyPolicyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
             <TermsOfServiceModal visible={termsVisible} onClose={() => setTermsVisible(false)} />
+            <Modal
+                visible={settingsVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setSettingsVisible(false)}
+            >
+                <Pressable style={styles.overlay} onPress={() => setSettingsVisible(false)}>
+                    <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+                        <Txt typography="t5" fontWeight="bold" style={styles.sheetTitle}>
+                            설정
+                        </Txt>
+                        <ListRow
+                            onPress={handleOpenNicknameEdit}
+                            contents={
+                                <ListRow.Texts
+                                    type="1RowTypeA"
+                                    top="닉네임 수정"
+                                    topProps={{ fontWeight: 'bold' }}
+                                />
+                            }
+                            withArrow
+                        />
+                        <ListRow
+                            onPress={handleOpenPrivacy}
+                            contents={
+                                <ListRow.Texts type="1RowTypeA" top={PRIVACY_POLICY_LABELS.myPageEntry} />
+                            }
+                            withArrow
+                        />
+                        <ListRow
+                            onPress={handleOpenTerms}
+                            contents={
+                                <ListRow.Texts type="1RowTypeA" top={TERMS_OF_SERVICE_LABELS.myPageEntry} />
+                            }
+                            withArrow
+                        />
+                        {onPressRestartOnboarding != null ? (
+                            <ListRow
+                                onPress={handleRestartOnboardingFromSettings}
+                                contents={
+                                    <ListRow.Texts
+                                        type="1RowTypeA"
+                                        top="처음부터 다시 시작"
+                                        topProps={{ color: 'red500' }}
+                                    />
+                                }
+                                withArrow
+                            />
+                        ) : null}
+                        <Button
+                            size="medium"
+                            type="dark"
+                            style="weak"
+                            display="block"
+                            onPress={() => setSettingsVisible(false)}
+                        >
+                            닫기
+                        </Button>
+                    </View>
+                </Pressable>
+            </Modal>
+            <Modal
+                visible={nicknameEditVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setNicknameEditVisible(false)}
+            >
+                <Pressable style={styles.overlay} onPress={() => setNicknameEditVisible(false)}>
+                    <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+                        <Txt typography="t5" fontWeight="bold" style={styles.sheetTitle}>
+                            닉네임 수정
+                        </Txt>
+                        <TextField
+                            variant="line"
+                            label="닉네임"
+                            value={nicknameInput}
+                            onChangeText={(value) => {
+                                setNicknameInput(value);
+                                setNicknameError(null);
+                            }}
+                            autoFocus
+                            maxLength={12}
+                        />
+                        {nicknameError != null ? (
+                            <Txt typography="t7" color="red500">
+                                {nicknameError}
+                            </Txt>
+                        ) : null}
+                        <Button
+                            size="medium"
+                            type="primary"
+                            display="block"
+                            onPress={handleSaveNickname}
+                        >
+                            저장
+                        </Button>
+                        <Button
+                            size="medium"
+                            type="dark"
+                            style="weak"
+                            display="block"
+                            onPress={() => setNicknameEditVisible(false)}
+                        >
+                            취소
+                        </Button>
+                    </View>
+                </Pressable>
+            </Modal>
             <ProfileListModal
                 visible={detailModal === 'ecoJam'}
                 title="에코잼 내역"
@@ -374,6 +511,19 @@ export function ProfileScreen({
 }
 
 const styles = StyleSheet.create({
+    topBar: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        paddingTop: 12,
+        marginBottom: 12,
+    },
+    settingsButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     hero: {
         alignItems: 'center',
         marginBottom: 20,
@@ -422,6 +572,12 @@ const styles = StyleSheet.create({
         marginLeft: 40,
         top: 1,
     },
+    ecoJamInfoAnchor: {
+        position: 'absolute',
+        left: '50%',
+        marginLeft: 26,
+        top: 1,
+    },
     almangTapArea: {
         alignItems: 'center',
         gap: 2,
@@ -443,11 +599,6 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         gap: 4,
     },
-    restartOnboarding: {
-        marginTop: 24,
-        textAlign: 'center',
-        textDecorationLine: 'underline',
-    },
     devBox: {
         marginTop: 20,
         padding: 14,
@@ -462,13 +613,25 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 24,
     },
-    legalLinkRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 16,
-        marginTop: 12,
-    },
     policyLink: {
         textDecorationLine: 'underline',
+    },
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    sheet: {
+        backgroundColor: colors.surface,
+        borderRadius: 16,
+        padding: 20,
+        maxHeight: '80%',
+        gap: 12,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    sheetTitle: {
+        marginBottom: 4,
     },
 });

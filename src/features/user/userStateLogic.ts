@@ -170,6 +170,10 @@ export function setCameraConsent(state: AppUserState, consent: CameraConsent): A
     };
 }
 
+export function updateNickname(state: AppUserState, nickname: string): AppUserState {
+    return { ...state, nickname };
+}
+
 export function getMissionStatus(state: AppUserState, missionId: string): MissionProgressStatus {
     return state.missionProgress[missionId]?.status ?? 'available';
 }
