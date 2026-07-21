@@ -8,7 +8,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { buildMissionShareMessage, shareZerostResult } from '../../shared/feedback/shareResult';
 import { useAppToast } from '../../shared/feedback/useAppToast';
-import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 import { resolveShopNameWithRegion } from '../user/selectors';
@@ -26,11 +25,17 @@ type MissionResultScreenProps = {
     onPressHome: () => void;
 };
 
-function formatShareDate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}.${m}.${d}`;
+function MissionDetailRow({ label, value }: { label: string; value: string }) {
+    return (
+        <View style={styles.detailRow}>
+            <Txt typography="t7" color="grey600">
+                {label}
+            </Txt>
+            <Txt typography="t7" color="grey900" fontWeight="semibold" style={styles.detailValue}>
+                {value}
+            </Txt>
+        </View>
+    );
 }
 
 export function MissionResultScreen({ mission, onPressHome }: MissionResultScreenProps) {
@@ -66,7 +71,6 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
     );
     const shopName = resolveShopNameWithRegion(state.shopId);
     const checkInStreak = computeCheckInStreak(state.checkInDates);
-    const dateLabel = formatShareDate(new Date());
     const shareMessage = buildMissionShareMessage(mission.title, rewardLabel);
 
     // 공유 성공 검증 서버 API가 없어 에코잼 보상 없이 공유만 수행한다.
@@ -107,37 +111,20 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
                     </View>
                 ) : (
                     <>
-                        <View style={styles.rewardBox}>
-                            {rewardIngredient?.imageSource != null ? (
-                                <BrandEmojiImage
-                                    source={rewardIngredient.imageSource}
-                                    size={72}
-                                    containerStyle={styles.rewardImage}
-                                    accessibilityLabel={rewardLabel}
-                                />
-                            ) : null}
-                            <Txt typography="t7" color="grey600">
-                                획득 재료
-                            </Txt>
-                            <Txt typography="t4" fontWeight="bold" style={styles.rewardLabel}>
-                                {rewardLabel}
-                            </Txt>
-                        </View>
-                        {carbonReduction != null ? (
-                            <Txt typography="t6" color="grey700" style={styles.carbonFeedback}>
-                                {carbonReduction.feedbackCopy}
-                            </Txt>
-                        ) : null}
                         <MissionShareCard
-                            missionTitle={mission.title}
                             practiceCount={practiceCount}
-                            checkInStreak={checkInStreak}
-                            shopName={shopName}
-                            dateLabel={dateLabel}
-                            rewardLabel={rewardLabel}
                             carbonGrams={carbonReduction?.grams ?? null}
                             photoUri={capturedPhotoUri}
                         />
+                        <View style={styles.details}>
+                            <Txt typography="t6" color="grey900" fontWeight="bold">
+                                상세 정보
+                            </Txt>
+                            <MissionDetailRow label="완료 미션" value={mission.title} />
+                            <MissionDetailRow label="획득 재료" value={rewardLabel} />
+                            <MissionDetailRow label="연속 출석" value={`${checkInStreak}일째`} />
+                            <MissionDetailRow label="참여 상점" value={shopName} />
+                        </View>
                     </>
                 )}
             </Screen>
@@ -194,26 +181,26 @@ const styles = StyleSheet.create({
         gap: 12,
         alignItems: 'center',
     },
-    rewardBox: {
+    details: {
         marginHorizontal: 20,
-        marginTop: 4,
+        marginTop: 16,
+        marginBottom: 8,
         padding: 16,
         borderRadius: 16,
-        backgroundColor: colors.heroTint,
-        alignItems: 'center',
-        gap: 4,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+        gap: 12,
     },
-    rewardImage: {
-        marginRight: 0,
-        marginBottom: 4,
+    detailRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 16,
     },
-    rewardLabel: {
-        textAlign: 'center',
-    },
-    carbonFeedback: {
-        textAlign: 'center',
-        marginTop: 10,
-        marginHorizontal: 20,
+    detailValue: {
+        flex: 1,
+        textAlign: 'right',
     },
     pendingTitle: {
         textAlign: 'center',

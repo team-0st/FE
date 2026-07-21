@@ -68,6 +68,8 @@ import { getMissionImageSource } from '../../shared/constants/missionAssets';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { MissionsListScreen } from '../missions/MissionsListScreen';
+import { MissionShareCard } from '../missions/MissionShareCard';
+import { MissionResultScreen } from '../missions/MissionResultScreen';
 
 jest.mock('@toss/tds-react-native', () => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -197,6 +199,7 @@ jest.mock('@toss/tds-react-native', () => {
     });
 
     return {
+        Asset: { Icon: () => null },
         Badge: MockBadge,
         Border: MockBorder,
         BottomCTA: MockBottomCTA,
@@ -208,6 +211,7 @@ jest.mock('@toss/tds-react-native', () => {
         TextField: MockTextField,
         Top: MockTop,
         Txt: MockText,
+        frameShape: { CircleLarge: 'CircleLarge' },
     };
 });
 
@@ -1907,5 +1911,46 @@ describe('미션 아이콘 — 미션별 개별 asset', () => {
             expect(lockedRow.props.left.type).toBe(ListRow.Icon);
             expect(lockedRow.props.left.props.name).toBe(TDS_ICON.missionLock);
         }
+    });
+});
+
+describe('MissionShareCard 사진 중심 공유 카드', () => {
+    it('브랜드·핵심 성과만 하단 그라데이션에 남기고 상세 정보는 카드에서 제거한다', () => {
+        const screen = render(
+            <MissionShareCard
+                practiceCount={4}
+                carbonGrams={150}
+                photoUri="file:///mission.jpg"
+            />,
+        );
+
+        expect(screen.getByText('제로스트')).toBeTruthy();
+        expect(screen.getByText('일회용품 4개 절감')).toBeTruthy();
+        expect(screen.getByText('약 150g CO2 감소')).toBeTruthy();
+        expect(screen.getByTestId('mission-share-gradient')).toBeTruthy();
+        expect(screen.queryByText('연속 출석')).toBeNull();
+        expect(screen.queryByText('참여 샵')).toBeNull();
+        expect(screen.queryByText('획득 재료')).toBeNull();
+        expect(screen.queryByText('알맹상점 · 마포')).toBeNull();
+        expect(screen.queryByText('토마토 1개')).toBeNull();
+    });
+
+    it('카드에서 뺀 미션·재료·출석·상점 정보는 결과 화면 하단 상세영역에 보여준다', () => {
+        const mission = DAILY_MISSIONS[0]!;
+        mockUseUser.mockReturnValue({
+            state: DEFAULT_USER_STATE,
+        } as unknown as ReturnType<typeof useUser>);
+        mockUseAppToast.mockReturnValue({
+            show: jest.fn(),
+            showSuccess: jest.fn(),
+            showError: jest.fn(),
+        });
+
+        const screen = render(<MissionResultScreen mission={mission} onPressHome={jest.fn()} />);
+
+        expect(screen.getByText('완료 미션')).toBeTruthy();
+        expect(screen.getByText('획득 재료')).toBeTruthy();
+        expect(screen.getByText('연속 출석')).toBeTruthy();
+        expect(screen.getByText('참여 상점')).toBeTruthy();
     });
 });
