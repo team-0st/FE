@@ -1,4 +1,4 @@
-import { Button, Top, Txt } from '@toss/tds-react-native';
+import { Button, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { FEATURE_HEADER_SLOT_HEIGHT } from '../../shared/constants/brandAssets';
 import { CAULDRON_TIER_LAYERS, STIR_STICK_IMAGE } from '../../shared/constants/cauldronImages';
@@ -25,14 +25,7 @@ export function CraftLandingScreen({ onPressStart }: CraftLandingScreenProps) {
                 <FixedHeightHeaderSlot
                     height={FEATURE_HEADER_SLOT_HEIGHT}
                     testID="craft-header-slot"
-                >
-                    <Top
-                        title={<Top.TitleParagraph size={22}>마녀의 마법 솥 🧙‍♀️</Top.TitleParagraph>}
-                        subtitle2={
-                            <Top.SubtitleParagraph>오늘의 제로웨이스트 요리를 시작해요</Top.SubtitleParagraph>
-                        }
-                    />
-                </FixedHeightHeaderSlot>
+                />
                 <CenteredFeatureStage
                     testID="craft-centered-stage"
                     stageTestID="craft-stage-viewport"
