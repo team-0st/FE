@@ -316,6 +316,7 @@ export function GachaScreen({ active }: GachaScreenProps) {
                     testID="gacha-centered-stage"
                     stageTestID="gacha-stage-viewport"
                     belowTestID="gacha-below"
+                    belowScrollable={false}
                     stage={
                         <StageArt source={heroSource} phaseKey={stageKey} accessibilityLabel={heroLabel} />
                     }

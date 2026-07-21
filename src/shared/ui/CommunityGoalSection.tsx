@@ -7,6 +7,7 @@ import { ProgressBar, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { BrandEmojiImage } from './BrandEmojiImage';
+import { ProbabilityInfoButton } from './ProbabilityInfoButton';
 
 const CHEER_SIZE = 22;
 const HERO_SIZE = 52;
@@ -19,9 +20,16 @@ export function CommunityGoalSection() {
     return (
         <View style={styles.wrap}>
             <View style={styles.headerRow}>
-                <Txt typography="t6" fontWeight="semibold" style={styles.title}>
-                    {goal.title} · {percent}%
-                </Txt>
+                <View style={styles.titleRow}>
+                    <Txt typography="t6" fontWeight="semibold">
+                        {goal.title} · {percent}%
+                    </Txt>
+                    <ProbabilityInfoButton
+                        title="공동 목표"
+                        lines={[goal.description]}
+                        footnote={null}
+                    />
+                </View>
                 <BrandEmojiImage
                     source={HOME_DECOR.homeHero}
                     size={HERO_SIZE}
@@ -29,9 +37,6 @@ export function CommunityGoalSection() {
                     accessibilityLabel="제로와 스티"
                 />
             </View>
-            <Txt typography="t7" color="grey600">
-                {goal.description}
-            </Txt>
             <View style={styles.barRow}>
                 <ProgressBar
                     progress={percent}
@@ -72,8 +77,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         gap: 8,
     },
-    title: {
+    titleRow: {
         flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
     },
     hero: {
         flexShrink: 0,
