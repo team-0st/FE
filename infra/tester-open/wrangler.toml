@@ -6,6 +6,11 @@ workers_dev = true
 [vars]
 TESTER_LINK_API_BASE = "https://dev-api.zero-st.com"
 
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
 [[routes]]
 pattern = "zero-st.com/*"
 zone_name = "zero-st.com"
