@@ -33,6 +33,7 @@ import {
     ProfileListModal,
     ProfileSoupRow,
 } from './ProfileListSection';
+import { AdminTesterLinkSection } from './AdminTesterLinkSection';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
@@ -305,6 +306,7 @@ export function ProfileScreen({
                     </Txt>
                 </View>
             ) : null}
+            <AdminTesterLinkSection />
             <View style={styles.legalLinkRow}>
                 <Txt
                     typography="t6"
