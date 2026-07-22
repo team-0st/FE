@@ -1,0 +1,11 @@
+name = "zerost-tester-open"
+main = "src/index.ts"
+compatibility_date = "2026-07-22"
+workers_dev = true
+
+[vars]
+TESTER_LINK_API_BASE = "https://dev-api.zero-st.com"
+
+[[routes]]
+pattern = "zero-st.com/*"
+zone_name = "zero-st.com"

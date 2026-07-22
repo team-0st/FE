@@ -174,4 +174,6 @@ export const API_PATHS = {
     ecoJamHistories: '/api/v1/histories/eco-jams',
     pointHistories: '/api/v1/histories/points',
     home: '/api/v1/home',
+    testerLinkCurrent: '/api/v1/tester-link/current',
+    adminTesterLink: '/api/v1/admin/tester-link',
 } as const;
