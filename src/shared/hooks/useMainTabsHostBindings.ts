@@ -26,6 +26,9 @@ export function useMainTabsHostBindings(navigation: object) {
         onPressAbout: () => {
             nav.navigate(ROUTES.about);
         },
+        onPressAdminReview: () => {
+            nav.navigate(ROUTES.adminReview);
+        },
         onPressLogout: () => {
             nav.replace(ROUTES.login);
         },

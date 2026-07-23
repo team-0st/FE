@@ -236,4 +236,10 @@ export const API_PATHS = {
     adminTesterLink: '/api/v1/admin/tester-link',
     adminUsers: '/api/v1/admin/users',
     adminAssetsGrant: '/api/v1/admin/assets/grant',
+    adminMissionCompletionsPending: '/api/v1/admin/missions/completions/pending',
+    adminMissionCompletionReview: (completionId: number) =>
+        `/api/v1/admin/missions/completions/${completionId}/review`,
+    adminCommunityProofsPending: '/api/v1/admin/community-missions/proofs/pending',
+    adminCommunityProofReview: (proofId: number) =>
+        `/api/v1/admin/community-missions/proofs/${proofId}/review`,
 } as const;

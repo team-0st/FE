@@ -33,11 +33,13 @@ import {
 } from './ProfileListSection';
 import { AdminTesterLinkSection } from './AdminTesterLinkSection';
 import { AdminAssetGrantSection } from './AdminAssetGrantSection';
+import { AdminReviewEntry } from './AdminReviewEntry';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
 type ProfileScreenProps = {
     onPressAbout?: () => void;
+    onPressAdminReview?: () => void;
     onPressLogout?: () => void;
 };
 
@@ -68,6 +70,7 @@ function formatLedgerTime(iso: string): string {
 
 export function ProfileScreen({
     onPressAbout,
+    onPressAdminReview,
     onPressLogout,
 }: ProfileScreenProps) {
     const { state, updateNickname, updateAvatar, logout } = useUser();
@@ -304,6 +307,9 @@ export function ProfileScreen({
                         {ABOUT_ZEROST_LABELS.myPageEntry}
                     </Txt>
                 </View>
+            ) : null}
+            {onPressAdminReview != null ? (
+                <AdminReviewEntry onPress={onPressAdminReview} />
             ) : null}
             <AdminTesterLinkSection />
             <AdminAssetGrantSection />

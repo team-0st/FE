@@ -18,6 +18,7 @@ type MainTabsHostProps = {
     onSoupMade: (recipeId: string, craft: SoupCraftResponse) => void;
     onPressChangeShop: () => void;
     onPressAbout?: () => void;
+    onPressAdminReview?: () => void;
     onPressLogout?: () => void;
 };
 
@@ -37,6 +38,7 @@ export function MainTabsHost({
     onSoupMade,
     onPressChangeShop,
     onPressAbout,
+    onPressAdminReview,
     onPressLogout,
 }: MainTabsHostProps) {
     const insets = useSafeAreaInsets();
@@ -104,6 +106,7 @@ export function MainTabsHost({
                         ) : (
                             <ProfileScreen
                                 onPressAbout={onPressAbout}
+                                onPressAdminReview={onPressAdminReview}
                                 onPressLogout={onPressLogout}
                             />
                         )}
@@ -118,6 +121,7 @@ export function MainTabsHost({
             onSoupMade,
             onPressChangeShop,
             onPressAbout,
+            onPressAdminReview,
             onPressLogout,
         ],
     );
