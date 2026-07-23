@@ -258,7 +258,14 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
     const beClaimableCount = Object.values(beFlagsBySlug).filter(
         (f) => f.rewardClaimable && !f.rewardClaimed,
     ).length;
-    const claimableCount = Math.max(pendingRewardCount, localClaimableCount, beClaimableCount);
+    const communityClaimableCount = communityItems.filter(
+        (item) => item.unlocked && item.status === 'claimable',
+    ).length;
+    const claimableCount = Math.max(
+        pendingRewardCount,
+        localClaimableCount,
+        beClaimableCount + communityClaimableCount,
+    );
 
     useEffect(() => {
         if (!isApiEnabled()) {

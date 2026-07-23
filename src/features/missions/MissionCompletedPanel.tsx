@@ -1,47 +1,75 @@
 import { getMissionCompletions } from '@api/missions';
-import type { MissionCompletionItem } from '@api/notion/types';
+import { getCommunityMissions } from '@api/communityMissions';
 import { Button, Txt } from '@toss/tds-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useUser } from '../user/UserProvider';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { CenterLoader } from '../../shared/ui/CenterLoader';
 import { useAppToast } from '../../shared/feedback/useAppToast';
+import { getMissionImageSource } from '../../shared/constants/missionAssets';
 import {
-    resolveMissionRewardRowMeta,
+    communityToCompletedTabItem,
+    completionToClaimedTabItem,
+    formatRewardEntries,
+    formatTabDate,
+    localCompletedToTabItems,
     rewardImageSource,
-} from './missionRewardRowMeta';
+    sortClaimedDesc,
+    type MissionRewardTabItem,
+} from './missionRewardTabItems';
 
 /**
- * 수령 완료된 미션 보상 이력.
- * 행: 미션 아이콘 · 미션 내용 · 보상 아이콘
+ * 수령·완료 이력: 일반 미션 completions + 공동 미션 completed.
  */
 export function MissionCompletedPanel() {
+    const { state } = useUser();
     const toast = useAppToast();
     const [loading, setLoading] = useState(true);
-    const [items, setItems] = useState<MissionCompletionItem[]>([]);
+    const [items, setItems] = useState<MissionRewardTabItem[]>([]);
 
     const refresh = useCallback(async () => {
         setLoading(true);
         try {
-            const completions = await getMissionCompletions();
-            const claimed = completions
-                .filter(
-                    (item) =>
-                        item.rewardClaimed === true ||
-                        (item.rewardClaimedAt != null && item.rewardClaimedAt.length > 0),
-                )
-                .sort((a, b) => {
-                    const at = Date.parse(a.rewardClaimedAt ?? a.reviewedAt ?? a.submittedAt);
-                    const bt = Date.parse(b.rewardClaimedAt ?? b.reviewedAt ?? b.submittedAt);
-                    return (Number.isNaN(bt) ? 0 : bt) - (Number.isNaN(at) ? 0 : at);
-                });
-            setItems(claimed);
+            const [completions, community] = await Promise.all([
+                getMissionCompletions().catch(() => []),
+                getCommunityMissions().catch(() => null),
+            ]);
+
+            const byKey = new Map<string, MissionRewardTabItem>();
+
+            for (const c of completions) {
+                const claimed =
+                    c.rewardClaimed === true ||
+                    (c.rewardClaimedAt != null && c.rewardClaimedAt.length > 0);
+                if (!claimed) {
+                    continue;
+                }
+                const row = completionToClaimedTabItem(c);
+                byKey.set(row.key, row);
+            }
+
+            if (community != null) {
+                for (const dto of community) {
+                    if (!dto.completed && !dto.succeeded) {
+                        continue;
+                    }
+                    const row = communityToCompletedTabItem(dto);
+                    byKey.set(row.key, row);
+                }
+            }
+
+            for (const row of localCompletedToTabItems(state, new Set(byKey.keys()))) {
+                byKey.set(row.key, row);
+            }
+
+            setItems(sortClaimedDesc(Array.from(byKey.values())));
         } catch {
             toast.showError('완료 목록을 불러오지 못했어요.\n잠시 후 다시 시도해 주세요.');
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [state.missionProgress, toast]);
 
     useEffect(() => {
         void refresh();
@@ -77,31 +105,35 @@ export function MissionCompletedPanel() {
     return (
         <View style={styles.list} testID="mission-completed-panel">
             <Txt typography="t7" color="grey600" style={styles.hint}>
-                이미 받은 보상이에요.
+                일반·공동 미션에서 받은 보상이에요.
             </Txt>
             {items.map((item) => {
-                const meta = resolveMissionRewardRowMeta(item.missionId, item.missionTitle);
-                const rewardSrc = rewardImageSource(item.rewardedIngredient?.imageUrl);
-                const rewardName = item.rewardedIngredient?.name ?? '보상';
+                const rewardSrc = rewardImageSource(item.rewards[0]?.imageUrl);
+                const rewardName = item.rewards[0]?.ingredientName ?? '보상';
                 return (
-                    <View key={item.completionId} style={styles.card}>
+                    <View key={item.key} style={styles.card}>
                         <BrandEmojiImage
-                            source={meta.missionImage}
+                            source={getMissionImageSource(item.missionSlug, item.sourceTitle)}
                             size={48}
-                            containerStyle={styles.missionIcon}
-                            accessibilityLabel={`${meta.title} 아이콘`}
+                            accessibilityLabel={`${item.sourceTitle} 아이콘`}
                         />
                         <View style={styles.cardText}>
                             <Txt typography="t6" fontWeight="bold" numberOfLines={1}>
-                                {meta.title}
+                                {item.sourceTitle}
                             </Txt>
-                            {meta.description.length > 0 ? (
+                            {item.description.length > 0 ? (
                                 <Txt typography="t7" color="grey600" numberOfLines={2}>
-                                    {meta.description}
+                                    {item.description}
                                 </Txt>
-                            ) : null}
+                            ) : (
+                                <Txt typography="t7" color="grey500" numberOfLines={1}>
+                                    {formatRewardEntries(item)}
+                                </Txt>
+                            )}
                             <Txt typography="t7" color="grey500">
-                                {formatClaimedAt(item.rewardClaimedAt ?? item.reviewedAt)}
+                                {item.kind === 'community'
+                                    ? '공동 미션 · 완료'
+                                    : formatTabDate(item.claimedAt, '수령')}
                             </Txt>
                         </View>
                         {rewardSrc != null ? (
@@ -120,17 +152,6 @@ export function MissionCompletedPanel() {
             })}
         </View>
     );
-}
-
-function formatClaimedAt(iso: string | null | undefined): string {
-    if (iso == null || iso.length === 0) {
-        return '수령 완료';
-    }
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) {
-        return '수령 완료';
-    }
-    return `${d.getMonth() + 1}/${d.getDate()} 수령`;
 }
 
 const styles = StyleSheet.create({
@@ -162,9 +183,6 @@ const styles = StyleSheet.create({
         padding: 14,
         borderRadius: 12,
         backgroundColor: '#F3F0E8',
-    },
-    missionIcon: {
-        marginRight: 0,
     },
     cardText: {
         flex: 1,
