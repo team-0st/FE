@@ -20,9 +20,9 @@ export const GACHA_WEIGHT_TABLE: GachaWeightEntry[] = [
     { kind: 'almang', amount: 200, weight: 8 },
     { kind: 'almang', amount: 300, weight: 5 },
     { kind: 'almang', amount: 500, weight: 2 },
-    { kind: 'almang', amount: 100, weight: 40 },
-    { kind: 'common_ingredient', count: 2, weight: 10 },
-    { kind: 'common_ingredient', count: 1, weight: 18 },
+    { kind: 'almang', amount: 100, weight: 25 },
+    { kind: 'common_ingredient', count: 2, weight: 15 },
+    { kind: 'common_ingredient', count: 1, weight: 28 },
     { kind: 'hidden_ingredient', count: 1, weight: 2 },
     { kind: 'consolation', amount: ECO_JAM_GACHA_CONSOLATION, weight: 15 },
 ];
@@ -45,4 +45,4 @@ export const GACHA_REWARD_LABEL = {
 } as const;
 
 export const GACHA_PROBABILITY_HINT =
-    '알맹P 55% · 일반재료 28% · 희귀재료 2% · 꽝(에코잼30) 15% · 1회 100잼';
+    '알맹P 40% · 일반재료 43% · 희귀재료 2% · 꽝(에코잼30) 15% · 1회 100잼';
