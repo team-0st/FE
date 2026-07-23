@@ -289,6 +289,26 @@ export function markMissionClaimable(
     };
 }
 
+/** 관리자 반려 — 재인증 가능 */
+export function markMissionRejected(
+    state: AppUserState,
+    missionId: string,
+    completionId?: number,
+): AppUserState {
+    const prev = state.missionProgress[missionId];
+    return {
+        ...state,
+        missionProgress: {
+            ...state.missionProgress,
+            [missionId]: {
+                status: 'rejected',
+                completionId: completionId ?? prev?.completionId,
+                submittedAt: prev?.submittedAt,
+            },
+        },
+    };
+}
+
 function addIngredient(state: AppUserState, ingredientId: string, amount = 1): AppUserState {
     const current = state.ingredientInventory[ingredientId] ?? 0;
     return {
@@ -427,7 +447,7 @@ export function applyCommunityMissionComplete(
     return next;
 }
 
-/** BE completions → 로컬 pending/approved 동기화 */
+/** BE completions → 로컬 pending/approved/rejected 동기화 (미션별 최신 1건) */
 export function applyMissionCompletionsToState(
     state: AppUserState,
     items: Array<{
@@ -438,6 +458,7 @@ export function applyMissionCompletionsToState(
         rewardClaimable?: boolean;
         rewardClaimed?: boolean;
         rewardedIngredient?: { id: number; name?: string; imageUrl?: string | null } | null;
+        submittedAt?: string;
     }>,
     resolveMissionSlug: (
         missionId: number,
@@ -445,15 +466,43 @@ export function applyMissionCompletionsToState(
     ) => string | undefined,
     ingredientSlugFromNumeric: (id: number) => string | undefined,
 ): AppUserState {
-    let next = state;
+    // BE completions는 submittedAt desc — 슬러그당 첫 항목이 최신
+    const latestBySlug = new Map<
+        string,
+        (typeof items)[number]
+    >();
     for (const item of items) {
+        const slug = resolveMissionSlug(item.missionId, item.missionTitle);
+        if (slug == null || latestBySlug.has(slug)) {
+            continue;
+        }
+        latestBySlug.set(slug, item);
+    }
+
+    let next = state;
+    for (const [slug, item] of latestBySlug) {
+        if (item.status === 'REJECTED') {
+            const current = next.missionProgress[slug]?.status;
+            if (current === 'completed' || current === 'claimable') {
+                continue;
+            }
+            next = markMissionRejected(next, slug, item.completionId);
+            continue;
+        }
+
+        if (item.status === 'PENDING') {
+            const current = next.missionProgress[slug]?.status;
+            if (current === 'completed' || current === 'claimable') {
+                continue;
+            }
+            next = submitMissionPendingReview(next, slug, item.completionId);
+            continue;
+        }
+
         if (item.status !== 'APPROVED') {
             continue;
         }
-        const slug = resolveMissionSlug(item.missionId, item.missionTitle);
-        if (slug == null) {
-            continue;
-        }
+
         if (next.missionProgress[slug]?.status === 'completed') {
             const existing = next.missionProgress[slug];
             if (
@@ -479,7 +528,7 @@ export function applyMissionCompletionsToState(
             }
             continue;
         }
-        // BE 수령 완료 → 로컬 completed. 재고는 ingredients API가 맞춤(중복 가산 방지).
+
         if (item.rewardClaimed === true) {
             const rewardSlug =
                 item.rewardedIngredient != null
@@ -498,24 +547,6 @@ export function applyMissionCompletionsToState(
             next = markMissionClaimable(next, slug, item.completionId);
         }
     }
-    for (const item of items) {
-        if (item.status !== 'PENDING') {
-            continue;
-        }
-        const slug = resolveMissionSlug(item.missionId, item.missionTitle);
-        if (slug == null) {
-            continue;
-        }
-        const current = next.missionProgress[slug]?.status;
-        if (
-            current === 'completed' ||
-            current === 'pending_review' ||
-            current === 'claimable'
-        ) {
-            continue;
-        }
-        next = submitMissionPendingReview(next, slug, item.completionId);
-    }
     return next;
 }
 
@@ -530,6 +561,7 @@ export function applyDailyMissionFlagsToState(
         title: string;
         rewardClaimable: boolean;
         rewardClaimed: boolean;
+        todayStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
     }>,
     resolveMissionSlug: (missionId: number, missionTitle?: string) => string | undefined,
 ): AppUserState {
@@ -545,7 +577,12 @@ export function applyDailyMissionFlagsToState(
             }
             continue;
         }
-        // claimable은 completionId 필요 → completions sync에 맡김. 여기선 claimed만 강제.
+        if (item.todayStatus === 'REJECTED') {
+            const current = next.missionProgress[slug]?.status;
+            if (current !== 'completed' && current !== 'claimable') {
+                next = markMissionRejected(next, slug);
+            }
+        }
     }
     return next;
 }

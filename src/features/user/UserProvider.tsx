@@ -15,6 +15,7 @@ import { postGacha } from '@api/gacha';
 import { getEcoJamHistories } from '@api/history';
 import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
 import {
+    getDailyMissionSections,
     getMissionCompletions,
     postMissionRewardClaim,
     postMissionVerify,
@@ -73,6 +74,7 @@ import { ensureRegisteredUser } from './userRegistration';
 import {
     applyCheckInFromServer,
     applyMissionCompletionsToState,
+    applyDailyMissionFlagsToState,
     syncCheckedInToday,
     applyLoginUser,
     applySoupRerollDelta,
@@ -779,24 +781,34 @@ export function UserProvider({ children }: PropsWithChildren) {
                     return;
                 }
                 try {
-                    const completions = await getMissionCompletions();
-                    const current = stateRef.current;
-                    const next = applyMissionCompletionsToState(
-                        current,
+                    const [completions, sections] = await Promise.all([
+                        getMissionCompletions(),
+                        getDailyMissionSections().catch(() => null),
+                    ]);
+                    const resolveSlug = (missionId: number, missionTitle?: string) => {
+                        if (missionTitle != null && missionTitle.length > 0) {
+                            return resolveMissionSlugFromBe({
+                                id: missionId,
+                                title: missionTitle,
+                            });
+                        }
+                        return missionSlugFromNumeric(missionId) ?? `be-${missionId}`;
+                    };
+                    let next = applyMissionCompletionsToState(
+                        stateRef.current,
                         completions,
-                        (missionId, missionTitle) => {
-                            if (missionTitle != null && missionTitle.length > 0) {
-                                return resolveMissionSlugFromBe({
-                                    id: missionId,
-                                    title: missionTitle,
-                                });
-                            }
-                            return (
-                                missionSlugFromNumeric(missionId) ?? `be-${missionId}`
-                            );
-                        },
+                        resolveSlug,
                         ingredientSlugFromNumeric,
                     );
+                    if (sections != null) {
+                        const flat = [
+                            ...sections.generalMissions,
+                            ...(sections.specialMission != null
+                                ? [sections.specialMission]
+                                : []),
+                        ];
+                        next = applyDailyMissionFlagsToState(next, flat, resolveSlug);
+                    }
                     stateRef.current = next;
                     setState(next);
                     await saveUserState(next);
