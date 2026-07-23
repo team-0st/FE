@@ -300,6 +300,60 @@ function addIngredient(state: AppUserState, ingredientId: string, amount = 1): A
     };
 }
 
+/**
+ * BE에 이미 수령된 미션을 로컬 completed로 맞춤.
+ * 재고는 ingredients API가 소스 — 여기서 재료를 더하지 않는다.
+ */
+export function markMissionCompletedWithoutGrant(
+    state: AppUserState,
+    missionId: string,
+    rewardMeta?: {
+        ingredientId?: string;
+        name?: string | null;
+        imageUrl?: string | null;
+        completionId?: number;
+    },
+): AppUserState {
+    const prev = state.missionProgress[missionId];
+    const wasCompleted = prev?.status === 'completed';
+    let next: AppUserState = {
+        ...state,
+        missionProgress: {
+            ...state.missionProgress,
+            [missionId]: {
+                status: 'completed',
+                completedAt: prev?.completedAt ?? new Date().toISOString(),
+                completionId: rewardMeta?.completionId ?? prev?.completionId,
+                rewardIngredientId:
+                    rewardMeta?.ingredientId ?? prev?.rewardIngredientId,
+                rewardIngredientName:
+                    rewardMeta?.name?.trim() ||
+                    prev?.rewardIngredientName ||
+                    undefined,
+                rewardIngredientImageUrl:
+                    rewardMeta?.imageUrl !== undefined
+                        ? rewardMeta.imageUrl
+                        : prev?.rewardIngredientImageUrl,
+            },
+        },
+    };
+    if (wasCompleted) {
+        return next;
+    }
+    next = {
+        ...next,
+        weeklyMissionDone: Math.min(next.weeklyMissionTotal, next.weeklyMissionDone + 1),
+    };
+    const carbonReduction = getCarbonReduction(missionId);
+    if (carbonReduction?.grams != null) {
+        next = {
+            ...next,
+            totalCo2ReductionGrams: next.totalCo2ReductionGrams + carbonReduction.grams,
+        };
+    }
+    return next;
+}
+
 export function completeMissionVerify(
     state: AppUserState,
     missionId: string,
@@ -425,19 +479,18 @@ export function applyMissionCompletionsToState(
             }
             continue;
         }
-        // BE: claim 후에만 재고 증가. 이미 수령한 건 로컬 완료 반영.
+        // BE 수령 완료 → 로컬 completed. 재고는 ingredients API가 맞춤(중복 가산 방지).
         if (item.rewardClaimed === true) {
             const rewardSlug =
                 item.rewardedIngredient != null
                     ? (ingredientSlugFromNumeric(item.rewardedIngredient.id) ??
                       `be-${item.rewardedIngredient.id}`)
                     : undefined;
-            if (rewardSlug == null) {
-                continue;
-            }
-            next = completeMissionVerify(next, slug, rewardSlug, {
+            next = markMissionCompletedWithoutGrant(next, slug, {
+                ingredientId: rewardSlug,
                 name: item.rewardedIngredient?.name,
                 imageUrl: item.rewardedIngredient?.imageUrl,
+                completionId: item.completionId,
             });
             continue;
         }
@@ -462,6 +515,37 @@ export function applyMissionCompletionsToState(
             continue;
         }
         next = submitMissionPendingReview(next, slug, item.completionId);
+    }
+    return next;
+}
+
+/**
+ * BE 오늘 미션 플래그로 로컬 claimable/completed 불일치를 보정한다.
+ * completionId는 completions sync가 채운다.
+ */
+export function applyDailyMissionFlagsToState(
+    state: AppUserState,
+    missions: Array<{
+        id: number;
+        title: string;
+        rewardClaimable: boolean;
+        rewardClaimed: boolean;
+    }>,
+    resolveMissionSlug: (missionId: number, missionTitle?: string) => string | undefined,
+): AppUserState {
+    let next = state;
+    for (const item of missions) {
+        const slug = resolveMissionSlug(item.id, item.title);
+        if (slug == null) {
+            continue;
+        }
+        if (item.rewardClaimed) {
+            if (next.missionProgress[slug]?.status !== 'completed') {
+                next = markMissionCompletedWithoutGrant(next, slug);
+            }
+            continue;
+        }
+        // claimable은 completionId 필요 → completions sync에 맡김. 여기선 claimed만 강제.
     }
     return next;
 }

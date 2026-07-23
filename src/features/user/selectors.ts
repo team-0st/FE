@@ -25,6 +25,31 @@ export function missionStatusFor(state: AppUserState, missionId: string): Missio
     return getMissionStatus(state, missionId);
 }
 
+/** BE 오늘 미션 플래그가 있으면 로컬보다 우선 (수령 후에도 «보상 받기» 잔존 방지) */
+export function missionStatusFromBeAndLocal(
+    state: AppUserState,
+    missionId: string,
+    be?: {
+        rewardClaimable?: boolean;
+        rewardClaimed?: boolean;
+        todayStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    } | null,
+): MissionProgressStatus {
+    if (be?.rewardClaimed === true) {
+        return 'completed';
+    }
+    if (be?.rewardClaimable === true) {
+        return 'claimable';
+    }
+    if (be?.todayStatus === 'PENDING') {
+        return 'pending_review';
+    }
+    if (be?.todayStatus === 'REJECTED') {
+        return 'rejected';
+    }
+    return missionStatusFor(state, missionId);
+}
+
 export function isUserCheckedInToday(state: AppUserState): boolean {
     return isCheckedInToday(state);
 }

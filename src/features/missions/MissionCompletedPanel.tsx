@@ -25,7 +25,11 @@ export function MissionCompletedPanel() {
         try {
             const completions = await getMissionCompletions();
             const claimed = completions
-                .filter((item) => item.rewardClaimed === true)
+                .filter(
+                    (item) =>
+                        item.rewardClaimed === true ||
+                        (item.rewardClaimedAt != null && item.rewardClaimedAt.length > 0),
+                )
                 .sort((a, b) => {
                     const at = Date.parse(a.rewardClaimedAt ?? a.reviewedAt ?? a.submittedAt);
                     const bt = Date.parse(b.rewardClaimedAt ?? b.reviewedAt ?? b.submittedAt);
