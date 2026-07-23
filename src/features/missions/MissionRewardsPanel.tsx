@@ -3,6 +3,7 @@ import {
     postRewardClaim,
     postRewardsClaimAll,
 } from '@api/rewards';
+import { getMissionCompletions } from '@api/missions';
 import type { RewardBundleDto, RewardsSummaryDto } from '@api/notion/types';
 import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
 import { Button, Txt } from '@toss/tds-react-native';
@@ -10,7 +11,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
 import { useAppToast } from '../../shared/feedback/useAppToast';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { CenterLoader } from '../../shared/ui/CenterLoader';
+import {
+    resolveMissionRewardRowMeta,
+    rewardImageSource,
+} from './missionRewardRowMeta';
 
 const EMPTY_SUMMARY: RewardsSummaryDto = {
     totalPendingRewardCount: 0,
@@ -20,10 +26,17 @@ const EMPTY_SUMMARY: RewardsSummaryDto = {
     pendingHiddenIngredientCount: 0,
 };
 
+type MissionRewardsPanelProps = {
+    /** 탭 뱃지용 — 미수령 개수 변경 시 */
+    onPendingCountChange?: (count: number) => void;
+};
+
 /**
- * Notion 보상 탭 API (`GET /api/v1/rewards`) 기준 미수령 목록.
+ * 미수령 보상 (오늘·이전 포함).
+ * GET /rewards + completions claimable 병합으로 미션 «보상받기»와 동일 목록 유지.
+ * 행: 미션 아이콘 · 미션 내용 · 보상 아이콘 · 수령
  */
-export function MissionRewardsPanel() {
+export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPanelProps) {
     const { syncMissionCompletions, applyRemoteInventory } = useUser();
     const toast = useAppToast();
     const [loading, setLoading] = useState(true);
@@ -34,18 +47,70 @@ export function MissionRewardsPanel() {
     const refresh = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await fetchRewardsTab();
+            const [result, completions] = await Promise.all([
+                fetchRewardsTab(),
+                getMissionCompletions().catch(() => []),
+            ]);
             if (!result.ok) {
                 toast.showError('보상 목록을 불러오지 못했어요.\n잠시 후 다시 시도해 주세요.');
+                onPendingCountChange?.(0);
                 return;
             }
-            setSummary(result.data.summary);
-            setItems(result.data.items);
+
+            const byId = new Map<number, RewardBundleDto>();
+            for (const item of result.data.items) {
+                if (item.rewardStatus === 'CLAIMED') {
+                    continue;
+                }
+                byId.set(item.rewardId, item);
+            }
+            // 미션 상세 claimable과 동일하게 completions도 합침 (오늘 승인분 누락 방지)
+            for (const c of completions) {
+                if (!c.rewardClaimable || c.rewardClaimed) {
+                    continue;
+                }
+                if (byId.has(c.completionId)) {
+                    continue;
+                }
+                const ingredient = c.rewardedIngredient;
+                byId.set(c.completionId, {
+                    rewardId: c.completionId,
+                    rewardSourceType: 'MISSION',
+                    sourceId: c.missionId,
+                    sourceTitle: c.missionTitle,
+                    rewardStatus: 'CLAIMABLE',
+                    earnedAt: c.reviewedAt ?? c.submittedAt,
+                    claimedAt: null,
+                    rewards: [
+                        {
+                            rewardType: 'INGREDIENT',
+                            ingredientId: ingredient?.id ?? null,
+                            ingredientName: ingredient?.name ?? null,
+                            quantity: 1,
+                            imageUrl: ingredient?.imageUrl ?? null,
+                        },
+                    ],
+                });
+            }
+
+            const merged = Array.from(byId.values()).sort((a, b) => {
+                const at = Date.parse(a.earnedAt);
+                const bt = Date.parse(b.earnedAt);
+                return (Number.isNaN(at) ? 0 : at) - (Number.isNaN(bt) ? 0 : bt);
+            });
+
+            const nextSummary: RewardsSummaryDto = {
+                ...result.data.summary,
+                totalPendingRewardCount: merged.length,
+            };
+            setSummary(nextSummary);
+            setItems(merged);
+            onPendingCountChange?.(merged.length);
             await syncMissionCompletions();
         } finally {
             setLoading(false);
         }
-    }, [syncMissionCompletions, toast]);
+    }, [onPendingCountChange, syncMissionCompletions, toast]);
 
     useEffect(() => {
         void refresh();
@@ -161,23 +226,45 @@ export function MissionRewardsPanel() {
                 전체 수령
             </Button>
             <Txt typography="t7" color="grey600" style={styles.hint}>
-                검수 완료 후 아직 받지 않은 보상이에요. (오늘·이전 포함)
+                오늘·이전에 확정된 미수령 보상이에요. 미션에서도 받을 수 있어요.
             </Txt>
             {items.map((item) => {
                 const busy = claimingId === item.rewardId;
+                const meta = resolveMissionRewardRowMeta(item.sourceId, item.sourceTitle);
+                const firstReward = item.rewards[0];
+                const rewardSrc = rewardImageSource(firstReward?.imageUrl);
+                const rewardLabel = formatRewardEntries(item);
                 return (
                     <View key={item.rewardId} style={styles.card}>
+                        <BrandEmojiImage
+                            source={meta.missionImage}
+                            size={48}
+                            accessibilityLabel={`${meta.title} 아이콘`}
+                        />
                         <View style={styles.cardText}>
-                            <Txt typography="t6" fontWeight="bold">
-                                {item.sourceTitle}
+                            <Txt typography="t6" fontWeight="bold" numberOfLines={1}>
+                                {meta.title}
                             </Txt>
-                            <Txt typography="t7" color="grey500">
-                                {formatRewardEntries(item)}
-                            </Txt>
+                            {meta.description.length > 0 ? (
+                                <Txt typography="t7" color="grey600" numberOfLines={2}>
+                                    {meta.description}
+                                </Txt>
+                            ) : (
+                                <Txt typography="t7" color="grey500" numberOfLines={1}>
+                                    {rewardLabel}
+                                </Txt>
+                            )}
                             <Txt typography="t7" color="grey500">
                                 {formatEarnedAt(item.earnedAt)}
                             </Txt>
                         </View>
+                        {rewardSrc != null ? (
+                            <BrandEmojiImage
+                                source={rewardSrc}
+                                size={36}
+                                accessibilityLabel={firstReward?.ingredientName ?? '보상'}
+                            />
+                        ) : null}
                         <Button
                             size="medium"
                             type="primary"
@@ -269,7 +356,7 @@ const styles = StyleSheet.create({
     card: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 10,
         padding: 14,
         borderRadius: 12,
         backgroundColor: '#F3F0E8',
@@ -277,5 +364,6 @@ const styles = StyleSheet.create({
     cardText: {
         flex: 1,
         gap: 4,
+        minWidth: 0,
     },
 });
