@@ -62,6 +62,7 @@ export function MissionDetailScreen({
 }: MissionDetailScreenProps) {
     const isCompleted = status === 'completed';
     const isClaimable = status === 'claimable';
+    const isRejected = status === 'rejected';
     const isCoop = isCoopMission(mission);
     const rewardLabel = formatMissionIngredientReward(mission.id);
     const isFixedReward = MISSION_FIXED_REWARDS[mission.id] != null;
@@ -91,7 +92,9 @@ export function MissionDetailScreen({
             ? '검수가 끝났어요. 보상을 받아 주세요.'
             : status === 'pending_review'
               ? '제출한 사진을 검수하고 있어요.'
-              : '실천하고 사진으로 인증해요.';
+              : isRejected
+                ? '인증이 반려됐어요. 다시 인증해 주세요.'
+                : '실천하고 사진으로 인증해요.';
 
     const displayClaimedName =
         isCompleted && claimedLabel != null && claimedLabel !== '재료'
@@ -234,7 +237,9 @@ export function MissionDetailScreen({
                                   ? '이미 완료한 미션'
                                   : status === 'pending_review'
                                     ? '검수 중'
-                                    : '인증하기'
+                                    : isRejected
+                                      ? '다시 인증하기'
+                                      : '인증하기'
                         }
                     >
                         {locked
@@ -245,7 +250,9 @@ export function MissionDetailScreen({
                                 ? '검수 중이에요'
                                 : verifyLoading
                                   ? '카메라 여는 중…'
-                                  : '인증하기'}
+                                  : isRejected
+                                    ? '다시 인증하기'
+                                    : '인증하기'}
                     </Button>
                 )}
             </View>
