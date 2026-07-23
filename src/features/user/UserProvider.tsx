@@ -162,6 +162,8 @@ type UserContextValue = {
     >;
     /** BE completions로 claimable/completed 상태 재동기화 (보상 탭) */
     syncMissionCompletions: () => Promise<void>;
+    /** BE 보유 재료로 인벤토리 덮어쓰기 (보상 수령 후) */
+    applyRemoteInventory: (inventory: Record<string, number>) => Promise<void>;
     brewSoup: (slots: (string | null)[]) => Promise<
         | { ok: true; recipe: Recipe; craft: SoupCraftResponse }
         | {
@@ -788,6 +790,16 @@ export function UserProvider({ children }: PropsWithChildren) {
                 } catch {
                     // keep local
                 }
+            },
+            applyRemoteInventory: async (inventory) => {
+                const current = stateRef.current;
+                const next: AppUserState = {
+                    ...current,
+                    ingredientInventory: inventory,
+                };
+                stateRef.current = next;
+                setState(next);
+                await saveUserState(next);
             },
             pullGacha: async (): Promise<GachaPullResult> => {
                 for (let attempt = 0; attempt < 2; attempt += 1) {
