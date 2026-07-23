@@ -3,8 +3,12 @@ import {
     postRewardClaim,
     postRewardsClaimAll,
 } from '@api/rewards';
-import { getMissionCompletions, resolveMissionSlugFromBe } from '@api/missions';
-import type { RewardBundleDto, RewardsSummaryDto } from '@api/notion/types';
+import { getMissionCompletions } from '@api/missions';
+import {
+    completeCommunityMission,
+    getCommunityMissions,
+} from '@api/communityMissions';
+import type { RewardsSummaryDto } from '@api/notion/types';
 import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
 import { Button, Txt } from '@toss/tds-react-native';
 import { useCallback, useEffect, useState } from 'react';
@@ -13,10 +17,18 @@ import { useUser } from '../user/UserProvider';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { CenterLoader } from '../../shared/ui/CenterLoader';
+import { getMissionImageSource } from '../../shared/constants/missionAssets';
 import {
-    resolveMissionRewardRowMeta,
+    communityToClaimableTabItem,
+    completionToClaimableTabItem,
+    formatRewardEntries,
+    formatTabDate,
+    localClaimableToTabItems,
+    missionBundleToTabItem,
     rewardImageSource,
-} from './missionRewardRowMeta';
+    sortClaimableAsc,
+    type MissionRewardTabItem,
+} from './missionRewardTabItems';
 
 const EMPTY_SUMMARY: RewardsSummaryDto = {
     totalPendingRewardCount: 0,
@@ -27,108 +39,78 @@ const EMPTY_SUMMARY: RewardsSummaryDto = {
 };
 
 type MissionRewardsPanelProps = {
-    /** 탭 뱃지용 — 미수령 개수 변경 시 */
     onPendingCountChange?: (count: number) => void;
 };
 
+type ClaimingId = string | 'all' | null;
+
 /**
- * 미수령 보상 (오늘·이전 포함).
- * GET /rewards + completions claimable + 로컬 claimable 병합.
+ * 미수령 보상: 일반 미션(GET /rewards·completions) + 공동 미션(readyToComplete).
  */
 export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPanelProps) {
     const { state, syncMissionCompletions, applyRemoteInventory, markMissionClaimedLocally } =
         useUser();
     const toast = useAppToast();
     const [loading, setLoading] = useState(true);
-    const [claimingId, setClaimingId] = useState<number | 'all' | null>(null);
+    const [claimingId, setClaimingId] = useState<ClaimingId>(null);
     const [summary, setSummary] = useState<RewardsSummaryDto>(EMPTY_SUMMARY);
-    const [items, setItems] = useState<RewardBundleDto[]>([]);
+    const [items, setItems] = useState<MissionRewardTabItem[]>([]);
 
     const refresh = useCallback(async () => {
         setLoading(true);
         try {
-            const [result, completions] = await Promise.all([
+            const [result, completions, community] = await Promise.all([
                 fetchRewardsTab(),
                 getMissionCompletions().catch(() => []),
+                getCommunityMissions().catch(() => null),
             ]);
-            if (!result.ok) {
-                toast.showError('보상 목록을 불러오지 못했어요.\n잠시 후 다시 시도해 주세요.');
-                onPendingCountChange?.(0);
-                return;
+
+            const byKey = new Map<string, MissionRewardTabItem>();
+
+            if (result.ok) {
+                for (const item of result.data.items) {
+                    if (item.rewardStatus === 'CLAIMED') {
+                        continue;
+                    }
+                    const row = missionBundleToTabItem(item);
+                    byKey.set(row.key, row);
+                }
+                setSummary(result.data.summary);
+            } else {
+                toast.showError('일부 보상 목록을 불러오지 못했어요.');
+                setSummary(EMPTY_SUMMARY);
             }
 
-            const byId = new Map<number, RewardBundleDto>();
-            for (const item of result.data.items) {
-                if (item.rewardStatus === 'CLAIMED') {
-                    continue;
-                }
-                byId.set(item.rewardId, item);
-            }
             for (const c of completions) {
                 const claimed = c.rewardClaimed === true || c.rewardClaimedAt != null;
                 if (claimed || !c.rewardClaimable) {
                     continue;
                 }
-                if (byId.has(c.completionId)) {
-                    continue;
+                const row = completionToClaimableTabItem(c);
+                if (!byKey.has(row.key)) {
+                    byKey.set(row.key, row);
                 }
-                const ingredient = c.rewardedIngredient;
-                byId.set(c.completionId, {
-                    rewardId: c.completionId,
-                    rewardSourceType: 'MISSION',
-                    sourceId: c.missionId,
-                    sourceTitle: c.missionTitle,
-                    rewardStatus: 'CLAIMABLE',
-                    earnedAt: c.reviewedAt ?? c.submittedAt,
-                    claimedAt: null,
-                    rewards: [
-                        {
-                            rewardType: 'INGREDIENT',
-                            ingredientId: ingredient?.id ?? null,
-                            ingredientName: ingredient?.name ?? null,
-                            quantity: 1,
-                            imageUrl: ingredient?.imageUrl ?? null,
-                        },
-                    ],
-                });
-            }
-            for (const [slug, progress] of Object.entries(state.missionProgress)) {
-                if (progress.status !== 'claimable' || progress.completionId == null) {
-                    continue;
-                }
-                if (byId.has(progress.completionId)) {
-                    continue;
-                }
-                byId.set(progress.completionId, {
-                    rewardId: progress.completionId,
-                    rewardSourceType: 'MISSION',
-                    sourceId: progress.completionId,
-                    sourceTitle: slug,
-                    rewardStatus: 'CLAIMABLE',
-                    earnedAt: progress.submittedAt ?? new Date().toISOString(),
-                    claimedAt: null,
-                    rewards: [
-                        {
-                            rewardType: 'INGREDIENT',
-                            quantity: 1,
-                            ingredientName: progress.rewardIngredientName ?? '재료',
-                            imageUrl: progress.rewardIngredientImageUrl ?? null,
-                        },
-                    ],
-                });
             }
 
-            const merged = Array.from(byId.values()).sort((a, b) => {
-                const at = Date.parse(a.earnedAt);
-                const bt = Date.parse(b.earnedAt);
-                return (Number.isNaN(at) ? 0 : at) - (Number.isNaN(bt) ? 0 : bt);
-            });
+            if (community != null) {
+                for (const dto of community) {
+                    if (!dto.readyToComplete || dto.completed) {
+                        continue;
+                    }
+                    const row = communityToClaimableTabItem(dto);
+                    byKey.set(row.key, row);
+                }
+            }
 
-            const nextSummary: RewardsSummaryDto = {
-                ...result.data.summary,
+            for (const row of localClaimableToTabItems(state, new Set(byKey.keys()))) {
+                byKey.set(row.key, row);
+            }
+
+            const merged = sortClaimableAsc(Array.from(byKey.values()));
+            setSummary((prev) => ({
+                ...prev,
                 totalPendingRewardCount: merged.length,
-            };
-            setSummary(nextSummary);
+            }));
             setItems(merged);
             onPendingCountChange?.(merged.length);
             await syncMissionCompletions();
@@ -148,24 +130,46 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                 await applyRemoteInventory(inventoryFromUserIngredients(remote));
             }
         } catch {
-            // keep local inventory
+            // keep local
         }
     }, [applyRemoteInventory]);
 
     const onClaim = useCallback(
-        (item: RewardBundleDto) => {
+        (item: MissionRewardTabItem) => {
             void (async () => {
-                setClaimingId(item.rewardId);
+                setClaimingId(item.key);
                 try {
+                    if (item.kind === 'community') {
+                        const result = await completeCommunityMission(item.rewardId);
+                        if (!result.ok) {
+                            toast.showError('보상 수령에 실패했어요.\n잠시 후 다시 시도해 주세요.');
+                            await refresh();
+                            return;
+                        }
+                        await markMissionClaimedLocally(item.missionSlug, item.rewardId, {
+                            rewards: result.data.rewardedIngredients.map((ing) => ({
+                                ingredientId: ing.id,
+                                ingredientName: ing.name,
+                                imageUrl: ing.imageUrl,
+                            })),
+                        });
+                        toast.showSuccess(
+                            result.data.rewardGranted
+                                ? '보상을 받았어요.'
+                                : '미션을 완료했어요.',
+                        );
+                        await refreshInventory();
+                        await refresh();
+                        return;
+                    }
+
                     const result = await postRewardClaim(item.rewardId);
-                    const slug = resolveMissionSlugFromBe({
-                        id: item.sourceId,
-                        title: item.sourceTitle,
-                    });
                     if (!result.ok) {
                         if (result.code === 'REWARD_ALREADY_CLAIMED') {
                             toast.showError('이미 받은 보상이에요.');
-                            await markMissionClaimedLocally(slug, item.rewardId, item);
+                            await markMissionClaimedLocally(item.missionSlug, item.rewardId, {
+                                rewards: item.rewards,
+                            });
                         } else if (result.code === 'REWARD_NOT_CLAIMABLE') {
                             toast.showError('아직 받을 수 없어요. 검수를 확인해 주세요.');
                         } else {
@@ -174,7 +178,9 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                         await refresh();
                         return;
                     }
-                    await markMissionClaimedLocally(slug, item.rewardId, item);
+                    await markMissionClaimedLocally(item.missionSlug, item.rewardId, {
+                        rewards: item.rewards,
+                    });
                     toast.showSuccess('보상을 받았어요.');
                     await refreshInventory();
                     await refresh();
@@ -190,23 +196,38 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
         void (async () => {
             setClaimingId('all');
             try {
-                const result = await postRewardsClaimAll();
-                if (!result.ok) {
-                    toast.showError('일괄 수령에 실패했어요.\n잠시 후 다시 시도해 주세요.');
-                    await refresh();
-                    return;
+                let claimed = 0;
+                const missionItems = items.filter((i) => i.kind === 'mission');
+                const communityItems = items.filter((i) => i.kind === 'community');
+
+                if (missionItems.length > 0) {
+                    const result = await postRewardsClaimAll();
+                    if (result.ok) {
+                        claimed += result.data.claimedRewardCount;
+                        for (const item of missionItems) {
+                            await markMissionClaimedLocally(item.missionSlug, item.rewardId, {
+                                rewards: item.rewards,
+                            });
+                        }
+                    }
                 }
-                for (const item of items) {
-                    const slug = resolveMissionSlugFromBe({
-                        id: item.sourceId,
-                        title: item.sourceTitle,
-                    });
-                    await markMissionClaimedLocally(slug, item.rewardId, item);
+
+                for (const item of communityItems) {
+                    const result = await completeCommunityMission(item.rewardId);
+                    if (result.ok) {
+                        claimed += 1;
+                        await markMissionClaimedLocally(item.missionSlug, item.rewardId, {
+                            rewards: result.data.rewardedIngredients.map((ing) => ({
+                                ingredientId: ing.id,
+                                ingredientName: ing.name,
+                                imageUrl: ing.imageUrl,
+                            })),
+                        });
+                    }
                 }
+
                 toast.showSuccess(
-                    result.data.claimedRewardCount > 0
-                        ? `보상 ${result.data.claimedRewardCount}개를 받았어요.`
-                        : '받을 보상이 없어요.',
+                    claimed > 0 ? `보상 ${claimed}개를 받았어요.` : '받을 보상이 없어요.',
                 );
                 await refreshInventory();
                 await refresh();
@@ -250,7 +271,7 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                     {`미수령 ${summary.totalPendingRewardCount}개`}
                 </Txt>
                 <Txt typography="t7" color="grey600" style={styles.summaryLine}>
-                    {formatSummaryLine(summary)}
+                    일반·공동 미션 미수령 보상이에요.
                 </Txt>
             </View>
             <Button
@@ -264,43 +285,43 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                 전체 수령
             </Button>
             <Txt typography="t7" color="grey600" style={styles.hint}>
-                오늘·이전에 확정된 미수령 보상이에요. 미션에서도 받을 수 있어요.
+                미션 상세에서도 받을 수 있어요.
             </Txt>
             {items.map((item) => {
-                const busy = claimingId === item.rewardId;
-                const meta = resolveMissionRewardRowMeta(item.sourceId, item.sourceTitle);
-                const firstReward = item.rewards[0];
-                const rewardSrc = rewardImageSource(firstReward?.imageUrl);
-                const rewardLabel = formatRewardEntries(item);
+                const busy = claimingId === item.key;
+                const first = item.rewards[0];
+                const rewardSrc = rewardImageSource(first?.imageUrl);
                 return (
-                    <View key={item.rewardId} style={styles.card}>
+                    <View key={item.key} style={styles.card}>
                         <BrandEmojiImage
-                            source={meta.missionImage}
+                            source={getMissionImageSource(item.missionSlug, item.sourceTitle)}
                             size={48}
-                            accessibilityLabel={`${meta.title} 아이콘`}
+                            accessibilityLabel={`${item.sourceTitle} 아이콘`}
                         />
                         <View style={styles.cardText}>
                             <Txt typography="t6" fontWeight="bold" numberOfLines={1}>
-                                {meta.title}
+                                {item.sourceTitle}
                             </Txt>
-                            {meta.description.length > 0 ? (
+                            {item.description.length > 0 ? (
                                 <Txt typography="t7" color="grey600" numberOfLines={2}>
-                                    {meta.description}
+                                    {item.description}
                                 </Txt>
                             ) : (
                                 <Txt typography="t7" color="grey500" numberOfLines={1}>
-                                    {rewardLabel}
+                                    {formatRewardEntries(item)}
                                 </Txt>
                             )}
                             <Txt typography="t7" color="grey500">
-                                {formatEarnedAt(item.earnedAt)}
+                                {item.kind === 'community'
+                                    ? '공동 미션 · 수령 가능'
+                                    : formatTabDate(item.earnedAt, '확정')}
                             </Txt>
                         </View>
                         {rewardSrc != null ? (
                             <BrandEmojiImage
                                 source={rewardSrc}
                                 size={36}
-                                accessibilityLabel={firstReward?.ingredientName ?? '보상'}
+                                accessibilityLabel={first?.ingredientName ?? '보상'}
                             />
                         ) : null}
                         <Button
@@ -317,49 +338,6 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
             })}
         </View>
     );
-}
-
-function formatSummaryLine(summary: RewardsSummaryDto): string {
-    const parts: string[] = [];
-    if (summary.pendingCommonIngredientCount > 0) {
-        parts.push(`일반 재료 ${summary.pendingCommonIngredientCount}`);
-    }
-    if (summary.pendingHiddenIngredientCount > 0) {
-        parts.push(`히든 재료 ${summary.pendingHiddenIngredientCount}`);
-    }
-    if (summary.pendingEcoJam > 0) {
-        parts.push(`에코잼 ${summary.pendingEcoJam}`);
-    }
-    if (summary.pendingPoint > 0) {
-        parts.push(`포인트 ${summary.pendingPoint}`);
-    }
-    return parts.length > 0 ? parts.join(' · ') : '수령 가능한 보상이 있어요';
-}
-
-function formatRewardEntries(item: RewardBundleDto): string {
-    return item.rewards
-        .map((entry) => {
-            if (entry.rewardType === 'INGREDIENT') {
-                const name = entry.ingredientName ?? '재료';
-                return `${name} ×${entry.quantity}`;
-            }
-            if (entry.rewardType === 'ECO_JAM') {
-                return `에코잼 ${entry.quantity}`;
-            }
-            if (entry.rewardType === 'POINT') {
-                return `포인트 ${entry.quantity}`;
-            }
-            return `${entry.rewardType} ×${entry.quantity}`;
-        })
-        .join(' · ');
-}
-
-function formatEarnedAt(iso: string): string {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) {
-        return iso;
-    }
-    return `${d.getMonth() + 1}/${d.getDate()} 확정`;
 }
 
 const styles = StyleSheet.create({
