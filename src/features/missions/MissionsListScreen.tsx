@@ -15,12 +15,14 @@ import {
 import {
     getDailyMissionSections,
     missionFromBeSummary,
+    resolveMissionSlugFromBe,
+    type MissionTodayStatus,
 } from '@api/missions';
 import { Badge, Border, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
-import { missionStatusFor } from '../user/selectors';
+import { missionStatusFromBeAndLocal, missionStatusFor } from '../user/selectors';
 import type { MissionProgressStatus } from '../user/types';
 import { coopDifficultyStars, coopUnlockHint, isCoopMissionUnlocked } from './coopMissionLogic';
 import { MissionCompletedPanel } from './MissionCompletedPanel';
@@ -40,6 +42,12 @@ type MissionsListScreenProps = {
 };
 
 type MissionsListTab = 'missions' | 'rewards' | 'completed';
+
+type BeMissionFlags = {
+    rewardClaimable: boolean;
+    rewardClaimed: boolean;
+    todayStatus: MissionTodayStatus;
+};
 
 type CommunityListItem = {
     mission: CoopMission;
@@ -225,7 +233,7 @@ function CoopMissionRow({
 }
 
 export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) {
-    const { state } = useUser();
+    const { state, syncMissionCompletions } = useUser();
     const toast = useAppToast();
     const [listTab, setListTab] = useState<MissionsListTab>('missions');
     const [generalMissions, setGeneralMissions] = useState<Mission[]>(DAILY_MISSIONS);
@@ -237,13 +245,20 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
             status: missionStatusFor(state, mission.id),
         })),
     );
+    const [beFlagsBySlug, setBeFlagsBySlug] = useState<Record<string, BeMissionFlags>>({});
     const [loadingBe, setLoadingBe] = useState(isApiEnabled());
     const [pendingRewardCount, setPendingRewardCount] = useState(0);
+
+    const statusForMission = (missionId: string): MissionProgressStatus =>
+        missionStatusFromBeAndLocal(state, missionId, beFlagsBySlug[missionId]);
 
     const localClaimableCount = Object.values(state.missionProgress).filter(
         (p) => p.status === 'claimable',
     ).length;
-    const claimableCount = Math.max(pendingRewardCount, localClaimableCount);
+    const beClaimableCount = Object.values(beFlagsBySlug).filter(
+        (f) => f.rewardClaimable && !f.rewardClaimed,
+    ).length;
+    const claimableCount = Math.max(pendingRewardCount, localClaimableCount, beClaimableCount);
 
     useEffect(() => {
         if (!isApiEnabled()) {
@@ -269,6 +284,25 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
                             ? [missionFromBeSummary(sections.specialMission)]
                             : [],
                     );
+                    const flags: Record<string, BeMissionFlags> = {};
+                    for (const dto of sections.generalMissions) {
+                        const slug = resolveMissionSlugFromBe(dto);
+                        flags[slug] = {
+                            rewardClaimable: dto.rewardClaimable,
+                            rewardClaimed: dto.rewardClaimed,
+                            todayStatus: dto.todayStatus,
+                        };
+                    }
+                    if (sections.specialMission != null) {
+                        const dto = sections.specialMission;
+                        const slug = resolveMissionSlugFromBe(dto);
+                        flags[slug] = {
+                            rewardClaimable: dto.rewardClaimable,
+                            rewardClaimed: dto.rewardClaimed,
+                            todayStatus: dto.todayStatus,
+                        };
+                    }
+                    setBeFlagsBySlug(flags);
                 }
                 if (community != null && community.length > 0) {
                     setCommunityItems(
@@ -279,6 +313,7 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
                         })),
                     );
                 }
+                await syncMissionCompletions();
             } catch {
                 // mock 유지
             } finally {
@@ -290,7 +325,7 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [syncMissionCompletions]);
 
     const handleCoopPress = (item: CommunityListItem) => {
         if (!item.unlocked) {
@@ -407,7 +442,7 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
                     <MissionRow
                         key={mission.id}
                         mission={mission}
-                        status={missionStatusFor(state, mission.id)}
+                        status={statusForMission(mission.id)}
                         onPress={() => onPressMission(mission.id)}
                         showReward={false}
                     />
@@ -426,7 +461,7 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
                             <MissionRow
                                 key={mission.id}
                                 mission={mission}
-                                status={missionStatusFor(state, mission.id)}
+                                status={statusForMission(mission.id)}
                                 onPress={() => onPressMission(mission.id)}
                             />
                         ))}

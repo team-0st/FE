@@ -3,7 +3,7 @@ import {
     postRewardClaim,
     postRewardsClaimAll,
 } from '@api/rewards';
-import { getMissionCompletions } from '@api/missions';
+import { getMissionCompletions, resolveMissionSlugFromBe } from '@api/missions';
 import type { RewardBundleDto, RewardsSummaryDto } from '@api/notion/types';
 import { getUserIngredients, inventoryFromUserIngredients } from '@api/ingredients';
 import { Button, Txt } from '@toss/tds-react-native';
@@ -33,11 +33,11 @@ type MissionRewardsPanelProps = {
 
 /**
  * 미수령 보상 (오늘·이전 포함).
- * GET /rewards + completions claimable 병합으로 미션 «보상받기»와 동일 목록 유지.
- * 행: 미션 아이콘 · 미션 내용 · 보상 아이콘 · 수령
+ * GET /rewards + completions claimable + 로컬 claimable 병합.
  */
 export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPanelProps) {
-    const { syncMissionCompletions, applyRemoteInventory } = useUser();
+    const { state, syncMissionCompletions, applyRemoteInventory, markMissionClaimedLocally } =
+        useUser();
     const toast = useAppToast();
     const [loading, setLoading] = useState(true);
     const [claimingId, setClaimingId] = useState<number | 'all' | null>(null);
@@ -64,9 +64,9 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                 }
                 byId.set(item.rewardId, item);
             }
-            // 미션 상세 claimable과 동일하게 completions도 합침 (오늘 승인분 누락 방지)
             for (const c of completions) {
-                if (!c.rewardClaimable || c.rewardClaimed) {
+                const claimed = c.rewardClaimed === true || c.rewardClaimedAt != null;
+                if (claimed || !c.rewardClaimable) {
                     continue;
                 }
                 if (byId.has(c.completionId)) {
@@ -92,6 +92,31 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                     ],
                 });
             }
+            for (const [slug, progress] of Object.entries(state.missionProgress)) {
+                if (progress.status !== 'claimable' || progress.completionId == null) {
+                    continue;
+                }
+                if (byId.has(progress.completionId)) {
+                    continue;
+                }
+                byId.set(progress.completionId, {
+                    rewardId: progress.completionId,
+                    rewardSourceType: 'MISSION',
+                    sourceId: progress.completionId,
+                    sourceTitle: slug,
+                    rewardStatus: 'CLAIMABLE',
+                    earnedAt: progress.submittedAt ?? new Date().toISOString(),
+                    claimedAt: null,
+                    rewards: [
+                        {
+                            rewardType: 'INGREDIENT',
+                            quantity: 1,
+                            ingredientName: progress.rewardIngredientName ?? '재료',
+                            imageUrl: progress.rewardIngredientImageUrl ?? null,
+                        },
+                    ],
+                });
+            }
 
             const merged = Array.from(byId.values()).sort((a, b) => {
                 const at = Date.parse(a.earnedAt);
@@ -110,7 +135,7 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
         } finally {
             setLoading(false);
         }
-    }, [onPendingCountChange, syncMissionCompletions, toast]);
+    }, [onPendingCountChange, state.missionProgress, syncMissionCompletions, toast]);
 
     useEffect(() => {
         void refresh();
@@ -128,14 +153,19 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
     }, [applyRemoteInventory]);
 
     const onClaim = useCallback(
-        (rewardId: number) => {
+        (item: RewardBundleDto) => {
             void (async () => {
-                setClaimingId(rewardId);
+                setClaimingId(item.rewardId);
                 try {
-                    const result = await postRewardClaim(rewardId);
+                    const result = await postRewardClaim(item.rewardId);
+                    const slug = resolveMissionSlugFromBe({
+                        id: item.sourceId,
+                        title: item.sourceTitle,
+                    });
                     if (!result.ok) {
                         if (result.code === 'REWARD_ALREADY_CLAIMED') {
                             toast.showError('이미 받은 보상이에요.');
+                            await markMissionClaimedLocally(slug, item.rewardId, item);
                         } else if (result.code === 'REWARD_NOT_CLAIMABLE') {
                             toast.showError('아직 받을 수 없어요. 검수를 확인해 주세요.');
                         } else {
@@ -144,6 +174,7 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                         await refresh();
                         return;
                     }
+                    await markMissionClaimedLocally(slug, item.rewardId, item);
                     toast.showSuccess('보상을 받았어요.');
                     await refreshInventory();
                     await refresh();
@@ -152,7 +183,7 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                 }
             })();
         },
-        [refresh, refreshInventory, toast],
+        [markMissionClaimedLocally, refresh, refreshInventory, toast],
     );
 
     const onClaimAll = useCallback(() => {
@@ -165,6 +196,13 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                     await refresh();
                     return;
                 }
+                for (const item of items) {
+                    const slug = resolveMissionSlugFromBe({
+                        id: item.sourceId,
+                        title: item.sourceTitle,
+                    });
+                    await markMissionClaimedLocally(slug, item.rewardId, item);
+                }
                 toast.showSuccess(
                     result.data.claimedRewardCount > 0
                         ? `보상 ${result.data.claimedRewardCount}개를 받았어요.`
@@ -176,7 +214,7 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                 setClaimingId(null);
             }
         })();
-    }, [refresh, refreshInventory, toast]);
+    }, [items, markMissionClaimedLocally, refresh, refreshInventory, toast]);
 
     if (loading && items.length === 0) {
         return (
@@ -270,7 +308,7 @@ export function MissionRewardsPanel({ onPendingCountChange }: MissionRewardsPane
                             type="primary"
                             loading={busy}
                             disabled={claimingId != null}
-                            onPress={() => onClaim(item.rewardId)}
+                            onPress={() => onClaim(item)}
                         >
                             수령
                         </Button>

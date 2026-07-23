@@ -84,6 +84,7 @@ import {
     finishOnboarding as finishOnboardingState,
     getMissionTodayStatus,
     markMissionClaimable,
+    markMissionCompletedWithoutGrant,
     reconcileOnboardingFromMyPage,
     resetOnboarding as resetOnboardingState,
     saveOnboardingProfile as saveOnboardingProfileState,
@@ -162,6 +163,18 @@ type UserContextValue = {
     >;
     /** BE completions로 claimable/completed 상태 재동기화 (보상 탭) */
     syncMissionCompletions: () => Promise<void>;
+    /** 보상 탭 수령 직후 로컬 completed 반영 (재고는 ingredients sync) */
+    markMissionClaimedLocally: (
+        missionSlug: string,
+        completionId: number,
+        bundle?: {
+            rewards?: Array<{
+                ingredientId?: number | null;
+                ingredientName?: string | null;
+                imageUrl?: string | null;
+            }>;
+        },
+    ) => Promise<void>;
     /** BE 보유 재료로 인벤토리 덮어쓰기 (보상 수령 후) */
     applyRemoteInventory: (inventory: Record<string, number>) => Promise<void>;
     brewSoup: (slots: (string | null)[]) => Promise<
@@ -790,6 +803,24 @@ export function UserProvider({ children }: PropsWithChildren) {
                 } catch {
                     // keep local
                 }
+            },
+            markMissionClaimedLocally: async (missionSlug, completionId, bundle) => {
+                const entry = bundle?.rewards?.[0];
+                const ingredientId =
+                    entry?.ingredientId != null
+                        ? (ingredientSlugFromNumeric(entry.ingredientId) ??
+                          `be-${entry.ingredientId}`)
+                        : undefined;
+                const current = stateRef.current;
+                const next = markMissionCompletedWithoutGrant(current, missionSlug, {
+                    ingredientId,
+                    name: entry?.ingredientName,
+                    imageUrl: entry?.imageUrl,
+                    completionId,
+                });
+                stateRef.current = next;
+                setState(next);
+                await saveUserState(next);
             },
             applyRemoteInventory: async (inventory) => {
                 const current = stateRef.current;

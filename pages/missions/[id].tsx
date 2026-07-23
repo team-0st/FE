@@ -1,4 +1,4 @@
-import { getMissionForUi } from '@api/missions';
+import { getMissionForUi, getCachedDailyMissionSections, resolveMissionSlugFromBe } from '@api/missions';
 import {
     communityProgressStatus,
     communityToCoopMission,
@@ -16,7 +16,7 @@ import { MissionDetailScreen } from '../../src/features/missions/MissionDetailSc
 import { setPendingMissionVerifyPhoto } from '../../src/features/missions/missionVerifyPhotoStore';
 import { isCoopMissionUnlocked } from '../../src/features/missions/coopMissionLogic';
 import { useUser } from '../../src/features/user/UserProvider';
-import { missionStatusFor } from '../../src/features/user/selectors';
+import { missionStatusFromBeAndLocal } from '../../src/features/user/selectors';
 import type { MissionProgressStatus } from '../../src/features/user/types';
 import { CAMERA_CONSENT_NEEDED_MESSAGE } from '../../src/shared/constants/cameraPolicy';
 import { navigateMissionVerify } from '../../src/shared/constants/routes';
@@ -35,7 +35,7 @@ export const Route = createRoute('/missions/:id', {
 function Page() {
     const { id } = Route.useParams();
     const navigation = Route.useNavigation();
-    const { state, setCameraConsent, claimMissionReward } = useUser();
+    const { state, setCameraConsent, claimMissionReward, syncMissionCompletions } = useUser();
     const toast = useAppToast();
     const [openingCamera, setOpeningCamera] = useState(false);
     const [claimLoading, setClaimLoading] = useState(false);
@@ -45,6 +45,13 @@ function Page() {
     const [communityStatus, setCommunityStatus] = useState<MissionProgressStatus | null>(null);
     const [communityLocked, setCommunityLocked] = useState(false);
     const [loadingCommunity, setLoadingCommunity] = useState(communityBeId != null);
+
+    useEffect(() => {
+        if (communityBeId != null) {
+            return;
+        }
+        void syncMissionCompletions();
+    }, [communityBeId, syncMissionCompletions]);
 
     useEffect(() => {
         if (communityBeId == null) {
@@ -158,8 +165,16 @@ function Page() {
         );
     }
 
+    const cachedSections = getCachedDailyMissionSections();
+    const beSummary =
+        cachedSections == null
+            ? null
+            : [...cachedSections.generalMissions, cachedSections.specialMission].find(
+                  (item) => item != null && resolveMissionSlugFromBe(item) === mission.id,
+              ) ?? null;
     const status =
-        communityStatus ?? missionStatusFor(state, mission.id);
+        communityStatus ??
+        missionStatusFromBeAndLocal(state, mission.id, beSummary);
     const locked =
         communityBeId != null
             ? communityLocked
