@@ -347,3 +347,89 @@ export async function uploadMissionVerifyPhoto(
 
     return parseUploadEnvelope(result.status, result.text);
 }
+
+/**
+ * POST /api/v1/files/upload/community-missions?communityMissionId=
+ */
+export async function uploadCommunityMissionPhoto(
+    communityMissionId: number,
+    photo: MissionVerifyUploadInput,
+): Promise<FileUploadResponse> {
+    if (!isApiEnabled()) {
+        return {
+            fileKey: `mock/community-missions/${communityMissionId}/${Date.now()}.jpg`,
+            fileUrl: photo.previewUri,
+        };
+    }
+
+    const base = getApiBaseUrl();
+    if (base == null) {
+        throw new ApiClientError('API_DISABLED', 'EXPO_PUBLIC_API_BASE_URL이 비어 있습니다.', 0);
+    }
+
+    const rawBase64 = extractRawBase64(photo);
+    const imageBytes = decodeBase64(rawBase64);
+    if (imageBytes.length === 0) {
+        throw new ApiClientError('INVALID_INPUT_VALUE', '빈 파일은 업로드할 수 없습니다.', 400);
+    }
+
+    const format = detectImageFormat(imageBytes);
+    if (format == null) {
+        throw new ApiClientError(
+            'INVALID_FILE_TYPE',
+            '지원하지 않는 파일 형식입니다.',
+            400,
+        );
+    }
+
+    const MAX_IMAGE_BYTES = 900_000;
+    if (imageBytes.length > MAX_IMAGE_BYTES) {
+        throw new ApiClientError('FILE_TOO_LARGE', '사진이 너무 커요.', 413);
+    }
+
+    const { body, contentType } = buildImageMultipart(
+        'file',
+        `community-${communityMissionId}.${format.ext}`,
+        format.mime,
+        imageBytes,
+    );
+
+    const session = await getAuthSession();
+    const baseHeaders: Record<string, string> = {
+        Accept: 'application/json',
+        'Content-Type': contentType,
+    };
+    if (session != null) {
+        baseHeaders.Authorization = `Bearer ${session.accessToken}`;
+    }
+
+    const url = `${base}${API_PATHS.filesUploadCommunity}?communityMissionId=${communityMissionId}`;
+
+    const send = async (
+        headers: Record<string, string>,
+    ): Promise<{ status: number; text: string }> => {
+        try {
+            return await postMultipartXhr(url, headers, body);
+        } catch {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers,
+                body: toArrayBuffer(body) as unknown as BodyInit_,
+            });
+            return { status: response.status, text: await response.text() };
+        }
+    };
+
+    let result = await send(baseHeaders);
+    if (result.status === 401) {
+        const refreshed = await refreshAuthSession(base);
+        if (refreshed != null) {
+            result = await send({
+                ...baseHeaders,
+                Authorization: `Bearer ${refreshed.accessToken}`,
+            });
+        }
+    }
+
+    return parseUploadEnvelope(result.status, result.text);
+}

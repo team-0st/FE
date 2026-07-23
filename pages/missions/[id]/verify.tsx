@@ -1,4 +1,4 @@
-import { getMissionById } from '@api/mock';
+import { getMissionForUi } from '@api/missions';
 import { createRoute } from '@granite-js/react-native';
 import { useCallback } from 'react';
 import { MissionVerifyScreen } from '../../../src/features/missions/MissionVerifyScreen';
@@ -21,7 +21,7 @@ function Page() {
     const navigation = Route.useNavigation();
     const { verifyMission } = useUser();
     const toast = useAppToast();
-    const mission = getMissionById(id);
+    const mission = getMissionForUi(id);
 
     const handleMissingPhoto = useCallback(() => {
         toast.showError('인증 사진이 없어요.\n다시 촬영해 주세요.');

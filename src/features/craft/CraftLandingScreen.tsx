@@ -20,7 +20,7 @@ type CraftLandingScreenProps = {
  */
 export function CraftLandingScreen({ onPressStart }: CraftLandingScreenProps) {
     return (
-        <View style={styles.root}>
+        <View style={styles.root} accessibilityLabel="마녀스프 제작">
             <View style={styles.body} testID="craft-body">
                 <FixedHeightHeaderSlot
                     height={FEATURE_HEADER_SLOT_HEIGHT}
@@ -55,7 +55,7 @@ export function CraftLandingScreen({ onPressStart }: CraftLandingScreenProps) {
                     onPress={onPressStart}
                     accessibilityLabel="스프 만들기"
                 >
-                    🍲 스프 만들기
+                    스프 만들기
                 </Button>
             </View>
         </View>

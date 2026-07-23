@@ -2,22 +2,25 @@ import { appsInToss } from '@apps-in-toss/framework/plugins';
 import { hermes } from '@granite-js/plugin-hermes';
 import { router } from '@granite-js/plugin-router';
 import { defineConfig } from '@granite-js/react-native/config';
-import { APP_DISPLAY_NAME, APP_NAME } from './app.config';
 
 /**
  * `appName` must match the name registered in the Apps in Toss console.
  * 콘솔 등록명: 0st (표시명: 제로스트)
  * legacy 스킴 `intoss://zerost` 는 `normalizeSchemeUrl`에서 0st로 정규화됨.
+ *
+ * Brand literals stay inlined (keep in sync with `app.config.ts`).
+ * `ait build` copies this file into `.granite/.ait-runtime-*.config.ts`,
+ * so relative imports like `./app.config` fail module resolution.
  */
 export default defineConfig({
-  appName: APP_NAME,
+  appName: '0st',
   /** Must be `intoss` for Apps in Toss (see official RN config docs). */
   scheme: 'intoss',
   plugins: [
     appsInToss({
       appType: 'general',
       brand: {
-        displayName: APP_DISPLAY_NAME,
+        displayName: '제로스트',
         primaryColor: '#3182F6',
         // 제로스트(0st) 컨셉에 맞춘 임시 아이콘. 콘솔에 업로드한 공식 로고 URL이 있으면 그것으로 교체.
         icon: 'https://static.toss.im/icons/png/4x/icon-plant-mono.png',

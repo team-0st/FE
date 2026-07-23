@@ -6,7 +6,7 @@ import { Screen } from '../../shared/ui/Screen';
 /** 마이 화면 「제로스트의 목표와 의의」 진입 항목 — 별도 route로 노출. */
 export function AboutZerostScreen() {
     return (
-        <Screen scrollable>
+        <Screen scrollable accessibilityLabel={ABOUT_ZEROST_LABELS.title}>
             <Top
                 title={
                     <Top.TitleParagraph size={22} style={styles.title}>

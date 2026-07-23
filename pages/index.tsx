@@ -22,7 +22,7 @@ function Page() {
 
     useEffect(() => {
         if (isReady && !state.onboardingCompleted) {
-            navigation.replace(ROUTES.onboarding);
+            navigation.replace(ROUTES.login);
         }
     }, [isReady, navigation, state.onboardingCompleted]);
 

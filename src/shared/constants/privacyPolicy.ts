@@ -218,5 +218,5 @@ export const ONBOARDING_PRIVACY_CHECKBOX = {
     service: '[필수] 개인정보 수집·이용에 동의해요',
     serviceHint: '닉네임, 전화번호, 비밀번호, 이용 기록, 인증 사진 등을 포함해요',
     phone: '[선택] 매장 포인트 연동을 위한 휴대전화번호 수집·이용에 동의해요',
-    phoneHint: '동의하지 않아도 계정 생성과 앱 이용은 가능해요',
+    phoneHint: '전화번호를 입력하려면 처리방침 확인 후 선택 동의가 필요해요',
 } as const;

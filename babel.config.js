@@ -49,26 +49,35 @@ module.exports = function (api) {
         },
       ],
       function inlineExpoPublicEnv({ types: t }) {
+        function expoPublicName(path) {
+          if (!path.get('object').matchesPattern('process.env')) {
+            return null;
+          }
+          const prop = path.node.property;
+          const name = path.node.computed
+            ? t.isStringLiteral(prop)
+              ? prop.value
+              : null
+            : t.isIdentifier(prop)
+              ? prop.name
+              : null;
+          if (name == null || !name.startsWith('EXPO_PUBLIC_')) {
+            return null;
+          }
+          return name;
+        }
+        function inlineEnv(path) {
+          const name = expoPublicName(path);
+          if (name == null) {
+            return;
+          }
+          const value = expoPublic[name];
+          path.replaceWith(t.stringLiteral(value ?? ''));
+        }
         return {
           visitor: {
-            MemberExpression(path) {
-              if (!path.get('object').matchesPattern('process.env')) {
-                return;
-              }
-              const prop = path.node.property;
-              const name = path.node.computed
-                ? t.isStringLiteral(prop)
-                  ? prop.value
-                  : null
-                : t.isIdentifier(prop)
-                  ? prop.name
-                  : null;
-              if (name == null || !name.startsWith('EXPO_PUBLIC_')) {
-                return;
-              }
-              const value = expoPublic[name];
-              path.replaceWith(t.stringLiteral(value ?? ''));
-            },
+            MemberExpression: inlineEnv,
+            OptionalMemberExpression: inlineEnv,
           },
         };
       },

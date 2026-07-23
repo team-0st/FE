@@ -11,6 +11,7 @@ export const SCREEN_CONTENT_MAX_WIDTH = 400;
 type ScreenProps = PropsWithChildren<{
     scrollable?: boolean;
     contentCentered?: boolean;
+    accessibilityLabel?: string;
 }>;
 
 type FixedHeightHeaderSlotProps = PropsWithChildren<{
@@ -42,18 +43,31 @@ export function FixedHeightHeaderSlot({
     );
 }
 
-export function Screen({ children, scrollable = false, contentCentered = false }: ScreenProps) {
+export function Screen({
+    children,
+    scrollable = false,
+    contentCentered = false,
+    accessibilityLabel,
+}: ScreenProps) {
     if (scrollable) {
         return (
             <ScrollView
                 style={styles.screen}
-                contentContainerStyle={[styles.content, contentCentered && styles.contentCentered]}
+                contentContainerStyle={[
+                    styles.content,
+                    contentCentered && styles.contentCentered,
+                ]}
+                accessibilityLabel={accessibilityLabel}
             >
                 {children}
             </ScrollView>
         );
     }
-    return <View style={styles.screen}>{children}</View>;
+    return (
+        <View style={styles.screen} accessibilityLabel={accessibilityLabel}>
+            {children}
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({

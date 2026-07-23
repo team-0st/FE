@@ -106,4 +106,15 @@ describe('authSession', () => {
 
         expect(writeJsonMock).toHaveBeenCalledWith('zerost.authSession.v1', null);
     });
+
+    it('mock 토큰은 실세션으로 보지 않는다', async () => {
+        const { isLiveAuthSession } = await import('./authSession');
+        expect(
+            isLiveAuthSession({
+                ...SESSION,
+                accessToken: 'mock-access-token',
+            }),
+        ).toBe(false);
+        expect(isLiveAuthSession({ ...SESSION, accessToken: 'a.b.c' })).toBe(true);
+    });
 });

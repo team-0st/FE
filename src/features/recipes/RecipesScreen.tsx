@@ -1,15 +1,16 @@
 import {
-    getAllRecipes,
     getBeginnerRecipes,
     getHiddenRecipes,
     getLegendaryRecipes,
-    getTodayRecipe,
-    getTodayRecipeHint,
     getWeeklyRecipes,
 } from '@api/mock/recipes';
 import type { Recipe } from '@api/mock/recipeTypes';
+import {
+    getRecipeSections,
+    type RecipeSectionsView,
+} from '@api/recipes';
 import { Asset, Button, ListRow, Txt, frameShape } from '@toss/tds-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     type LayoutChangeEvent,
     type NativeScrollEvent,
@@ -128,9 +129,11 @@ function RecipeList({
             {recipes.map((recipe) => {
                 const done = completedRecipeIds.includes(recipe.id);
                 const unlocked =
-                    kind === 'public' ||
-                    done ||
-                    unlockedRecipeIds.includes(recipe.id);
+                    recipe.recipeVisible != null
+                        ? recipe.recipeVisible
+                        : kind === 'public' ||
+                          done ||
+                          unlockedRecipeIds.includes(recipe.id);
                 const showSoupArt = unlocked && hasSoupImage(recipe.id);
                 return (
                     <RecipeListRowShell key={recipe.id} done={done}>
@@ -189,7 +192,7 @@ function RecipeList({
 }
 
 export function RecipesScreen() {
-    const { state, unlockRandomHiddenRecipe, hideTodayRecipePin, showTodayRecipePin } = useUser();
+    const { state, unlockRandomHiddenRecipe } = useUser();
     const { show, showSuccess, showError } = useAppToast();
     const { width: windowWidth } = useWindowDimensions();
     const soupThumbSize = recipeSoupThumbSize(windowWidth);
@@ -198,29 +201,40 @@ export function RecipesScreen() {
     const [viewportHeight, setViewportHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const [scrollY, setScrollY] = useState(0);
-    const weekly = getWeeklyRecipes();
-    const beginner = getBeginnerRecipes();
-    const hidden = getHiddenRecipes();
-    const legendary = getLegendaryRecipes();
-    const todayRecipe = getTodayRecipe();
-    const allRecipeCount = useMemo(() => getAllRecipes().length, []);
-    const catalogUnlocked =
-        state.unlockedRecipeIds.length >= allRecipeCount && allRecipeCount > 0;
-    const todayRevealed =
-        todayRecipe != null &&
-        (state.completedRecipeIds.includes(todayRecipe.id) ||
-            state.unlockedRecipeIds.includes(todayRecipe.id) ||
-            catalogUnlocked);
-    const todayPinCollapsed =
-        todayRecipe != null && state.hiddenTodayRecipePinId === todayRecipe.id;
-    const showTodayPin = todayRevealed && todayRecipe != null && !todayPinCollapsed;
-    const hiddenLockedCount = hidden.filter(
-        (recipe) =>
-            !state.completedRecipeIds.includes(recipe.id) &&
-            !state.unlockedRecipeIds.includes(recipe.id),
-    ).length;
+    const [beSections, setBeSections] = useState<RecipeSectionsView | null>(null);
 
-    const activeRecipes = useMemo(() => {
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const sections = await getRecipeSections();
+                if (!cancelled && sections != null) {
+                    setBeSections(sections);
+                }
+            } catch {
+                // mock getters 유지
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const weekly = beSections?.weekly ?? getWeeklyRecipes();
+    const beginner = beSections?.beginner ?? getBeginnerRecipes();
+    const hidden = beSections?.hidden ?? getHiddenRecipes();
+    const legendary = beSections?.legendary ?? getLegendaryRecipes();
+    const hiddenLockedCount = hidden.filter((recipe) => {
+        if (recipe.recipeVisible != null) {
+            return !recipe.recipeVisible;
+        }
+        return (
+            !state.completedRecipeIds.includes(recipe.id) &&
+            !state.unlockedRecipeIds.includes(recipe.id)
+        );
+    }).length;
+
+    const listRecipes = useMemo(() => {
         switch (tab) {
             case 'today':
                 return weekly;
@@ -232,13 +246,6 @@ export function RecipesScreen() {
                 return legendary;
         }
     }, [beginner, hidden, legendary, tab, weekly]);
-
-    const listRecipes = useMemo(() => {
-        if (tab !== 'today' || !showTodayPin || todayRecipe == null) {
-            return activeRecipes;
-        }
-        return activeRecipes.filter((recipe) => recipe.id !== todayRecipe.id);
-    }, [activeRecipes, showTodayPin, tab, todayRecipe]);
 
     const listKind: 'public' | 'hidden' | 'legendary' =
         tab === 'hidden' ? 'hidden' : tab === 'legendary' ? 'legendary' : 'public';
@@ -284,66 +291,6 @@ export function RecipesScreen() {
                         lines={RECIPE_LIST_GUIDE_LINES}
                     />
                 </View>
-                {showTodayPin && todayRecipe != null ? (
-                    <View style={styles.todayHint}>
-                        <View style={styles.todayPinHeader}>
-                            <Txt typography="t7" color="grey500" fontWeight="semibold">
-                                오늘의 레시피
-                            </Txt>
-                            <Pressable
-                                onPress={() => {
-                                    void hideTodayRecipePin();
-                                }}
-                                hitSlop={8}
-                                accessibilityRole="button"
-                                accessibilityLabel="오늘의 레시피 숨기기"
-                            >
-                                <Txt typography="t7" color="grey500">
-                                    숨기기
-                                </Txt>
-                            </Pressable>
-                        </View>
-                        <View style={styles.todayPinList}>
-                            <RecipeList
-                                recipes={[todayRecipe]}
-                                completedRecipeIds={state.completedRecipeIds}
-                                unlockedRecipeIds={state.unlockedRecipeIds}
-                                kind="public"
-                                soupThumbSize={soupThumbSize}
-                            />
-                        </View>
-                    </View>
-                ) : todayRevealed && todayPinCollapsed ? (
-                    <View style={styles.todayHint}>
-                        <Pressable
-                            onPress={() => {
-                                void showTodayRecipePin();
-                            }}
-                            hitSlop={8}
-                            accessibilityRole="button"
-                            accessibilityLabel="오늘의 레시피 보기"
-                            style={styles.todayShowButton}
-                        >
-                            <Txt typography="t7" color="grey500" fontWeight="semibold">
-                                오늘의 레시피 보기
-                            </Txt>
-                        </Pressable>
-                    </View>
-                ) : (
-                    <View style={styles.todayHint} accessibilityRole="text">
-                        <Txt
-                            typography="t7"
-                            color="grey500"
-                            fontWeight="semibold"
-                            style={styles.todayHintLabel}
-                        >
-                            오늘의 레시피 힌트
-                        </Txt>
-                        <Txt typography="t7" color="grey700" style={styles.todayHintText}>
-                            {getTodayRecipeHint()}
-                        </Txt>
-                    </View>
-                )}
                 <View style={styles.tabs} accessibilityRole="tablist">
                     {RECIPE_TABS.map((item) => {
                         const selected = tab === item.id;
@@ -492,38 +439,6 @@ const styles = StyleSheet.create({
     guideRow: {
         alignSelf: 'flex-start',
         marginBottom: 8,
-    },
-    todayHint: {
-        marginTop: 2,
-        marginBottom: 6,
-        gap: 2,
-        alignItems: 'center',
-        width: '100%',
-    },
-    todayPinHeader: {
-        width: '100%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8,
-    },
-    todayPinList: {
-        width: '100%',
-        alignSelf: 'stretch',
-    },
-    todayShowButton: {
-        width: '100%',
-        alignItems: 'center',
-        paddingVertical: 8,
-    },
-    todayHintLabel: {
-        textAlign: 'center',
-        width: '100%',
-    },
-    todayHintText: {
-        lineHeight: 18,
-        textAlign: 'center',
-        width: '100%',
     },
     tabs: {
         flexDirection: 'row',

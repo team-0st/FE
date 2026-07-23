@@ -1,6 +1,7 @@
-import { Asset, frameShape, Txt } from '@toss/tds-react-native';
+import { Txt } from '@toss/tds-react-native';
 import { Image, StyleSheet, View } from 'react-native';
-import { TDS_ICON } from '../../shared/constants/tdsAssets';
+import { BRAND_EMOJI } from '../../shared/constants/brandAssets';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { formatCarbonGrams } from './carbonReduction';
 
 const BOTTOM_GRADIENT_URI =
@@ -33,10 +34,9 @@ export function MissionShareCard({
 
             {photoUri == null ? (
                 <View style={styles.photoPlaceholder}>
-                    <Asset.Icon
-                        name={TDS_ICON.missionCamera}
-                        frameShape={frameShape.CircleLarge}
-                        backgroundColor="rgba(255,255,255,0.16)"
+                    <BrandEmojiImage
+                        source={BRAND_EMOJI.camera}
+                        size={64}
                         accessibilityLabel="인증 사진"
                     />
                     <Txt typography="t7" color="white" style={styles.photoPlaceholderLabel}>

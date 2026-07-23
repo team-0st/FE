@@ -2,12 +2,12 @@
   "name": "@team-0st/fe",
   "private": true,
   "scripts": {
-    "dev": "granite dev",
-    "dev:sandbox": "bash scripts/dev-sandbox.sh",
-    "dev:device": "granite dev --host $(ipconfig getifaddr en0 2>/dev/null || echo 127.0.0.1)",
-    "build": "ait build",
-    "test": "jest --passWithNoTests",
-    "typecheck": "tsc --noEmit",
+    "dev": "node scripts/sync-api-base-url.mjs && granite dev",
+    "dev:sandbox": "node scripts/sync-api-base-url.mjs && bash scripts/dev-sandbox.sh",
+    "dev:device": "node scripts/sync-api-base-url.mjs && granite dev --host $(ipconfig getifaddr en0 2>/dev/null || echo 127.0.0.1)",
+    "build": "node scripts/sync-api-base-url.mjs && ait build",
+    "test": "node scripts/sync-api-base-url.mjs && jest --passWithNoTests",
+    "typecheck": "node scripts/sync-api-base-url.mjs && tsc --noEmit",
     "lint": "biome check --write"
   },
   "dependencies": {

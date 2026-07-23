@@ -36,6 +36,8 @@ function normalizeMissionProgress(
                 status: 'completed',
                 completedAt: progress.completedAt,
                 rewardIngredientId: progress.rewardIngredientId,
+                rewardIngredientName: progress.rewardIngredientName,
+                rewardIngredientImageUrl: progress.rewardIngredientImageUrl,
             };
         }
     }
@@ -101,7 +103,6 @@ export async function loadUserState(): Promise<AppUserState> {
         gachaHistory: rest.gachaHistory ?? [],
         pendingRealRewards: rest.pendingRealRewards ?? [],
         lastShareRewardDate: rest.lastShareRewardDate ?? null,
-        hiddenTodayRecipePinId: rest.hiddenTodayRecipePinId ?? null,
     };
 }
 

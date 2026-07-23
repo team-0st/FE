@@ -33,3 +33,6 @@ export const REGISTER_FAILED_MESSAGE =
 
 export const ONBOARDING_SYNC_FAILED_MESSAGE =
     '서버에 온보딩 정보를 저장하지 못했어요.\n잠시 후 다시 시도해 주세요.';
+
+export const LOGIN_FAILED_MESSAGE =
+    '로그인에 실패했어요.\n전화번호와 비밀번호를 확인해 주세요.';

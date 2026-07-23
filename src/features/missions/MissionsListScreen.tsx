@@ -1,7 +1,23 @@
 import { formatMissionIngredientReward } from '@api/mock/ingredients';
-import { COOP_MISSIONS, DAILY_MISSIONS, missionStatusLabel, SPECIAL_MISSIONS } from '@api/mock/missions';
+import {
+    COOP_MISSIONS,
+    DAILY_MISSIONS,
+    missionStatusLabel,
+    SPECIAL_MISSIONS,
+} from '@api/mock/missions';
 import type { CoopMission, Mission } from '@api/mock';
+import { isApiEnabled } from '@api/client';
+import {
+    communityProgressStatus,
+    communityToCoopMission,
+    getCommunityMissions,
+} from '@api/communityMissions';
+import {
+    getDailyMissionSections,
+    missionFromBeSummary,
+} from '@api/missions';
 import { Badge, Border, ListRow, Top, Txt } from '@toss/tds-react-native';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
 import { missionStatusFor } from '../user/selectors';
@@ -15,15 +31,25 @@ import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { colors } from '../../shared/theme/colors';
+import { CenterLoader } from '../../shared/ui/CenterLoader';
 
 type MissionsListScreenProps = {
     onPressMission: (id: string) => void;
+};
+
+type CommunityListItem = {
+    mission: CoopMission;
+    unlocked: boolean;
+    status: MissionProgressStatus;
 };
 
 type StatusBadgeType = 'green' | 'blue' | 'elephant' | 'red';
 
 function statusBadgeType(status: MissionProgressStatus): StatusBadgeType {
     if (status === 'completed') {
+        return 'green';
+    }
+    if (status === 'claimable') {
         return 'green';
     }
     if (status === 'pending_review') {
@@ -102,7 +128,7 @@ function MissionRow({
                 onPress={onPress}
                 left={
                     <BrandEmojiImage
-                        source={getMissionImageSource(mission.id)}
+                        source={getMissionImageSource(mission.id, mission.title)}
                         size={48}
                         containerStyle={styles.rowIcon}
                         accessibilityLabel={`${mission.title} 아이콘`}
@@ -156,7 +182,7 @@ function CoopMissionRow({
                 left={
                     unlocked ? (
                         <BrandEmojiImage
-                            source={getMissionImageSource(mission.id)}
+                            source={getMissionImageSource(mission.id, mission.title)}
                             size={48}
                             containerStyle={styles.rowIcon}
                             accessibilityLabel={`${mission.title} 아이콘`}
@@ -197,15 +223,79 @@ function CoopMissionRow({
 export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) {
     const { state } = useUser();
     const toast = useAppToast();
+    const [generalMissions, setGeneralMissions] = useState<Mission[]>(DAILY_MISSIONS);
+    const [specialMissions, setSpecialMissions] = useState<Mission[]>(SPECIAL_MISSIONS);
+    const [communityItems, setCommunityItems] = useState<CommunityListItem[]>(() =>
+        COOP_MISSIONS.map((mission) => ({
+            mission,
+            unlocked: isCoopMissionUnlocked(state, mission),
+            status: missionStatusFor(state, mission.id),
+        })),
+    );
+    const [loadingBe, setLoadingBe] = useState(isApiEnabled());
 
-    const handleCoopPress = (mission: CoopMission) => {
-        if (!isCoopMissionUnlocked(state, mission)) {
-            const hint = coopUnlockHint(mission);
-            toast.show(hint ?? '이전 미션을 먼저 완료해 주세요.');
+    useEffect(() => {
+        if (!isApiEnabled()) {
+            setLoadingBe(false);
             return;
         }
-        onPressMission(mission.id);
+        let cancelled = false;
+        (async () => {
+            try {
+                const [sections, community] = await Promise.all([
+                    getDailyMissionSections(),
+                    getCommunityMissions(),
+                ]);
+                if (cancelled) {
+                    return;
+                }
+                if (sections != null) {
+                    setGeneralMissions(
+                        sections.generalMissions.map(missionFromBeSummary),
+                    );
+                    setSpecialMissions(
+                        sections.specialMission != null
+                            ? [missionFromBeSummary(sections.specialMission)]
+                            : [],
+                    );
+                }
+                if (community != null && community.length > 0) {
+                    setCommunityItems(
+                        community.map((dto) => ({
+                            mission: communityToCoopMission(dto),
+                            unlocked: dto.unlocked,
+                            status: communityProgressStatus(dto),
+                        })),
+                    );
+                }
+            } catch {
+                // mock 유지
+            } finally {
+                if (!cancelled) {
+                    setLoadingBe(false);
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const handleCoopPress = (item: CommunityListItem) => {
+        if (!item.unlocked) {
+            toast.show(coopUnlockHint(item.mission) ?? '이전 미션을 먼저 완료해 주세요.');
+            return;
+        }
+        onPressMission(item.mission.id);
     };
+
+    if (loadingBe) {
+        return (
+            <Screen>
+                <CenterLoader />
+            </Screen>
+        );
+    }
 
     return (
         <Screen scrollable>
@@ -223,34 +313,30 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
 
             <MissionSectionHeader
                 title="공동 미션"
-                count={COOP_MISSIONS.length}
-                description={'난이도 1부터 차례로 해금돼요.\n난이도 1 미션부터 시작해 보세요.'}
+                count={communityItems.length}
+                description={'난이도 1부터 차례로 해금돼요.\n사진 인증 후 검수가 끝나면 보상을 받아요.'}
             />
             <View style={styles.sectionCard}>
-                {COOP_MISSIONS.map((mission) => {
-                    const unlocked = isCoopMissionUnlocked(state, mission);
-                    const status = missionStatusFor(state, mission.id);
-                    return (
-                        <CoopMissionRow
-                            key={mission.id}
-                            mission={mission}
-                            status={status}
-                            unlocked={unlocked}
-                            onPress={() => handleCoopPress(mission)}
-                        />
-                    );
-                })}
+                {communityItems.map((item) => (
+                    <CoopMissionRow
+                        key={item.mission.id}
+                        mission={item.mission}
+                        status={item.status}
+                        unlocked={item.unlocked}
+                        onPress={() => handleCoopPress(item)}
+                    />
+                ))}
             </View>
 
             <Border type="height16" style={styles.sectionBorder} />
 
             <MissionSectionHeader
                 title="일반 미션"
-                count={DAILY_MISSIONS.length}
+                count={generalMissions.length}
                 rewardBadge="랜덤 일반 재료 1종"
             />
             <View style={styles.sectionCard}>
-                {DAILY_MISSIONS.map((mission) => (
+                {generalMissions.map((mission) => (
                     <MissionRow
                         key={mission.id}
                         mission={mission}
@@ -261,19 +347,25 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
                 ))}
             </View>
 
-            <Border type="height16" style={styles.sectionBorder} />
-
-            <MissionSectionHeader title="특별 미션 (히든 재료)" count={SPECIAL_MISSIONS.length} />
-            <View style={styles.sectionCard}>
-                {SPECIAL_MISSIONS.map((mission) => (
-                    <MissionRow
-                        key={mission.id}
-                        mission={mission}
-                        status={missionStatusFor(state, mission.id)}
-                        onPress={() => onPressMission(mission.id)}
+            {specialMissions.length > 0 ? (
+                <>
+                    <Border type="height16" style={styles.sectionBorder} />
+                    <MissionSectionHeader
+                        title="특별 미션 (히든 재료)"
+                        count={specialMissions.length}
                     />
-                ))}
-            </View>
+                    <View style={styles.sectionCard}>
+                        {specialMissions.map((mission) => (
+                            <MissionRow
+                                key={mission.id}
+                                mission={mission}
+                                status={missionStatusFor(state, mission.id)}
+                                onPress={() => onPressMission(mission.id)}
+                            />
+                        ))}
+                    </View>
+                </>
+            ) : null}
         </Screen>
     );
 }

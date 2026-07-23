@@ -1,14 +1,24 @@
 import type { SoupCraftResponse } from '../../api/notion/types';
 
-export type MissionProgressStatus = 'available' | 'pending_review' | 'completed' | 'rejected';
+export type MissionProgressStatus =
+    | 'available'
+    | 'pending_review'
+    /** 관리자 승인됨 · BE claim 대기 (로컬 재료 미지급) */
+    | 'claimable'
+    | 'completed'
+    | 'rejected';
 
 export type MissionProgress = {
     status: MissionProgressStatus;
     completionId?: number;
     submittedAt?: string;
     completedAt?: string;
-    /** 승인 후 지급된 재료 (slug) */
+    /** 승인 후 지급된 재료 (slug 또는 be-{id}) */
     rewardIngredientId?: string;
+    /** BE가 준 실제 재료 이름 — 표시용 */
+    rewardIngredientName?: string;
+    /** BE imageUrl — 로컬 카탈로그에 없을 때 */
+    rewardIngredientImageUrl?: string | null;
 };
 
 export type PointsLedgerEntry = {
@@ -90,6 +100,4 @@ export type AppUserState = {
     pendingRealRewards: PendingRealReward[];
     /** SNS 공유 리워드 수령일 — 있으면 계정당 1회 보상 완료 (YYYY-MM-DD) */
     lastShareRewardDate: string | null;
-    /** 상단 「오늘의 레시피」 고정 카드에서 숨긴 레시피 id */
-    hiddenTodayRecipePinId: string | null;
 };

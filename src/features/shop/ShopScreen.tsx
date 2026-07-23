@@ -17,7 +17,7 @@ export function ShopScreen({ onPressSelectShop }: ShopScreenProps) {
     const shop = state.shopId != null ? getShopById(state.shopId) : undefined;
 
     return (
-        <Screen scrollable>
+        <Screen scrollable accessibilityLabel="내 샵">
             <Top
                 title={<Top.TitleParagraph size={22}>내 샵</Top.TitleParagraph>}
                 subtitle2={

@@ -49,12 +49,14 @@ export function CauldronStage({
                 Animated.timing(stirTilt, { toValue: 1, duration: 460, useNativeDriver: true }),
                 Animated.timing(stirTilt, { toValue: -1, duration: 460, useNativeDriver: true }),
             ]),
+            { resetBeforeIteration: false },
         );
         const pulseLoop = Animated.loop(
             Animated.sequence([
                 Animated.timing(soupPulse, { toValue: 1.03, duration: 620, useNativeDriver: true }),
                 Animated.timing(soupPulse, { toValue: 1, duration: 620, useNativeDriver: true }),
             ]),
+            { resetBeforeIteration: false },
         );
         tiltLoop.start();
         pulseLoop.start();

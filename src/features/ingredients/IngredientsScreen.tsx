@@ -10,6 +10,11 @@ import {
     recipeToSlots,
     recommendationTitle,
 } from '@api/mock/recipes';
+import type { Recipe } from '@api/mock/recipeTypes';
+import {
+    ensureBrewRecipeCatalog,
+    findMatchingBrewRecipe,
+} from '@api/recipes';
 import { getIngredientById } from '@api/mock/ingredients';import type { SoupCraftResponse } from '@api/notion/types';
 import { Button, ListRow, Switch, Txt } from '@toss/tds-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -85,6 +90,7 @@ export function IngredientsScreen({
     const [slots, setSlots] = useState<(string | null)[]>(emptySlots);
     const [brewing, setBrewing] = useState(false);
     const [animating, setAnimating] = useState(false);
+    const [brewCatalog, setBrewCatalog] = useState<Recipe[] | null>(null);
     const [ownedExpanded, setOwnedExpanded] = useState(false);
     const [scrollViewportHeight, setScrollViewportHeight] = useState(0);
     const [scrollContentMeasurement, setScrollContentMeasurement] = useState({
@@ -100,7 +106,10 @@ export function IngredientsScreen({
     const filledCount = getFilledIngredientIds(slots).length;
     const canBrew = isValidBrewFillCount(filledCount) && !brewing && !animating;
     const matchedRecipe = isValidBrewFillCount(filledCount)
-        ? findMatchingRecipe(slots, state.completedRecipeIds)
+        ? brewCatalog != null
+            ? findMatchingBrewRecipe(slots, brewCatalog) ??
+              findMatchingRecipe(slots, state.completedRecipeIds)
+            : findMatchingRecipe(slots, state.completedRecipeIds)
         : undefined;
     const matchedLabel =
         matchedRecipe == null
@@ -108,6 +117,23 @@ export function IngredientsScreen({
             : matchedRecipe.kind === 'hidden' || matchedRecipe.kind === 'legendary'
               ? '비밀 레시피 조합이에요'
               : `${matchedRecipe.name} 조합이에요`;
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const catalog = await ensureBrewRecipeCatalog();
+                if (!cancelled) {
+                    setBrewCatalog(catalog);
+                }
+            } catch {
+                // mock findMatchingRecipe 유지
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const recommendedRecipes = useMemo(
         () => getRecommendedRecipes(state.ingredientInventory, state.completedRecipeIds),

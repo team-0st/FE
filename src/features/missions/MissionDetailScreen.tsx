@@ -1,15 +1,22 @@
 import type { Mission } from '@api/mock';
 import { isCoopMission } from '@api/mock/types';
-import { formatMissionIngredientReward, MISSION_FIXED_REWARDS } from '@api/mock/ingredients';
+import {
+    formatIngredientReward,
+    formatMissionIngredientReward,
+    getIngredientById,
+    MISSION_FIXED_REWARDS,
+} from '@api/mock/ingredients';
 import { Asset, Button, frameShape, Txt } from '@toss/tds-react-native';
 import { StyleSheet, View } from 'react-native';
 import type { MissionProgressStatus } from '../user/types';
+import { getMissionImageSource } from '../../shared/constants/missionAssets';
 import { GUIDE_CHARACTER } from '../../shared/constants/guideCharacter';
 import {
     MISSION_REWARD_PROBABILITY_LINES,
     MISSION_REWARD_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
+import { BrandEmojiImage } from '../../shared/ui/BrandEmojiImage';
 import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import { Screen } from '../../shared/ui/Screen';
 import { SproutAvatar, SproutAvatarWrap } from '../../shared/ui/SproutAvatar';
@@ -21,7 +28,14 @@ type MissionDetailScreenProps = {
     status: MissionProgressStatus;
     locked?: boolean;
     verifyLoading?: boolean;
+    claimLoading?: boolean;
+    /** 보상 수령 후 저장된 재료 id */
+    claimedRewardIngredientId?: string | null;
+    /** BE가 준 실제 재료명 */
+    claimedRewardIngredientName?: string | null;
+    claimedRewardIngredientImageUrl?: string | null;
     onPressVerify: () => void;
+    onPressClaim?: () => void;
 };
 
 function getAuthNotice(mission: Mission): string {
@@ -39,15 +53,54 @@ export function MissionDetailScreen({
     status,
     locked = false,
     verifyLoading = false,
+    claimLoading = false,
+    claimedRewardIngredientId = null,
+    claimedRewardIngredientName = null,
+    claimedRewardIngredientImageUrl = null,
     onPressVerify,
+    onPressClaim,
 }: MissionDetailScreenProps) {
     const isCompleted = status === 'completed';
+    const isClaimable = status === 'claimable';
     const isCoop = isCoopMission(mission);
     const rewardLabel = formatMissionIngredientReward(mission.id);
     const isFixedReward = MISSION_FIXED_REWARDS[mission.id] != null;
+    const claimedIngredient =
+        claimedRewardIngredientId != null
+            ? getIngredientById(claimedRewardIngredientId)
+            : undefined;
+    const claimedLabel =
+        claimedRewardIngredientName?.trim() ||
+        claimedIngredient?.name ||
+        (claimedRewardIngredientId != null
+            ? formatIngredientReward(claimedRewardIngredientId)
+            : null);
+    const claimedImageSource =
+        claimedIngredient?.imageSource ??
+        (claimedRewardIngredientImageUrl != null &&
+        claimedRewardIngredientImageUrl.length > 0
+            ? { uri: claimedRewardIngredientImageUrl }
+            : null);
+    /** 검수 이후(claimable·completed): 인증 안내 → 보상 확인 칸 */
+    const showClaimedRewardBox = !locked && (isClaimable || isCompleted);
     const headerLine = locked
         ? '이전 공동 미션을 완료하면 열려요.'
-        : '실천하고 사진으로 인증해요.';
+        : isCompleted
+          ? '보상을 받았어요.'
+          : isClaimable
+            ? '검수가 끝났어요. 보상을 받아 주세요.'
+            : status === 'pending_review'
+              ? '제출한 사진을 검수하고 있어요.'
+              : '실천하고 사진으로 인증해요.';
+
+    const displayClaimedName =
+        isCompleted && claimedLabel != null && claimedLabel !== '재료'
+            ? claimedLabel
+            : isCompleted
+              ? claimedLabel ?? '보상 정보 없음'
+              : isClaimable
+                ? '보상 받기 후 재료가 확정돼요'
+                : rewardLabel;
 
     return (
         <Screen>
@@ -69,10 +122,9 @@ export function MissionDetailScreen({
                 </View>
 
                 <View style={styles.photoCard}>
-                    <Asset.Icon
-                        name={TDS_ICON.missionCamera}
-                        frameShape={frameShape.CircleLarge}
-                        backgroundColor={colors.primaryLight}
+                    <BrandEmojiImage
+                        source={getMissionImageSource(mission.id, mission.title)}
+                        size={72}
                         accessibilityLabel={mission.title}
                     />
                     {isCoop ? (
@@ -98,9 +150,11 @@ export function MissionDetailScreen({
                                 accessibilityLabel="재료 보상"
                             />
                             <Txt typography="t7" color="grey700" style={styles.rewardText}>
-                                {`보상 · ${rewardLabel}`}
+                                {isCompleted
+                                    ? `받은 보상 · ${displayClaimedName}`
+                                    : `보상 · ${rewardLabel}`}
                             </Txt>
-                            {isFixedReward ? null : (
+                            {isFixedReward || isCompleted ? null : (
                                 <ProbabilityInfoButton
                                     title={MISSION_REWARD_PROBABILITY_TITLE}
                                     lines={MISSION_REWARD_PROBABILITY_LINES}
@@ -108,35 +162,92 @@ export function MissionDetailScreen({
                             )}
                         </View>
 
-                        <View style={styles.notice}>
-                            <Txt typography="t7" color="grey600" style={styles.noticeText}>
-                                {getAuthNotice(mission)}
-                            </Txt>
-                        </View>
+                        {showClaimedRewardBox ? (
+                            <View style={styles.notice} accessibilityRole="text">
+                                {claimedImageSource != null ? (
+                                    <BrandEmojiImage
+                                        source={claimedImageSource}
+                                        size={40}
+                                        accessibilityLabel={displayClaimedName}
+                                    />
+                                ) : (
+                                    <Asset.Icon
+                                        name={TDS_ICON.gachaGift}
+                                        frameShape={frameShape.CircleSmall}
+                                        backgroundColor={colors.primaryLight}
+                                        accessibilityLabel="받은 보상"
+                                    />
+                                )}
+                                <Txt typography="t7" color="grey700" style={styles.claimedTitle}>
+                                    {isCompleted ? '받은 보상' : '지급 예정 보상'}
+                                </Txt>
+                                <Txt typography="t6" fontWeight="bold" style={styles.claimedName}>
+                                    {displayClaimedName}
+                                </Txt>
+                                {isClaimable && !isCompleted ? (
+                                    <Txt typography="t7" color="grey500" style={styles.claimedHint}>
+                                        아래 버튼으로 보상을 받아 주세요.
+                                    </Txt>
+                                ) : null}
+                            </View>
+                        ) : (
+                            <View style={styles.notice}>
+                                <Txt typography="t7" color="grey600" style={styles.noticeText}>
+                                    {getAuthNotice(mission)}
+                                </Txt>
+                            </View>
+                        )}
                     </>
                 )}
             </View>
 
             <View style={styles.cta}>
-                <Button
-                    size="large"
-                    type="primary"
-                    display="block"
-                    disabled={isCompleted || locked || verifyLoading}
-                    loading={verifyLoading}
-                    onPress={onPressVerify}
-                    accessibilityLabel={
-                        locked ? '아직 잠겨 있어요' : isCompleted ? '이미 완료한 미션' : '인증하기'
-                    }
-                >
-                    {locked
-                        ? '아직 잠겨 있어요'
-                        : isCompleted
-                          ? '이미 완료한 미션'
-                          : verifyLoading
-                            ? '카메라 여는 중…'
-                            : '인증하기'}
-                </Button>
+                {isClaimable && onPressClaim != null ? (
+                    <Button
+                        size="large"
+                        type="primary"
+                        display="block"
+                        disabled={claimLoading}
+                        loading={claimLoading}
+                        onPress={onPressClaim}
+                        accessibilityLabel="보상 받기"
+                    >
+                        {claimLoading ? '받는 중…' : '보상 받기'}
+                    </Button>
+                ) : (
+                    <Button
+                        size="large"
+                        type="primary"
+                        display="block"
+                        disabled={
+                            isCompleted ||
+                            locked ||
+                            verifyLoading ||
+                            status === 'pending_review'
+                        }
+                        loading={verifyLoading}
+                        onPress={onPressVerify}
+                        accessibilityLabel={
+                            locked
+                                ? '아직 잠겨 있어요'
+                                : isCompleted
+                                  ? '이미 완료한 미션'
+                                  : status === 'pending_review'
+                                    ? '검수 중'
+                                    : '인증하기'
+                        }
+                    >
+                        {locked
+                            ? '아직 잠겨 있어요'
+                            : isCompleted
+                              ? '이미 완료한 미션'
+                              : status === 'pending_review'
+                                ? '검수 중이에요'
+                                : verifyLoading
+                                  ? '카메라 여는 중…'
+                                  : '인증하기'}
+                    </Button>
+                )}
             </View>
         </Screen>
     );
@@ -211,15 +322,30 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     notice: {
-        paddingVertical: 10,
+        alignItems: 'center',
+        paddingVertical: 14,
         paddingHorizontal: 12,
         borderRadius: 12,
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
+        gap: 6,
     },
     noticeText: {
         lineHeight: 20,
+        textAlign: 'center',
+    },
+    claimedTitle: {
+        textAlign: 'center',
+        marginTop: 2,
+    },
+    claimedName: {
+        textAlign: 'center',
+    },
+    claimedHint: {
+        textAlign: 'center',
+        lineHeight: 18,
+        marginTop: 2,
     },
     cta: {
         paddingHorizontal: 20,
