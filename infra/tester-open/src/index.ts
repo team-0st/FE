@@ -57,7 +57,8 @@ export default {
     }
 
     const openHref = tossShareUrl ?? deepLink;
-    const html = renderOpenPage(openHref, tossShareUrl != null);
+    // 자동 이동 없음 — 사용자가 버튼을 눌렀을 때만 tossShareUrl/deepLink로 이동
+    const html = renderOpenPage(openHref, false);
     return new Response(html, {
       status: 200,
       headers: {
@@ -152,7 +153,7 @@ function renderOpenPage(
     if (inApp) {
       document.getElementById('inapp')?.classList.add('show');
     }
-    // https 토스 공유 링크만 자동 시도 (커스텀 스킴은 OS 에러만 남김)
+    // 자동 이동 없음. https 토스 공유 링크는 버튼 클릭으로만 연다.
     if (prefersAutoOpen && openHref && !inApp) {
       setTimeout(() => { window.location.href = openHref; }, 400);
     }
