@@ -89,6 +89,50 @@ export type MissionRewardClaimResponse = {
     rewardClaimedAt: string;
 };
 
+/** GET /api/v1/rewards */
+export type RewardsSummaryDto = {
+    totalPendingRewardCount: number;
+    pendingEcoJam: number;
+    pendingPoint: number;
+    pendingCommonIngredientCount: number;
+    pendingHiddenIngredientCount: number;
+};
+
+export type RewardEntryDto = {
+    rewardType: 'INGREDIENT' | 'ECO_JAM' | 'POINT' | string;
+    ingredientType?: string | null;
+    ingredientId?: number | null;
+    ingredientName?: string | null;
+    quantity: number;
+    imageUrl?: string | null;
+};
+
+export type RewardBundleDto = {
+    rewardId: number;
+    rewardSourceType: 'MISSION' | 'COMMUNITY_MISSION' | string;
+    sourceId: number;
+    sourceTitle: string;
+    rewardStatus: 'CLAIMABLE' | 'CLAIMED' | string;
+    earnedAt: string;
+    claimedAt?: string | null;
+    rewards: RewardEntryDto[];
+};
+
+export type RewardsTabDto = {
+    summary: RewardsSummaryDto;
+    items: RewardBundleDto[];
+};
+
+export type ClaimRewardDto = {
+    rewardId: number;
+    claimedAt: string;
+};
+
+export type ClaimAllRewardsDto = {
+    claimedRewardCount: number;
+    claimedAt: string;
+};
+
 export type MissionVerifyResponse = MissionVerifyPendingResponse | MissionVerifyApprovedResponse;
 
 /** FE 스프 보상 등급 (노션 리롤: 꽝~대박) */
@@ -209,9 +253,11 @@ export const API_PATHS = {
     missionDetail: (id: number) => `/api/v1/missions/${id}`,
     missionVerify: (id: number) => `/api/v1/missions/${id}/verify`,
     missionCompletions: '/api/v1/missions/completions',
-    /** BE `POST /api/v1/missions/completions/{completionId}/claim` — UI 연동 전 경로만 맞춤 */
     missionRewardClaim: (completionId: number) =>
         `/api/v1/missions/completions/${completionId}/claim`,
+    rewards: '/api/v1/rewards',
+    rewardClaim: (rewardId: number) => `/api/v1/rewards/${rewardId}/claim`,
+    rewardsClaimAll: '/api/v1/rewards/claim-all',
     filesUpload: '/api/v1/files/upload',
     ingredients: '/api/v1/ingredients',
     recipes: '/api/v1/recipes',
