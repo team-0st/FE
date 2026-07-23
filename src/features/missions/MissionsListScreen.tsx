@@ -18,11 +18,12 @@ import {
 } from '@api/missions';
 import { Badge, Border, ListRow, Top, Txt } from '@toss/tds-react-native';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useUser } from '../user/UserProvider';
 import { missionStatusFor } from '../user/selectors';
 import type { MissionProgressStatus } from '../user/types';
 import { coopDifficultyStars, coopUnlockHint, isCoopMissionUnlocked } from './coopMissionLogic';
+import { MissionRewardsPanel } from './MissionRewardsPanel';
 import { RecipeListRowShell } from '../recipes/RecipeCompletedStamp';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { getMissionImageSource } from '../../shared/constants/missionAssets';
@@ -36,6 +37,8 @@ import { CenterLoader } from '../../shared/ui/CenterLoader';
 type MissionsListScreenProps = {
     onPressMission: (id: string) => void;
 };
+
+type MissionsListTab = 'missions' | 'rewards';
 
 type CommunityListItem = {
     mission: CoopMission;
@@ -223,6 +226,7 @@ function CoopMissionRow({
 export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) {
     const { state } = useUser();
     const toast = useAppToast();
+    const [listTab, setListTab] = useState<MissionsListTab>('missions');
     const [generalMissions, setGeneralMissions] = useState<Mission[]>(DAILY_MISSIONS);
     const [specialMissions, setSpecialMissions] = useState<Mission[]>(SPECIAL_MISSIONS);
     const [communityItems, setCommunityItems] = useState<CommunityListItem[]>(() =>
@@ -234,6 +238,9 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
     );
     const [loadingBe, setLoadingBe] = useState(isApiEnabled());
 
+    const claimableCount = Object.values(state.missionProgress).filter(
+        (p) => p.status === 'claimable',
+    ).length;
     useEffect(() => {
         if (!isApiEnabled()) {
             setLoadingBe(false);
@@ -305,6 +312,44 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
                     <Top.SubtitleParagraph>미션을 완료하면 재료가 쌓여요.</Top.SubtitleParagraph>
                 }
             />
+
+            <View style={styles.tabRow}>
+                <Pressable
+                    onPress={() => setListTab('missions')}
+                    style={[styles.tab, listTab === 'missions' && styles.tabActive]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: listTab === 'missions' }}
+                >
+                    <Txt
+                        typography="t7"
+                        fontWeight="bold"
+                        color={listTab === 'missions' ? 'white' : 'grey700'}
+                    >
+                        미션
+                    </Txt>
+                </Pressable>
+                <Pressable
+                    onPress={() => setListTab('rewards')}
+                    style={[styles.tab, listTab === 'rewards' && styles.tabActive]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: listTab === 'rewards' }}
+                >
+                    <Txt
+                        typography="t7"
+                        fontWeight="bold"
+                        color={listTab === 'rewards' ? 'white' : 'grey700'}
+                    >
+                        {claimableCount > 0 ? `보상 (${claimableCount})` : '보상'}
+                    </Txt>
+                </Pressable>
+            </View>
+
+            {listTab === 'rewards' ? (
+                <View style={styles.rewardsWrap}>
+                    <MissionRewardsPanel />
+                </View>
+            ) : (
+                <>
             <GuideHero
                 message={'텀블러, 장바구니, 대중교통처럼\n일상에서 할 수 있는 미션이에요.'}
                 align="start"
@@ -366,11 +411,32 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
                     </View>
                 </>
             ) : null}
+                </>
+            )}
         </Screen>
     );
 }
 
 const styles = StyleSheet.create({
+    tabRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 8,
+        marginBottom: 4,
+    },
+    tab: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 10,
+        backgroundColor: colors.border,
+    },
+    tabActive: {
+        backgroundColor: colors.primary,
+    },
+    rewardsWrap: {
+        marginTop: 12,
+    },
     sectionHeader: {
         marginTop: 24,
         marginBottom: 8,

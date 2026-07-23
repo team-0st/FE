@@ -160,6 +160,8 @@ type UserContextValue = {
                   | 'NETWORK_ERROR';
           }
     >;
+    /** BE completions로 claimable/completed 상태 재동기화 (보상 탭) */
+    syncMissionCompletions: () => Promise<void>;
     brewSoup: (slots: (string | null)[]) => Promise<
         | { ok: true; recipe: Recipe; craft: SoupCraftResponse }
         | {
@@ -756,6 +758,36 @@ export function UserProvider({ children }: PropsWithChildren) {
                 setState(next);
                 await saveUserState(next);
                 return { ok: true, ingredientId: result.ingredientId };
+            },
+            syncMissionCompletions: async () => {
+                if (!isApiEnabled()) {
+                    return;
+                }
+                try {
+                    const completions = await getMissionCompletions();
+                    const current = stateRef.current;
+                    const next = applyMissionCompletionsToState(
+                        current,
+                        completions,
+                        (missionId, missionTitle) => {
+                            if (missionTitle != null && missionTitle.length > 0) {
+                                return resolveMissionSlugFromBe({
+                                    id: missionId,
+                                    title: missionTitle,
+                                });
+                            }
+                            return (
+                                missionSlugFromNumeric(missionId) ?? `be-${missionId}`
+                            );
+                        },
+                        ingredientSlugFromNumeric,
+                    );
+                    stateRef.current = next;
+                    setState(next);
+                    await saveUserState(next);
+                } catch {
+                    // keep local
+                }
             },
             pullGacha: async (): Promise<GachaPullResult> => {
                 for (let attempt = 0; attempt < 2; attempt += 1) {
