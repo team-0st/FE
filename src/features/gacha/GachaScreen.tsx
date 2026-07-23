@@ -1,6 +1,6 @@
 import { getIngredientById } from '@api/mock/ingredients';
 import { Button, Txt } from '@toss/tds-react-native';
-import { useCallback, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet, Vibration, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import {
@@ -13,7 +13,6 @@ import {
     GACHA_PROBABILITY_LINES,
     GACHA_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
-import { useAppToast } from '../../shared/feedback/useAppToast';
 import { buildGachaShareMessage } from '../../shared/feedback/shareResult';
 import { ProfileLedgerRow, ProfileListModal } from '../profile/ProfileListSection';
 import { CenteredFeatureStage } from '../../shared/ui/CenteredFeatureStage';
@@ -39,6 +38,9 @@ type GachaScreenProps = {
 
 /** 공유 버튼 자리 — 유무와 관계없이 확보해 뽑기 버튼 위치 고정 */
 const SHARE_SLOT_HEIGHT = 48;
+/** TDS bottom toast와 동일한 회색 칩 */
+const INLINE_TOAST_BG = '#8B95A1';
+const INLINE_TOAST_MS = 2600;
 
 const PHASE_MS = {
     pulling: 700,
@@ -170,8 +172,28 @@ function formatGachaHistoryTime(iso: string): string {
 
 export function GachaScreen({ active }: GachaScreenProps) {
     const { state, pullGacha } = useUser();
-    const toast = useAppToast();
     const [historyVisible, setHistoryVisible] = useState(false);
+    const [banner, setBanner] = useState<string | null>(null);
+    const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const showBanner = useCallback((message: string, duration = INLINE_TOAST_MS) => {
+        if (bannerTimerRef.current != null) {
+            clearTimeout(bannerTimerRef.current);
+        }
+        setBanner(message);
+        bannerTimerRef.current = setTimeout(() => {
+            setBanner(null);
+            bannerTimerRef.current = null;
+        }, duration);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (bannerTimerRef.current != null) {
+                clearTimeout(bannerTimerRef.current);
+            }
+        };
+    }, []);
 
     const [tabState, dispatch] = useReducer(
         reduceGachaTabState,
@@ -234,7 +256,7 @@ export function GachaScreen({ active }: GachaScreenProps) {
 
     const onPressPull = useCallback(async () => {
         if (!canPull) {
-            toast.showError(`에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`);
+            showBanner(`에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`, 3200);
             return;
         }
         const startGeneration = generationRef.current;
@@ -253,9 +275,9 @@ export function GachaScreen({ active }: GachaScreenProps) {
             if (!result.ok) {
                 dispatch({ type: 'PULL_SETTLED', outcome: 'idle' });
                 if (result.reason === 'network_error') {
-                    toast.showError('가챠를 진행하지 못했어요. 잠시 후 다시 시도해 주세요.');
+                    showBanner('가챠를 진행하지 못했어요. 잠시 후 다시 시도해 주세요.', 3200);
                 } else {
-                    toast.showError(`에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`);
+                    showBanner(`에코잼이 부족해요. (필요: ${GACHA_PULL_COST_ECO_JAM}개)`, 3200);
                 }
                 return;
             }
@@ -268,21 +290,21 @@ export function GachaScreen({ active }: GachaScreenProps) {
                     reward: result.reward,
                     failArt: pickFailAsset(),
                 });
-                toast.show(formatGachaRewardMessage(result.reward, state));
+                showBanner(formatGachaRewardMessage(result.reward, state));
                 return;
             }
 
             dispatch({ type: 'PULL_SETTLED', outcome: 'result', reward: result.reward });
-            toast.showSuccess(formatGachaRewardMessage(result.reward, state));
+            showBanner(formatGachaRewardMessage(result.reward, state));
         } catch {
             if (!isGachaPullOutcomeCurrent(startGeneration, generationRef.current)) {
                 dispatch({ type: 'PULL_ABANDONED_SETTLED' });
                 return;
             }
             dispatch({ type: 'PULL_SETTLED', outcome: 'idle' });
-            toast.showError('가챠를 진행하지 못했어요. 잠시 후 다시 시도해 주세요.');
+            showBanner('가챠를 진행하지 못했어요. 잠시 후 다시 시도해 주세요.', 3200);
         }
-    }, [canPull, pullGacha, state, toast]);
+    }, [canPull, pullGacha, showBanner, state]);
 
     return (
         <View style={styles.root} testID="gacha-root">
@@ -324,6 +346,13 @@ export function GachaScreen({ active }: GachaScreenProps) {
                         </View>
                     </View>
                 </FixedHeightHeaderSlot>
+                {banner != null ? (
+                    <View style={styles.inlineToast} testID="gacha-inline-toast">
+                        <Txt typography="t6" fontWeight="semibold" color="white">
+                            {banner}
+                        </Txt>
+                    </View>
+                ) : null}
                 <CenteredFeatureStage
                     testID="gacha-centered-stage"
                     stageTestID="gacha-stage-viewport"
@@ -438,6 +467,17 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginTop: 8,
         marginBottom: 4,
+    },
+    inlineToast: {
+        alignSelf: 'center',
+        maxWidth: '100%',
+        marginTop: 4,
+        marginBottom: 4,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        // TDS ToastBottom/Top: single=100, multi=20 — 알약형 대신 multi 라운드
+        borderRadius: 20,
+        backgroundColor: INLINE_TOAST_BG,
     },
     stageSlot: {
         width: '100%',

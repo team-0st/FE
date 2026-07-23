@@ -6,8 +6,7 @@ export function useAppToast() {
 
     const show = useCallback(
         (message: string, duration = 2800) => {
-            // 하단 탭바·홈 인디케이터에 가리지 않도록 상단 노출
-            toast.open(message, { duration, type: 'top' });
+            toast.open(message, { duration, type: 'bottom' });
         },
         [toast],
     );

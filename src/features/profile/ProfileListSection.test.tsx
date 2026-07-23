@@ -817,7 +817,7 @@ describe('GachaScreen tab reentry integration', () => {
 
         expect(screen.getByLabelText('가챠 머신')).toBeTruthy();
         expect(screen.queryByLabelText('가챠 결과')).toBeNull();
-        expect(toast.showSuccess).not.toHaveBeenCalled();
+        expect(screen.queryByTestId('gacha-inline-toast')).toBeNull();
     });
 
     it('복귀 시 pending 요청이 끝날 때까지 중복 pull을 막고 abandon settle 후 다시 허용한다', async () => {
@@ -845,14 +845,15 @@ describe('GachaScreen tab reentry integration', () => {
         });
     });
 
-    it('활성 상태의 정상 성공은 결과와 success toast를 유지한다', async () => {
+    it('활성 상태의 정상 성공은 결과와 인라인 배너를 유지한다', async () => {
         const screen = renderGacha(jest.fn().mockResolvedValue(GACHA_SUCCESS_RESULT));
 
         fireEvent.press(screen.getByLabelText(GACHA_PULL_LABEL));
         await finishPullAnimation();
 
         expect(screen.getByLabelText('가챠 결과')).toBeTruthy();
-        expect(toast.showSuccess).toHaveBeenCalledWith(expect.stringContaining('100P'));
+        expect(screen.getByTestId('gacha-inline-toast')).toBeTruthy();
+        expect(screen.getByText(/100P/)).toBeTruthy();
     });
 
     it('idle과 result 모두 동일 ShareResultButton 하나를 레이아웃에 유지하되 idle만 비상호작용·접근성 숨김 처리한다', async () => {
