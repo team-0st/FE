@@ -29,6 +29,17 @@ type BeBrewSoupResponse = {
     }>;
 };
 
+type BeSoupRewardPayload = {
+    rewardGrade: string;
+    rewardEcoJam: number;
+    rewardPoint: number;
+    rewardedIngredients: Array<{
+        ingredientId: number;
+        ingredientName: string;
+        quantity: number;
+    }>;
+};
+
 function mapBeGrade(grade: string): SoupRewardGradeWire {
     switch (grade) {
         case 'JACKPOT':
@@ -46,39 +57,92 @@ function mapBeGrade(grade: string): SoupRewardGradeWire {
     }
 }
 
-function mapBrewResponse(data: BeBrewSoupResponse): SoupCraftResponse {
+/**
+ * BE brew/reroll 공통 보상 필드.
+ * INGREDIENT면 rewardAmount = 재료 quantity (에코잼·포인트와 섞지 않음).
+ */
+function mapSoupRewardFields(data: BeSoupRewardPayload): Pick<
+    SoupCraftResponse,
+    | 'rewardGrade'
+    | 'rewardEcoJam'
+    | 'rewardPoint'
+    | 'rewardIngredientId'
+    | 'rewardType'
+    | 'rewardAmount'
+> {
     const rewardGrade = mapBeGrade(data.rewardGrade);
     const firstIng = data.rewardedIngredients[0];
     const rewardIngredientId =
         firstIng != null
             ? (ingredientSlugFromNumeric(firstIng.ingredientId) ?? `be-${firstIng.ingredientId}`)
             : undefined;
+    const ingredientQuantity =
+        firstIng != null ? Math.max(1, Math.floor(firstIng.quantity)) : undefined;
 
+    if (rewardGrade === 'INGREDIENT' && rewardIngredientId != null) {
+        return {
+            rewardGrade,
+            rewardEcoJam: data.rewardEcoJam > 0 ? data.rewardEcoJam : undefined,
+            rewardPoint: data.rewardPoint > 0 ? data.rewardPoint : undefined,
+            rewardIngredientId,
+            rewardType: 'ECO_JAM',
+            rewardAmount: ingredientQuantity ?? 1,
+        };
+    }
+
+    if (data.rewardPoint > 0) {
+        return {
+            rewardGrade,
+            rewardEcoJam: data.rewardEcoJam > 0 ? data.rewardEcoJam : undefined,
+            rewardPoint: data.rewardPoint,
+            rewardIngredientId,
+            rewardType: 'ALMANG_POINT',
+            rewardAmount: data.rewardPoint,
+        };
+    }
+
+    if (data.rewardEcoJam > 0) {
+        return {
+            rewardGrade,
+            rewardEcoJam: data.rewardEcoJam,
+            rewardPoint: undefined,
+            rewardIngredientId,
+            rewardType: 'ECO_JAM',
+            rewardAmount: data.rewardEcoJam,
+        };
+    }
+
+    if (rewardIngredientId != null) {
+        return {
+            rewardGrade,
+            rewardEcoJam: undefined,
+            rewardPoint: undefined,
+            rewardIngredientId,
+            rewardType: 'ECO_JAM',
+            rewardAmount: ingredientQuantity ?? 1,
+        };
+    }
+
+    return {
+        rewardGrade,
+        rewardEcoJam: undefined,
+        rewardPoint: undefined,
+        rewardIngredientId: undefined,
+        rewardType: 'TRASH_ITEM',
+        rewardAmount: undefined,
+    };
+}
+
+function mapBrewResponse(data: BeBrewSoupResponse): SoupCraftResponse {
+    const rewardFields = mapSoupRewardFields(data);
     const hasReward =
         data.rewardEcoJam > 0 || data.rewardPoint > 0 || data.rewardedIngredients.length > 0;
 
     return {
         soupId: data.soupId,
-        result: hasReward || rewardGrade !== 'FAIL' ? 'SUCCESS' : 'FAIL',
+        result: hasReward || rewardFields.rewardGrade !== 'FAIL' ? 'SUCCESS' : 'FAIL',
         recipeName: data.recipeName,
-        rewardGrade,
-        rewardEcoJam: data.rewardEcoJam > 0 ? data.rewardEcoJam : undefined,
-        rewardPoint: data.rewardPoint > 0 ? data.rewardPoint : undefined,
-        rewardIngredientId,
-        rewardType:
-            data.rewardPoint > 0
-                ? 'ALMANG_POINT'
-                : data.rewardEcoJam > 0
-                  ? 'ECO_JAM'
-                  : rewardIngredientId != null
-                    ? 'ECO_JAM'
-                    : 'TRASH_ITEM',
-        rewardAmount:
-            data.rewardPoint > 0
-                ? data.rewardPoint
-                : data.rewardEcoJam > 0
-                  ? data.rewardEcoJam
-                  : undefined,
+        ...rewardFields,
         rewardDescription: data.recipeName,
     };
 }
@@ -191,41 +255,16 @@ export function mapSoupRerollResponse(
     data: BeSoupRerollResponse,
     prevCraft: SoupCraftResponse,
 ): SoupCraftResponse {
-    const rewardGrade = mapBeGrade(data.rewardGrade);
-    // 기존 SoupCraftResponse는 표시용 재료 ID 하나만 지원한다.
-    // 실제 인벤토리는 후속 GET /ingredients의 전체 quantity 스냅샷으로 별도 동기화한다.
-    const firstIngredient = data.rewardedIngredients[0];
-    const rewardIngredientId =
-        firstIngredient != null
-            ? (ingredientSlugFromNumeric(firstIngredient.ingredientId) ??
-              `be-${firstIngredient.ingredientId}`)
-            : undefined;
-
+    // 표시용 재료 ID는 첫 항목만. 인벤토리 수량은 GET /ingredients로 별도 동기화.
+    const rewardFields = mapSoupRewardFields(data);
     const hasReward =
         data.rewardEcoJam > 0 || data.rewardPoint > 0 || data.rewardedIngredients.length > 0;
 
     return {
         soupId: data.soupId,
-        result: hasReward || rewardGrade !== 'FAIL' ? 'SUCCESS' : 'FAIL',
+        result: hasReward || rewardFields.rewardGrade !== 'FAIL' ? 'SUCCESS' : 'FAIL',
         recipeName: prevCraft.recipeName,
-        rewardGrade,
-        rewardEcoJam: data.rewardEcoJam > 0 ? data.rewardEcoJam : undefined,
-        rewardPoint: data.rewardPoint > 0 ? data.rewardPoint : undefined,
-        rewardIngredientId,
-        rewardType:
-            data.rewardPoint > 0
-                ? 'ALMANG_POINT'
-                : data.rewardEcoJam > 0
-                  ? 'ECO_JAM'
-                  : rewardIngredientId != null
-                    ? 'ECO_JAM'
-                    : 'TRASH_ITEM',
-        rewardAmount:
-            data.rewardPoint > 0
-                ? data.rewardPoint
-                : data.rewardEcoJam > 0
-                  ? data.rewardEcoJam
-                  : undefined,
+        ...rewardFields,
         rewardDescription: prevCraft.rewardDescription ?? prevCraft.recipeName,
     };
 }

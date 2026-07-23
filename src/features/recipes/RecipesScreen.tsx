@@ -12,6 +12,7 @@ import {
 import { Asset, Button, ListRow, Txt, frameShape } from '@toss/tds-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+    Image,
     type LayoutChangeEvent,
     type NativeScrollEvent,
     type NativeSyntheticEvent,
@@ -30,6 +31,7 @@ import {
     SOUP_WEEKLY_PROBABILITY_TITLE,
 } from '../../shared/constants/probabilityInfo';
 import { ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST } from '../../shared/constants/ecoJamPolicy';
+import { CAULDRON_BASE_IMAGE } from '../../shared/constants/cauldronImages';
 import { getSoupImageSource, hasSoupImage } from '../../shared/constants/soupAssets';
 import { useAppToast } from '../../shared/feedback/useAppToast';
 import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
@@ -38,11 +40,15 @@ import { RecipeIngredientIcons } from '../../shared/ui/RecipeIngredientIcons';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
 import { useUser } from '../user/UserProvider';
 import { RecipeListRowShell } from './RecipeCompletedStamp';
+import { collectCompletedRecipes, sortRecipesCompletedLast } from './recipeListOrder';
 import { colors } from '../../shared/theme/colors';
 
 const HIDDEN_LOCKED_MESSAGE =
     '히든 레시피는 아직 밝혀지지 않았어요. 조합을 맞추거나 에코잼으로 랜덤 해금할 수 있어요.';
 const LEGENDARY_LOCKED_MESSAGE = '전설 레시피는 아직 밝혀지지 않았어요. 조합을 맞추면 공개돼요.';
+export const COMPLETED_RECIPES_EMPTY_MESSAGE =
+    '완성된 레시피가 없어요.\n한번 만들어 보세요!';
+const EMPTY_CAULDRON_SIZE = 160;
 const SCROLL_BOTTOM_THRESHOLD = 24;
 export const BODY_CONTENT_PADDING_BOTTOM = 28;
 
@@ -92,13 +98,14 @@ function recipeSoupThumbSize(windowWidth: number): number {
     return Math.round(Math.min(120, Math.max(84, windowWidth * 0.27)));
 }
 
-type RecipeTabId = 'today' | 'beginner' | 'hidden' | 'legendary';
+type RecipeTabId = 'today' | 'beginner' | 'hidden' | 'legendary' | 'completed';
 
 const RECIPE_TABS: { id: RecipeTabId; label: string }[] = [
     { id: 'beginner', label: '입문' },
     { id: 'today', label: '일반' },
     { id: 'hidden', label: '히든' },
     { id: 'legendary', label: '전설' },
+    { id: 'completed', label: '완료' },
 ];
 
 function secretRecipeBottom(kind: 'hidden' | 'legendary'): string {
@@ -114,6 +121,7 @@ type RecipeSectionProps = {
     unlockedRecipeIds: string[];
     kind?: 'public' | 'hidden' | 'legendary';
     onLockedPress?: () => void;
+    rowAppearance?: 'grade' | 'completedTab';
 };
 
 function RecipeList({
@@ -123,6 +131,7 @@ function RecipeList({
     kind = 'public',
     onLockedPress,
     soupThumbSize,
+    rowAppearance = 'grade',
 }: RecipeSectionProps & { soupThumbSize: number }) {
     return (
         <View>
@@ -136,7 +145,11 @@ function RecipeList({
                           unlockedRecipeIds.includes(recipe.id);
                 const showSoupArt = unlocked && hasSoupImage(recipe.id);
                 return (
-                    <RecipeListRowShell key={recipe.id} done={done}>
+                    <RecipeListRowShell
+                        key={recipe.id}
+                        done={done}
+                        appearance={rowAppearance}
+                    >
                         <ListRow
                             onPress={unlocked ? undefined : onLockedPress}
                             left={
@@ -191,6 +204,22 @@ function RecipeList({
     );
 }
 
+function CompletedRecipesEmpty() {
+    return (
+        <View style={styles.emptyCompleted} testID="recipe-completed-empty">
+            <Image
+                source={CAULDRON_BASE_IMAGE}
+                style={styles.emptyCauldron}
+                resizeMode="contain"
+                accessibilityLabel="가마솥"
+            />
+            <Txt typography="t6" color="grey600" style={styles.emptyMessage}>
+                {COMPLETED_RECIPES_EMPTY_MESSAGE}
+            </Txt>
+        </View>
+    );
+}
+
 export function RecipesScreen() {
     const { state, unlockRandomHiddenRecipe } = useUser();
     const { show, showSuccess, showError } = useAppToast();
@@ -235,20 +264,28 @@ export function RecipesScreen() {
     }).length;
 
     const listRecipes = useMemo(() => {
+        const completedIds = state.completedRecipeIds;
         switch (tab) {
             case 'today':
-                return weekly;
+                return sortRecipesCompletedLast(weekly, completedIds);
             case 'beginner':
-                return beginner;
+                return sortRecipesCompletedLast(beginner, completedIds);
             case 'hidden':
-                return hidden;
+                return sortRecipesCompletedLast(hidden, completedIds);
             case 'legendary':
-                return legendary;
+                return sortRecipesCompletedLast(legendary, completedIds);
+            case 'completed':
+                return collectCompletedRecipes(
+                    { beginner, weekly, hidden, legendary },
+                    completedIds,
+                );
         }
-    }, [beginner, hidden, legendary, tab, weekly]);
+    }, [beginner, hidden, legendary, state.completedRecipeIds, tab, weekly]);
 
     const listKind: 'public' | 'hidden' | 'legendary' =
         tab === 'hidden' ? 'hidden' : tab === 'legendary' ? 'legendary' : 'public';
+    const rowAppearance = tab === 'completed' ? 'completedTab' : 'grade';
+    const showCompletedEmpty = tab === 'completed' && listRecipes.length === 0;
 
     const showWeeklyProb = tab === 'today' || tab === 'beginner';
     const showSecretProb = tab === 'hidden' || tab === 'legendary';
@@ -342,20 +379,25 @@ export function RecipesScreen() {
                     scrollEventThrottle={16}
                     onContentSizeChange={onContentSizeChange}
                 >
-                    <RecipeList
-                        recipes={listRecipes}
-                        completedRecipeIds={state.completedRecipeIds}
-                        unlockedRecipeIds={state.unlockedRecipeIds}
-                        kind={listKind}
-                        soupThumbSize={soupThumbSize}
-                        onLockedPress={() =>
-                            show(
-                                tab === 'legendary'
-                                    ? LEGENDARY_LOCKED_MESSAGE
-                                    : HIDDEN_LOCKED_MESSAGE,
-                            )
-                        }
-                    />
+                    {showCompletedEmpty ? (
+                        <CompletedRecipesEmpty />
+                    ) : (
+                        <RecipeList
+                            recipes={listRecipes}
+                            completedRecipeIds={state.completedRecipeIds}
+                            unlockedRecipeIds={state.unlockedRecipeIds}
+                            kind={listKind}
+                            soupThumbSize={soupThumbSize}
+                            rowAppearance={rowAppearance}
+                            onLockedPress={() =>
+                                show(
+                                    tab === 'legendary'
+                                        ? LEGENDARY_LOCKED_MESSAGE
+                                        : HIDDEN_LOCKED_MESSAGE,
+                                )
+                            }
+                        />
+                    )}
                     {tab === 'hidden' && hiddenLockedCount > 0 ? (
                         <View style={styles.unlockWrap} testID="recipe-hidden-unlock-wrap">
                             <Button
@@ -513,5 +555,19 @@ const styles = StyleSheet.create({
     recipeContents: {
         flex: 1,
         justifyContent: 'center',
+    },
+    emptyCompleted: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 40,
+        paddingHorizontal: 24,
+        gap: 16,
+    },
+    emptyCauldron: {
+        width: EMPTY_CAULDRON_SIZE,
+        height: EMPTY_CAULDRON_SIZE,
+    },
+    emptyMessage: {
+        textAlign: 'center',
     },
 });

@@ -56,7 +56,7 @@ export function buildCraftForGrade(
             result: 'SUCCESS',
             recipeName,
             rewardType: 'ECO_JAM',
-            rewardAmount: 0,
+            rewardAmount: 1,
             rewardDescription: '재료 지급',
             rewardGrade: 'INGREDIENT',
             rewardIngredientId: ingredientId,

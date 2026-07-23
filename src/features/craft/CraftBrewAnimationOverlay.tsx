@@ -2,7 +2,7 @@ import type { Recipe } from '@api/mock/recipeTypes';
 import type { SoupCraftResponse } from '@api/notion/types';
 import { Txt } from '@toss/tds-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, Vibration, View } from 'react-native';
 import type { BrewFailureReason } from '../../shared/feedback/messages';
 import { CAULDRON_TIER_LAYERS, STIR_STICK_IMAGE } from '../../shared/constants/cauldronImages';
 import { CenteredFeatureStage } from '../../shared/ui/CenteredFeatureStage';
@@ -21,6 +21,40 @@ const PHASE_HINT: Record<CraftBrewPhase, string> = {
     transform: '스프가 변하고 있어요…',
     complete: '스프가 완성됐어요!',
 };
+
+/** 가챠 pull과 동일 패턴 — 샌드박스·시뮬레이터에서는 무시될 수 있음 */
+function vibrateBrewing() {
+    try {
+        if (Platform.OS === 'android') {
+            Vibration.vibrate([0, 35, 70, 35, 70, 35, 70, 45, 70, 55]);
+            return;
+        }
+        Vibration.vibrate();
+        setTimeout(() => {
+            try {
+                Vibration.vibrate();
+            } catch {
+                // ignore
+            }
+        }, 160);
+        setTimeout(() => {
+            try {
+                Vibration.vibrate();
+            } catch {
+                // ignore
+            }
+        }, 320);
+        setTimeout(() => {
+            try {
+                Vibration.vibrate();
+            } catch {
+                // ignore
+            }
+        }, 480);
+    } catch {
+        // 샌드박스·시뮬레이터에서 무시
+    }
+}
 
 /**
  * 약 270px 내부 캔버스의 alpha 정렬 이동과 complete 단계 emphasize 1.1 배율을
@@ -50,6 +84,7 @@ export function CraftBrewAnimationOverlay({ run, onSuccess, onFailure }: CraftBr
 
     useEffect(() => {
         let cancelled = false;
+        vibrateBrewing();
 
         void runCraftBrewSequence<CraftBrewOutcome>({
             run,
