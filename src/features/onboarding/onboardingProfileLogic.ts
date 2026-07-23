@@ -23,15 +23,24 @@ export const PHONE_PREFIX = '010';
 /** @deprecated PHONE_DIGITS_LENGTH 사용 */
 export const PHONE_BODY_LENGTH = 8;
 
+/** iOS 한글 IME·보이지 않는 문자로 검증이 깨지지 않게 정규화 */
+export function normalizeNicknameInput(raw: string): string {
+    return raw
+        .normalize('NFC')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim();
+}
+
 export function validateNickname(raw: string): NicknameValidationResult {
-    const nickname = raw.trim();
+    const nickname = normalizeNicknameInput(raw);
     if (nickname.length < NICKNAME_MIN) {
         return { ok: false, message: `닉네임은 ${NICKNAME_MIN}자 이상 입력해 주세요.` };
     }
     if (nickname.length > NICKNAME_MAX) {
         return { ok: false, message: `닉네임은 ${NICKNAME_MAX}자까지 입력할 수 있어요.` };
     }
-    if (!/^[\p{L}\p{N}]+$/u.test(nickname)) {
+    // \p{L} 대신 한글·영문·숫자 범위를 명시 — 기기/엔진별 유니코드 속성 차이를 피함
+    if (!/^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9]+$/.test(nickname)) {
         return { ok: false, message: '닉네임은 한글·영문·숫자만 사용할 수 있어요.' };
     }
     return { ok: true, nickname };

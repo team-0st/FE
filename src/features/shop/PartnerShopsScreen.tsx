@@ -82,13 +82,9 @@ export function PartnerShopsScreen() {
                         type="3RowTypeA"
                         top={shop.name}
                         topProps={{ fontWeight: 'bold' }}
-                        middle={`${categoryLabel} · ${shop.address}`}
+                        middle={`${categoryLabel} · ${shop.region}`}
                         middleProps={{ color: 'grey600' }}
-                        bottom={
-                            distanceLabel != null
-                                ? `${shop.description} · ${distanceLabel}`
-                                : `${shop.description} · ${pointBadge}`
-                        }
+                        bottom={shop.address}
                     />
                 }
                 right={
@@ -112,7 +108,11 @@ export function PartnerShopsScreen() {
 
     return (
         <>
-            <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+            <ScrollView
+                style={styles.root}
+                contentContainerStyle={styles.content}
+                accessibilityLabel="주변 상점"
+            >
                 <Top
                     title={<Top.TitleParagraph size={22}>주변 상점</Top.TitleParagraph>}
                     subtitle2={

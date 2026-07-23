@@ -16,6 +16,17 @@ export const ONBOARDING_GUIDE = {
     intro: '안녕하세요!\n우리는 제로랑 스티예요.\n지구를 아끼는 제로웨이스트,\n함께 천천히 시작해 볼까요?',
 } as const;
 
+export const LOGIN_GUIDE = {
+    title: '로그인',
+    phoneLabel: '휴대전화번호',
+    phonePlaceholder: '01012345678',
+    passwordLabel: '비밀번호',
+    passwordPlaceholder: '비밀번호를 입력해 주세요',
+    submit: '로그인',
+    signUp: '회원가입하기',
+    characterLabel: '마녀 가마솥',
+} as const;
+
 export const ONBOARDING_PROFILE_GUIDE = {
     nicknameTitle: '닉네임을 입력해 주세요',
     nicknameSubtitle: '앱에서 사용할 이름이에요.\n실명은 필요하지 않아요.',

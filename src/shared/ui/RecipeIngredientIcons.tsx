@@ -21,31 +21,59 @@ function fitIconSize(windowWidth: number, count: number): number {
         return ICON_MIN;
     }
     const available = Math.max(ICON_MIN, windowWidth - ROW_SIDE_RESERVE);
-    const raw = Math.floor((available - ICON_GAP * (count - 1)) / count);
+    const raw = floorDiv(available - ICON_GAP * (count - 1), count);
     return Math.min(ICON_MAX, Math.max(ICON_MIN, raw));
 }
 
+function floorDiv(a: number, b: number): number {
+    return Math.floor(a / b);
+}
+
 /** 레시피 재료: 그림 한 줄 + 각 그림 아래 이름(잘림 없이 축소·줄바꿈) */
-export function RecipeIngredientIcons({ ingredientIds, size: sizeOverride }: RecipeIngredientIconsProps) {
+export function RecipeIngredientIcons({
+    ingredientIds,
+    size: sizeOverride,
+}: RecipeIngredientIconsProps) {
     const { width } = useWindowDimensions();
-    const items = ingredientIds
-        .map((id) => getIngredientById(id))
-        .filter(
-            (item): item is NonNullable<typeof item> & { imageSource: NonNullable<NonNullable<typeof item>['imageSource']> } =>
-                item?.imageSource != null,
-        );
+    const items = ingredientIds.map((id) => {
+        const known = getIngredientById(id);
+        if (known != null) {
+            return known;
+        }
+        return {
+            id,
+            name: id.startsWith('be-') ? '재료' : id,
+            emoji: '',
+            type: 'COMMON' as const,
+            imageSource: null,
+        };
+    });
     const size = sizeOverride ?? fitIconSize(width, items.length);
 
     return (
         <View style={styles.row}>
             {items.map((item, index) => (
                 <View key={`${item.id}-${index}`} style={styles.item}>
-                    <BrandEmojiImage
-                        source={item.imageSource}
-                        size={size}
-                        containerStyle={styles.iconNoMargin}
-                        accessibilityLabel={item.name}
-                    />
+                    {item.imageSource != null ? (
+                        <BrandEmojiImage
+                            source={item.imageSource}
+                            size={size}
+                            containerStyle={styles.iconNoMargin}
+                            accessibilityLabel={item.name}
+                        />
+                    ) : (
+                        <View
+                            style={[
+                                styles.iconFallback,
+                                {
+                                    width: size,
+                                    height: size,
+                                    borderRadius: size / 4,
+                                },
+                            ]}
+                            accessibilityLabel={item.name}
+                        />
+                    )}
                     <Text
                         style={styles.label}
                         adjustsFontSizeToFit
@@ -77,6 +105,9 @@ const styles = StyleSheet.create({
     },
     iconNoMargin: {
         marginRight: 0,
+    },
+    iconFallback: {
+        backgroundColor: colors.primaryLight,
     },
     label: {
         marginTop: 2,

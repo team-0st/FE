@@ -769,7 +769,6 @@ describe('GachaScreen tab reentry integration', () => {
         mockUseUser.mockReturnValue({
             state: { ...DEFAULT_USER_STATE, ecoJam: 300, totalPoints: 0 },
             pullGacha,
-            grantTestEcoJam: jest.fn(),
         } as unknown as ReturnType<typeof useUser>);
 
         return render(<GachaScreen active />);
@@ -1131,7 +1130,6 @@ describe('CraftLanding·Gacha 화면 구조 계약 (fixed header + CenteredFeatu
         mockUseUser.mockReturnValue({
             state: { ...DEFAULT_USER_STATE, ecoJam: 300, totalPoints: 0 },
             pullGacha: jest.fn(),
-            grantTestEcoJam: jest.fn(),
         } as unknown as ReturnType<typeof useUser>);
         mockUseAppToast.mockReturnValue({
             show: jest.fn(),
@@ -1471,8 +1469,6 @@ describe('RecipesScreen (분류 탭 고정 · 목록 영역만 스크롤)', () =
         mockUseUser.mockReturnValue({
             state: { ...DEFAULT_USER_STATE, ...stateOverrides },
             unlockRandomHiddenRecipe: jest.fn().mockResolvedValue({ ok: false, reason: 'none' }),
-            hideTodayRecipePin: jest.fn(),
-            showTodayRecipePin: jest.fn(),
         } as unknown as ReturnType<typeof useUser>);
         mockUseAppToast.mockReturnValue({
             show: jest.fn(),
@@ -1927,6 +1923,18 @@ describe('미션 아이콘 — 미션별 개별 asset', () => {
         expect(getMissionImageSource('unknown-mission-id')).toEqual(getMissionImageSource('unknown-mission-id'));
         expect(ALL_MISSION_IDS).not.toContain('unknown-mission-id');
         expect(getMissionImageSource('unknown-mission-id').uri).toMatch(/^data:image\/png;base64,/);
+    });
+
+    it('BE/community id라도 제목 키워드로 컨셉 이미지를 고른다', () => {
+        expect(getMissionImageSource('be-99', '텀블러 사용 인증')).toEqual(
+            getMissionImageSource('tumbler'),
+        );
+        expect(getMissionImageSource('community-3', '제로웨이스트 영수증')).toEqual(
+            getMissionImageSource('coop-receipt'),
+        );
+        expect(getMissionImageSource('be-1', '매핑없는제목XYZ')).toEqual(
+            getMissionImageSource('unknown-mission-id'),
+        );
     });
 
     function renderMissionsList() {

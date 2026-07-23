@@ -19,12 +19,10 @@ import { ProbabilityInfoButton } from '../../shared/ui/ProbabilityInfoButton';
 import { formatLedgerDelta } from '../user/ecoJamLedger';
 import { useUser } from '../user/UserProvider';
 import { ALMANG_UI_COPY } from '../../shared/constants/almangComplianceCopy';
-import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
 import {
     ECO_JAM_GACHA_CONSOLATION,
     ECO_JAM_GACHA_PULL_COST,
     ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST,
-    ECO_JAM_TEST_GRANT,
     ECO_JAM_WEEKLY_RECIPE_BASE,
 } from '../../shared/constants/ecoJamPolicy';
 import { useAppToast } from '../../shared/feedback/useAppToast';
@@ -34,12 +32,13 @@ import {
     ProfileSoupRow,
 } from './ProfileListSection';
 import { AdminTesterLinkSection } from './AdminTesterLinkSection';
+import { AdminAssetGrantSection } from './AdminAssetGrantSection';
 import { Screen } from '../../shared/ui/Screen';
 import { colors } from '../../shared/theme/colors';
 
 type ProfileScreenProps = {
     onPressAbout?: () => void;
-    onPressRestartOnboarding?: () => void;
+    onPressLogout?: () => void;
 };
 
 type DetailModal = 'ecoJam' | 'almang' | 'soups' | null;
@@ -69,9 +68,9 @@ function formatLedgerTime(iso: string): string {
 
 export function ProfileScreen({
     onPressAbout,
-    onPressRestartOnboarding,
+    onPressLogout,
 }: ProfileScreenProps) {
-    const { state, grantTestEcoJam, unlockAllRecipesForTest, updateNickname, updateAvatar } = useUser();
+    const { state, updateNickname, updateAvatar, logout } = useUser();
     const { showSuccess } = useAppToast();
     const { openConfirm } = useDialog();
     const [privacyVisible, setPrivacyVisible] = useState(false);
@@ -100,21 +99,21 @@ export function ProfileScreen({
         [state.completedRecipeIds],
     );
 
-    const handleRestartOnboarding = () => {
-        if (onPressRestartOnboarding == null) {
+    const handleLogout = () => {
+        if (onPressLogout == null) {
             return;
         }
         void (async () => {
             const confirmed = await openConfirm({
-                title: '처음부터 다시 시작할까요?',
-                description:
-                    '온보딩을 다시 진행해요.\n지금까지 모은 알맹 포인트, 에코잼, 재료가 모두 사라지고 되돌릴 수 없어요.',
+                title: '로그아웃할까요?',
+                description: '다시 로그인하면 이어서 이용할 수 있어요.',
                 leftButton: '취소',
-                rightButton: '사라지고 다시 시작',
+                rightButton: '로그아웃',
                 closeOnDimmerClick: true,
             });
             if (confirmed) {
-                onPressRestartOnboarding();
+                await logout();
+                onPressLogout();
             }
         })();
     };
@@ -307,6 +306,7 @@ export function ProfileScreen({
                 </View>
             ) : null}
             <AdminTesterLinkSection />
+            <AdminAssetGrantSection />
             <View style={styles.legalLinkRow}>
                 <Txt
                     typography="t6"
@@ -329,52 +329,17 @@ export function ProfileScreen({
                     {TERMS_OF_SERVICE_LABELS.myPageEntry}
                 </Txt>
             </View>
-            {onPressRestartOnboarding != null ? (
+            {onPressLogout != null ? (
                 <Txt
-                    typography="t7"
-                    color="blue500"
-                    style={styles.restartOnboarding}
-                    onPress={handleRestartOnboarding}
+                    typography="t6"
+                    color="grey600"
+                    style={styles.logoutLink}
+                    onPress={handleLogout}
                     accessibilityRole="button"
-                    accessibilityLabel="처음부터 다시 시작"
+                    accessibilityLabel="로그아웃"
                 >
-                    처음부터 다시 시작
+                    로그아웃
                 </Txt>
-            ) : null}
-            {DEV_TEST_TOOLS_ENABLED ? (
-                <View style={styles.devBox}>
-                    <Txt typography="t7" fontWeight="semibold" color="grey700">
-                        [테스트] 출시 전 제거 · `devTestFlags.ts`
-                    </Txt>
-                    <Button
-                        size="medium"
-                        type="dark"
-                        style="weak"
-                        display="block"
-                        onPress={() => {
-                            void (async () => {
-                                await unlockAllRecipesForTest();
-                                showSuccess('모든 레시피를 열람 해금했어요. (완성 처리는 아님)');
-                            })();
-                        }}
-                    >
-                        모든 레시피 열람 해금
-                    </Button>
-                    <Button
-                        size="medium"
-                        type="dark"
-                        style="weak"
-                        display="block"
-                        onPress={() => {
-                            void (async () => {
-                                await grantTestEcoJam(ECO_JAM_TEST_GRANT);
-                                showSuccess(`테스트 에코잼 +${ECO_JAM_TEST_GRANT}`);
-                            })();
-                        }}
-                    >
-                        {`에코잼 +${ECO_JAM_TEST_GRANT}`}
-                    </Button>
-                </View>
             ) : null}
             <PrivacyPolicyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
             <TermsOfServiceModal visible={termsVisible} onClose={() => setTermsVisible(false)} />
@@ -554,15 +519,6 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         gap: 4,
     },
-    devBox: {
-        marginTop: 20,
-        padding: 14,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.warningBorder,
-        backgroundColor: colors.warningBg,
-        gap: 10,
-    },
     aboutLinkRow: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -577,8 +533,8 @@ const styles = StyleSheet.create({
     policyLink: {
         textDecorationLine: 'underline',
     },
-    restartOnboarding: {
-        marginTop: 24,
+    logoutLink: {
+        marginTop: 16,
         textAlign: 'center',
         textDecorationLine: 'underline',
     },

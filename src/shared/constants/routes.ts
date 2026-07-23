@@ -3,6 +3,7 @@ import { encodeSoupCraftForRoute } from '@api/mock/soupCraftMock';
 
 export const ROUTES = {
     home: '/',
+    login: '/login',
     onboarding: '/onboarding',
     onboardingProfile: '/onboarding/profile',
     onboardingShop: '/onboarding/shop',

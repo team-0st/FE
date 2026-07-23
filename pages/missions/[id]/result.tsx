@@ -1,4 +1,4 @@
-import { getMissionById } from '@api/mock';
+import { getMissionForUi } from '@api/missions';
 import { createRoute } from '@granite-js/react-native';
 import { MissionResultScreen } from '../../../src/features/missions/MissionResultScreen';
 import { ROUTES } from '../../../src/shared/constants/routes';
@@ -16,7 +16,7 @@ export const Route = createRoute('/missions/:id/result', {
 function Page() {
     const { id } = Route.useParams();
     const navigation = Route.useNavigation();
-    const mission = getMissionById(id);
+    const mission = getMissionForUi(id);
 
     if (mission == null) {
         return (

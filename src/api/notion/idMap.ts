@@ -1,3 +1,4 @@
+import { PILOT_SHOP_ID, PILOT_SHOP_NUMERIC_ID } from '../../shared/constants/pilotShop';
 import { INGREDIENTS } from '../mock/ingredients';
 import { ALL_MISSIONS, DAILY_MISSIONS } from '../mock/missions';
 import { ALL_RECIPES } from '../mock/recipes';
@@ -36,10 +37,16 @@ export function missionSlugFromNumeric(id: number): string | undefined {
 }
 
 export function shopNumericId(slug: string): number | undefined {
+    if (slug === PILOT_SHOP_ID) {
+        return PILOT_SHOP_NUMERIC_ID;
+    }
     return shopNumericBySlug.get(slug);
 }
 
 export function shopSlugFromNumeric(id: number): string | undefined {
+    if (id === PILOT_SHOP_NUMERIC_ID) {
+        return PILOT_SHOP_ID;
+    }
     return MOCK_SHOPS[id - 1]?.id;
 }
 

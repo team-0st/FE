@@ -1,6 +1,16 @@
 import { Button, Checkbox, TextField, Txt } from '@toss/tds-react-native';
-import { useEffect, useState } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+    Animated,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    View,
+} from 'react-native';
 import type { AlmangPayoutConsent } from '../user/types';
 import { PrivacyPolicyModal } from '../legal/PrivacyPolicyModal';
 import { TermsOfServiceModal } from '../legal/TermsOfServiceModal';
@@ -17,6 +27,7 @@ import { GuideHero } from '../../shared/ui/GuideHero';
 import { Screen } from '../../shared/ui/Screen';
 import { useAttentionPulse } from '../../shared/hooks/useAttentionPulse';
 import {
+    PHONE_DIGITS_LENGTH,
     normalizePhoneDigits,
     validateNickname,
     validatePassword,
@@ -67,8 +78,32 @@ export function OnboardingProfileScreen({
     const [optionalPolicyAcknowledged, setOptionalPolicyAcknowledged] = useState(false);
     const [optionalPolicyButtonPulse, setOptionalPolicyButtonPulse] = useState(false);
     const [privacyConsentAt, setPrivacyConsentAt] = useState<string | null>(null);
+    const phoneScrollRef = useRef<ScrollView>(null);
+    const passwordInputRef = useRef<TextInput>(null);
+    const nicknameRef = useRef(nickname);
+    const advancedFromPhoneRef = useRef(false);
+    const nicknameSubmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const policyButtonOpacity = useAttentionPulse(policyButtonPulse);
     const optionalPolicyButtonOpacity = useAttentionPulse(optionalPolicyButtonPulse);
+
+    nicknameRef.current = nickname;
+
+    const revealPasswordField = () => {
+        requestAnimationFrame(() => {
+            phoneScrollRef.current?.scrollToEnd({ animated: true });
+            setTimeout(() => {
+                passwordInputRef.current?.focus();
+            }, 250);
+        });
+    };
+
+    useEffect(() => {
+        return () => {
+            if (nicknameSubmitTimerRef.current != null) {
+                clearTimeout(nicknameSubmitTimerRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (policyAcknowledged) {
@@ -82,24 +117,59 @@ export function OnboardingProfileScreen({
         }
     }, [optionalPolicyAcknowledged]);
 
+    useEffect(() => {
+        if (phoneConsentChecked) {
+            setOptionalPolicyButtonPulse(false);
+            setPhoneError(null);
+        }
+    }, [phoneConsentChecked]);
+
     const nudgeReadPolicy = () => {
         setPrivacyError(PRIVACY_POLICY_LABELS.mustReadBeforeConsent);
         setPolicyButtonPulse(true);
     };
 
     const nudgeReadOptionalPolicy = () => {
-        setPhoneError(PRIVACY_POLICY_LABELS.mustReadBeforeConsent);
+        setPhoneError(
+            optionalPolicyAcknowledged
+                ? ONBOARDING_PRIVACY_CHECKBOX.phoneHint
+                : PRIVACY_POLICY_LABELS.mustReadBeforeConsent,
+        );
         setOptionalPolicyButtonPulse(true);
     };
 
-    const submitNickname = () => {
-        const result = validateNickname(nickname);
+    const applyNicknameSubmit = (raw: string) => {
+        const result = validateNickname(raw);
         if (!result.ok) {
             setNicknameError(result.message);
             return;
         }
         setNicknameError(null);
+        setNickname(result.nickname);
         setStep('privacy');
+    };
+
+    /**
+     * iOS 한글 IME: 조합 중「다음」을 누르면 value가 미확정이거나 onPress가 씹힐 수 있음.
+     * 키보드를 닫아 조합을 확정한 뒤 ref 최신값으로 검증한다.
+     */
+    const submitNickname = () => {
+        if (nicknameSubmitTimerRef.current != null) {
+            clearTimeout(nicknameSubmitTimerRef.current);
+        }
+        Keyboard.dismiss();
+        nicknameSubmitTimerRef.current = setTimeout(() => {
+            nicknameSubmitTimerRef.current = null;
+            applyNicknameSubmit(nicknameRef.current);
+        }, Platform.OS === 'ios' ? 80 : 0);
+    };
+
+    const requirePhoneConsentForInput = (): boolean => {
+        if (phoneConsentChecked) {
+            return true;
+        }
+        nudgeReadOptionalPolicy();
+        return false;
     };
 
     const submitPrivacy = () => {
@@ -144,6 +214,7 @@ export function OnboardingProfileScreen({
         const passwordResult = validatePassword(password);
         if (!passwordResult.ok) {
             setPasswordError(passwordResult.message);
+            revealPasswordField();
             return;
         }
         onComplete({
@@ -227,40 +298,60 @@ export function OnboardingProfileScreen({
     if (step === 'nickname') {
         return (
             <Screen>
-                <View style={styles.body}>
-                    <GuideHero
-                        message={ONBOARDING_PROFILE_GUIDE.nicknameTitle}
-                        align="start"
-                        size="large"
-                        animate
-                        compact
-                    />
-                    <Txt typography="t7" color="grey600" style={styles.sub}>
-                        {ONBOARDING_PROFILE_GUIDE.nicknameSubtitle}
-                    </Txt>
-                    <TextField
-                        variant="line"
-                        label="닉네임"
-                        placeholder={ONBOARDING_PROFILE_GUIDE.nicknamePlaceholder}
-                        value={nickname}
-                        onChangeText={(value) => {
-                            setNickname(value);
-                            setNicknameError(null);
-                        }}
-                        autoFocus
-                        maxLength={12}
-                    />
-                    {nicknameError != null ? (
-                        <Txt typography="t7" color="red500">
-                            {nicknameError}
+                <KeyboardAvoidingView
+                    style={styles.flex}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                >
+                    <ScrollView
+                        style={styles.scroll}
+                        contentContainerStyle={styles.nicknameScrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
+                    >
+                        <GuideHero
+                            message={ONBOARDING_PROFILE_GUIDE.nicknameTitle}
+                            align="start"
+                            size="large"
+                            animate
+                            compact
+                        />
+                        <Txt typography="t7" color="grey600" style={styles.sub}>
+                            {ONBOARDING_PROFILE_GUIDE.nicknameSubtitle}
                         </Txt>
-                    ) : null}
-                </View>
-                <View style={styles.footer}>
-                    <Button size="large" type="primary" display="block" onPress={submitNickname}>
-                        다음
-                    </Button>
-                </View>
+                        <TextField
+                            variant="line"
+                            label="닉네임"
+                            placeholder={ONBOARDING_PROFILE_GUIDE.nicknamePlaceholder}
+                            value={nickname}
+                            onChangeText={(value) => {
+                                nicknameRef.current = value;
+                                setNickname(value);
+                                setNicknameError(null);
+                            }}
+                            autoFocus
+                            maxLength={12}
+                            returnKeyType="done"
+                            blurOnSubmit
+                            onSubmitEditing={submitNickname}
+                        />
+                        {nicknameError != null ? (
+                            <Txt typography="t7" color="red500">
+                                {nicknameError}
+                            </Txt>
+                        ) : null}
+                    </ScrollView>
+                    <View style={styles.footer}>
+                        <Button
+                            size="large"
+                            type="primary"
+                            display="block"
+                            onPress={submitNickname}
+                            accessibilityLabel="다음"
+                        >
+                            다음
+                        </Button>
+                    </View>
+                </KeyboardAvoidingView>
             </Screen>
         );
     }
@@ -385,7 +476,12 @@ export function OnboardingProfileScreen({
 
     return (
         <Screen>
-            <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                ref={phoneScrollRef}
+                style={styles.scroll}
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+            >
                 <GuideHero
                     message={ONBOARDING_PROFILE_GUIDE.phoneTitle}
                     align="start"
@@ -416,7 +512,7 @@ export function OnboardingProfileScreen({
                             hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                         >
                             <Txt
-                                typography="t7"
+                                typography="t5"
                                 fontWeight="bold"
                                 color={optionalPolicyButtonPulse ? 'red500' : 'blue500'}
                                 style={styles.policyLink}
@@ -453,12 +549,30 @@ export function OnboardingProfileScreen({
                     label="휴대전화번호"
                     placeholder={ONBOARDING_PROFILE_GUIDE.phonePlaceholder}
                     value={phoneBody}
+                    onFocus={() => {
+                        if (!requirePhoneConsentForInput()) {
+                            Keyboard.dismiss();
+                        }
+                    }}
                     onChangeText={(value) => {
-                        setPhoneBody(normalizePhoneDigits(value));
+                        if (!requirePhoneConsentForInput()) {
+                            return;
+                        }
+                        const next = normalizePhoneDigits(value);
+                        setPhoneBody(next);
                         setPhoneError(null);
+                        if (next.length < PHONE_DIGITS_LENGTH) {
+                            advancedFromPhoneRef.current = false;
+                            return;
+                        }
+                        if (advancedFromPhoneRef.current) {
+                            return;
+                        }
+                        advancedFromPhoneRef.current = true;
+                        revealPasswordField();
                     }}
                     keyboardType="phone-pad"
-                    maxLength={11}
+                    maxLength={PHONE_DIGITS_LENGTH}
                     help={ONBOARDING_PROFILE_GUIDE.phoneHelp}
                 />
                 {phoneError != null ? (
@@ -467,6 +581,7 @@ export function OnboardingProfileScreen({
                     </Txt>
                 ) : null}
                 <TextField
+                    ref={passwordInputRef}
                     variant="line"
                     label="비밀번호"
                     placeholder="8자 이상 입력해 주세요"
@@ -505,6 +620,9 @@ export function OnboardingProfileScreen({
 }
 
 const styles = StyleSheet.create({
+    flex: {
+        flex: 1,
+    },
     body: {
         flex: 1,
         paddingHorizontal: 20,
@@ -513,6 +631,13 @@ const styles = StyleSheet.create({
     },
     scroll: {
         flex: 1,
+    },
+    nicknameScrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: 24,
+        gap: 12,
     },
     scrollContent: {
         paddingHorizontal: 20,

@@ -41,5 +41,4 @@ export const DEFAULT_USER_STATE: AppUserState = {
     gachaHistory: [],
     pendingRealRewards: [],
     lastShareRewardDate: null,
-    hiddenTodayRecipePinId: null,
 };

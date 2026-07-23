@@ -132,6 +132,8 @@ export function missionStatusLabel(status: MissionProgressStatus): string {
             return '완료';
         case 'pending_review':
             return '검수 중';
+        case 'claimable':
+            return '보상 받기';
         case 'rejected':
             return '반려됨';
         default:

@@ -18,7 +18,7 @@ type MainTabsHostProps = {
     onSoupMade: (recipeId: string, craft: SoupCraftResponse) => void;
     onPressChangeShop: () => void;
     onPressAbout?: () => void;
-    onPressRestartOnboarding?: () => void;
+    onPressLogout?: () => void;
 };
 
 function tabToIndex(tab: MainTabId): number {
@@ -37,7 +37,7 @@ export function MainTabsHost({
     onSoupMade,
     onPressChangeShop,
     onPressAbout,
-    onPressRestartOnboarding,
+    onPressLogout,
 }: MainTabsHostProps) {
     const insets = useSafeAreaInsets();
     const initialIndex = tabToIndex(initialTab);
@@ -104,7 +104,7 @@ export function MainTabsHost({
                         ) : (
                             <ProfileScreen
                                 onPressAbout={onPressAbout}
-                                onPressRestartOnboarding={onPressRestartOnboarding}
+                                onPressLogout={onPressLogout}
                             />
                         )}
                     </View>
@@ -118,7 +118,7 @@ export function MainTabsHost({
             onSoupMade,
             onPressChangeShop,
             onPressAbout,
-            onPressRestartOnboarding,
+            onPressLogout,
         ],
     );
 

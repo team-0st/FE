@@ -1,5 +1,4 @@
 import type { SoupCraftResponse } from '@api/notion/types';
-import { useUser } from '../../features/user/UserProvider';
 import { navigateSoupResult, ROUTES } from '../constants/routes';
 
 type LooseNavigation = {
@@ -9,7 +8,6 @@ type LooseNavigation = {
 
 /** 메인 탭 셸에 넘기는 화면 이동·액션 바인딩 */
 export function useMainTabsHostBindings(navigation: object) {
-    const { resetOnboarding } = useUser();
     const nav = navigation as LooseNavigation;
 
     return {
@@ -28,13 +26,8 @@ export function useMainTabsHostBindings(navigation: object) {
         onPressAbout: () => {
             nav.navigate(ROUTES.about);
         },
-        onPressRestartOnboarding: __DEV__
-            ? () => {
-                  void (async () => {
-                      await resetOnboarding();
-                      nav.replace(ROUTES.onboarding);
-                  })();
-              }
-            : undefined,
+        onPressLogout: () => {
+            nav.replace(ROUTES.login);
+        },
     };
 }

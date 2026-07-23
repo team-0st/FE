@@ -21,13 +21,9 @@ import { ProbabilityInfoRow } from '../../shared/ui/ProbabilityInfoRow';
 import { FixedHeightHeaderSlot } from '../../shared/ui/Screen';
 import { ShareResultButton } from '../../shared/ui/ShareResultButton';
 import { toBrandImageSource } from '../../shared/ui/toBrandImageSource';
-import { DEV_TEST_TOOLS_ENABLED } from '../../shared/dev/devTestFlags';
 import { colors } from '../../shared/theme/colors';
 import { useUser } from '../user/UserProvider';
-import {
-    GACHA_PULL_COST_ECO_JAM,
-    GACHA_TEST_ECO_JAM_GRANT,
-} from './gachaConfig';
+import { GACHA_PULL_COST_ECO_JAM } from './gachaConfig';
 import {
     createInitialGachaTabState,
     formatGachaRewardMessage,
@@ -173,7 +169,7 @@ function formatGachaHistoryTime(iso: string): string {
 }
 
 export function GachaScreen({ active }: GachaScreenProps) {
-    const { state, pullGacha, grantTestEcoJam } = useUser();
+    const { state, pullGacha } = useUser();
     const toast = useAppToast();
     const [historyVisible, setHistoryVisible] = useState(false);
 
@@ -367,24 +363,6 @@ export function GachaScreen({ active }: GachaScreenProps) {
                 >
                     {isBusy ? '뽑는 중…' : pullLabel}
                 </Button>
-                {DEV_TEST_TOOLS_ENABLED ? (
-                    <Button
-                        size="medium"
-                        type="dark"
-                        style="weak"
-                        display="block"
-                        onPress={() => {
-                            void (async () => {
-                                await grantTestEcoJam(GACHA_TEST_ECO_JAM_GRANT);
-                                toast.showSuccess(
-                                    `테스트용 에코잼 ${GACHA_TEST_ECO_JAM_GRANT}개를 받았어요.`,
-                                );
-                            })();
-                        }}
-                    >
-                        [테스트] 에코잼 +{GACHA_TEST_ECO_JAM_GRANT}
-                    </Button>
-                ) : null}
             </View>
             <ProfileListModal
                 visible={historyVisible}

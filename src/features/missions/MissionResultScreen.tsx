@@ -95,7 +95,7 @@ export function MissionResultScreen({ mission, onPressHome }: MissionResultScree
 
     return (
         <View style={styles.root}>
-            <Screen scrollable>
+            <Screen scrollable accessibilityLabel="미션 결과">
                 <Top title={<Top.TitleParagraph size={22}>미션 완료</Top.TitleParagraph>} />
                 {isPending ? (
                     <View style={styles.pendingBox}>

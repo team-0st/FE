@@ -204,14 +204,56 @@ export function applyRegisterUser(
         ...state,
         userId: payload.userId,
         deviceId: payload.deviceId,
-        onboardingCompleted: state.onboardingCompleted || payload.onboardingCompleted,
+        // BE register 응답만 신뢰. 로컬 true를 유지하면 미완료 계정으로 홈에 들어갈 수 있다.
+        onboardingCompleted: payload.onboardingCompleted,
+    };
+}
+
+/**
+ * 마이페이지로 서버 온보딩 여부를 맞춘다.
+ * nickname+shop 이 있으면 BE에서 onboarding complete 된 것으로 본다.
+ */
+export function reconcileOnboardingFromMyPage(
+    state: AppUserState,
+    myPage: { nickname: string | null; shopName: string | null; ecoJam: number; point: number },
+): AppUserState {
+    const nickname = myPage.nickname?.trim() || null;
+    const shopName = myPage.shopName?.trim() || null;
+    const serverCompleted = nickname != null && shopName != null;
+    return {
+        ...state,
+        nickname: nickname ?? state.nickname,
+        ecoJam: myPage.ecoJam,
+        totalPoints: myPage.point,
+        onboardingCompleted: serverCompleted,
+    };
+}
+
+/** 전화번호·비밀번호 로그인 성공 후 로컬 계정 상태 반영 */
+export function applyLoginUser(
+    state: AppUserState,
+    payload: {
+        userId: number;
+        nickname: string;
+        phoneNumber: string;
+        phoneMasked: string;
+        onboardingCompleted: boolean;
+    },
+): AppUserState {
+    return {
+        ...state,
+        userId: payload.userId,
+        nickname: payload.nickname,
+        phoneNumber: payload.phoneNumber,
+        phoneMasked: payload.phoneMasked,
+        onboardingCompleted: payload.onboardingCompleted,
     };
 }
 
 export function submitMissionPendingReview(
     state: AppUserState,
     missionId: string,
-    completionId: number,
+    completionId?: number,
 ): AppUserState {
     const now = new Date().toISOString();
     return {
@@ -222,6 +264,26 @@ export function submitMissionPendingReview(
                 status: 'pending_review',
                 completionId,
                 submittedAt: now,
+            },
+        },
+    };
+}
+
+/** 관리자 승인 후 claim 대기 — 재료는 claim API 성공 시에만 지급 */
+export function markMissionClaimable(
+    state: AppUserState,
+    missionId: string,
+    completionId: number,
+): AppUserState {
+    const prev = state.missionProgress[missionId];
+    return {
+        ...state,
+        missionProgress: {
+            ...state.missionProgress,
+            [missionId]: {
+                status: 'claimable',
+                completionId,
+                submittedAt: prev?.submittedAt,
             },
         },
     };
@@ -242,9 +304,14 @@ export function completeMissionVerify(
     state: AppUserState,
     missionId: string,
     rewardIngredientId: string,
+    rewardMeta?: {
+        name?: string | null;
+        imageUrl?: string | null;
+    },
 ): AppUserState {
     const now = new Date().toISOString();
     const wasCompleted = state.missionProgress[missionId]?.status === 'completed';
+    const prev = state.missionProgress[missionId];
     let next: AppUserState = {
         ...state,
         missionProgress: {
@@ -252,7 +319,16 @@ export function completeMissionVerify(
             [missionId]: {
                 status: 'completed',
                 completedAt: now,
+                completionId: prev?.completionId,
                 rewardIngredientId,
+                rewardIngredientName:
+                    rewardMeta?.name?.trim() ||
+                    prev?.rewardIngredientName ||
+                    undefined,
+                rewardIngredientImageUrl:
+                    rewardMeta?.imageUrl !== undefined
+                        ? rewardMeta.imageUrl
+                        : prev?.rewardIngredientImageUrl,
             },
         },
     };
@@ -272,16 +348,47 @@ export function completeMissionVerify(
     return next;
 }
 
+/** 공동 미션 complete 응답 → 로컬 완료 + 재료/에코잼 */
+export function applyCommunityMissionComplete(
+    state: AppUserState,
+    missionId: string,
+    input: {
+        rewardIngredientIds: string[];
+        rewardedEcoJam: number;
+        rewardIngredientName?: string | null;
+        rewardIngredientImageUrl?: string | null;
+    },
+): AppUserState {
+    const primary = input.rewardIngredientIds[0] ?? 'be-0';
+    let next = completeMissionVerify(state, missionId, primary, {
+        name: input.rewardIngredientName,
+        imageUrl: input.rewardIngredientImageUrl,
+    });
+    for (const ingredientId of input.rewardIngredientIds.slice(1)) {
+        next = addIngredient(next, ingredientId, 1);
+    }
+    if (input.rewardedEcoJam > 0) {
+        next = addEcoJam(next, input.rewardedEcoJam, '공동 미션 보상');
+    }
+    return next;
+}
+
 /** BE completions → 로컬 pending/approved 동기화 */
 export function applyMissionCompletionsToState(
     state: AppUserState,
     items: Array<{
         completionId: number;
         missionId: number;
+        missionTitle?: string;
         status: 'PENDING' | 'APPROVED' | 'REJECTED';
-        rewardedIngredient?: { id: number } | null;
+        rewardClaimable?: boolean;
+        rewardClaimed?: boolean;
+        rewardedIngredient?: { id: number; name?: string; imageUrl?: string | null } | null;
     }>,
-    missionSlugFromNumeric: (id: number) => string | undefined,
+    resolveMissionSlug: (
+        missionId: number,
+        missionTitle?: string,
+    ) => string | undefined,
     ingredientSlugFromNumeric: (id: number) => string | undefined,
 ): AppUserState {
     let next = state;
@@ -289,33 +396,69 @@ export function applyMissionCompletionsToState(
         if (item.status !== 'APPROVED') {
             continue;
         }
-        const slug = missionSlugFromNumeric(item.missionId);
+        const slug = resolveMissionSlug(item.missionId, item.missionTitle);
         if (slug == null) {
             continue;
         }
         if (next.missionProgress[slug]?.status === 'completed') {
+            const existing = next.missionProgress[slug];
+            if (
+                existing != null &&
+                (existing.rewardIngredientName == null ||
+                    existing.rewardIngredientName.length === 0) &&
+                item.rewardedIngredient?.name != null &&
+                item.rewardedIngredient.name.length > 0
+            ) {
+                next = {
+                    ...next,
+                    missionProgress: {
+                        ...next.missionProgress,
+                        [slug]: {
+                            ...existing,
+                            rewardIngredientName: item.rewardedIngredient.name,
+                            rewardIngredientImageUrl:
+                                item.rewardedIngredient.imageUrl ??
+                                existing.rewardIngredientImageUrl,
+                        },
+                    },
+                };
+            }
             continue;
         }
-        const rewardSlug =
-            item.rewardedIngredient != null
-                ? (ingredientSlugFromNumeric(item.rewardedIngredient.id) ??
-                  `be-${item.rewardedIngredient.id}`)
-                : undefined;
-        if (rewardSlug == null) {
+        // BE: claim 후에만 재고 증가. 이미 수령한 건 로컬 완료 반영.
+        if (item.rewardClaimed === true) {
+            const rewardSlug =
+                item.rewardedIngredient != null
+                    ? (ingredientSlugFromNumeric(item.rewardedIngredient.id) ??
+                      `be-${item.rewardedIngredient.id}`)
+                    : undefined;
+            if (rewardSlug == null) {
+                continue;
+            }
+            next = completeMissionVerify(next, slug, rewardSlug, {
+                name: item.rewardedIngredient?.name,
+                imageUrl: item.rewardedIngredient?.imageUrl,
+            });
             continue;
         }
-        next = completeMissionVerify(next, slug, rewardSlug);
+        if (item.rewardClaimable === true) {
+            next = markMissionClaimable(next, slug, item.completionId);
+        }
     }
     for (const item of items) {
         if (item.status !== 'PENDING') {
             continue;
         }
-        const slug = missionSlugFromNumeric(item.missionId);
+        const slug = resolveMissionSlug(item.missionId, item.missionTitle);
         if (slug == null) {
             continue;
         }
         const current = next.missionProgress[slug]?.status;
-        if (current === 'completed' || current === 'pending_review') {
+        if (
+            current === 'completed' ||
+            current === 'pending_review' ||
+            current === 'claimable'
+        ) {
             continue;
         }
         next = submitMissionPendingReview(next, slug, item.completionId);
@@ -466,13 +609,14 @@ export function completeRecipe(
     recipe: Recipe,
     craft: SoupCraftResponse,
 ): AppUserState {
-    // 재제작이어도 리롤 세션은 항상 갱신
+    // 재제작이어도 세션·보상은 항상 갱신 (completed 목록은 최초 1회만 추가)
     const session = { recipeId: recipe.id, craft, rerollUsed: false as const };
     if (state.completedRecipeIds.includes(recipe.id)) {
-        return {
-            ...state,
-            lastSoupSession: session,
-        };
+        return applySoupCraftReward(
+            { ...state, lastSoupSession: session },
+            recipe,
+            craft,
+        );
     }
     let next: AppUserState = {
         ...state,

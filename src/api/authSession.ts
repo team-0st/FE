@@ -26,6 +26,22 @@ export async function getAuthSession(): Promise<AuthSession | null> {
     }
 }
 
+/** mock/로컬 전용 토큰은 실 BE 세션으로 보지 않는다. */
+export function isLiveAuthSession(session: AuthSession | null): boolean {
+    if (session == null) {
+        return false;
+    }
+    const token = session.accessToken?.trim() ?? '';
+    if (token.length === 0) {
+        return false;
+    }
+    if (token === 'mock-access-token' || token.startsWith('mock-')) {
+        return false;
+    }
+    // JWT: header.payload.sig
+    return token.split('.').length === 3;
+}
+
 export async function saveAuthSession(session: AuthSession): Promise<void> {
     await writeJson(STORAGE_KEYS.authSession, session);
 }

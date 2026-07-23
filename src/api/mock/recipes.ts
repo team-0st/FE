@@ -121,9 +121,10 @@ export function findRecipeBySlots(slots: (string | null)[]): Recipe | undefined 
     return getAllRecipes().find((r) => slotsMatchRecipe(slots, r));
 }
 
+/** 같은 레시피 반복 brew 허용 — completedIds는 호환용으로 무시 */
 export function findMatchingRecipe(
     slots: (string | null)[],
-    completedIds: string[],
+    _completedIds: string[] = [],
 ): Recipe | undefined {
     const filled = getFilledIngredientIds(slots);
     if (!VALID_SLOT_COUNTS.includes(filled.length as (typeof VALID_SLOT_COUNTS)[number])) {
@@ -131,9 +132,6 @@ export function findMatchingRecipe(
     }
     const weekKey = getIsoWeekKey();
     const candidates = getAllRecipes(weekKey).filter((r) => {
-        if (completedIds.includes(r.id)) {
-            return false;
-        }
         if (r.kind === 'weekly' && r.weekKey !== weekKey) {
             return false;
         }

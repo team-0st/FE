@@ -61,19 +61,19 @@ function slugify(text: string): string {
         .toLowerCase();
 }
 
-function buildDescription(category: ShopCategory, address: string): string {
-    const suffix = address.length > 60 ? `${address.slice(0, 60)}…` : address;
+/** 목록·상세에서 address를 따로 보여 주므로 description에는 주소를 넣지 않는다 */
+function buildDescription(category: ShopCategory): string {
     switch (category) {
         case 'almae-direct':
-            return `알맹 직영 · ${suffix}`;
+            return '알맹 직영 매장이에요.';
         case 'shop-in-shop':
-            return `샵앤샵 · ${suffix}`;
+            return '샵앤샵 입점 매장이에요.';
         case 'eco-stay':
-            return `제로웨이스트 숙소 · ${suffix}`;
+            return '제로웨이스트 숙소예요.';
         case 'reuse':
-            return `재사용·중고 · ${suffix}`;
+            return '재사용·중고 매장이에요.';
         default:
-            return `제로웨이스트 · ${suffix}`;
+            return '제로웨이스트 상점이에요.';
     }
 }
 
@@ -107,7 +107,7 @@ export function mapKakaoItemsToShops(items: KakaoMapItem[]): Shop[] {
         return {
             id,
             name: item.name,
-            description: buildDescription(category, item.address),
+            description: buildDescription(category),
             imageUrl: null,
             emoji: CATEGORY_EMOJI[category],
             category,

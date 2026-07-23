@@ -63,14 +63,30 @@ export type MissionVerifyApprovedResponse = {
     rewardedIngredient: IngredientDto;
 };
 
+export type MissionRewardedIngredientDto = {
+    id: number;
+    name: string;
+    imageUrl: string | null;
+};
+
 export type MissionCompletionItem = {
     completionId: number;
     missionId: number;
     missionTitle: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
-    rewardedIngredient?: IngredientDto;
+    rewardClaimable: boolean;
+    rewardClaimed: boolean;
+    rewardedIngredient?: MissionRewardedIngredientDto;
     submittedAt: string;
     reviewedAt?: string;
+    rewardClaimedAt?: string;
+};
+
+export type MissionRewardClaimResponse = {
+    completionId: number;
+    missionId: number;
+    rewardedIngredient: MissionRewardedIngredientDto;
+    rewardClaimedAt: string;
 };
 
 export type MissionVerifyResponse = MissionVerifyPendingResponse | MissionVerifyApprovedResponse;
@@ -124,6 +140,15 @@ export type MissionSummaryDto = {
     description: string | null;
     imageUrl: string | null;
     todayStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    rewardClaimable: boolean;
+    rewardClaimed: boolean;
+    rewardClaimedAt?: string | null;
+};
+
+/** BE `GET /api/v1/missions` */
+export type DailyMissionSectionsDto = {
+    generalMissions: MissionSummaryDto[];
+    specialMission: MissionSummaryDto | null;
 };
 
 export type ProfileResponse = {
@@ -149,6 +174,29 @@ export type EcoJamHistoryItem = {
     createdAt: string;
 };
 
+/** BE `GET /api/v1/community-missions` 항목 */
+export type CommunityMissionProgressDto = {
+    id: number;
+    title: string;
+    description: string | null;
+    imageUrl: string | null;
+    difficulty: string;
+    stage: number;
+    /** 목표 달성 비율(%) */
+    targetRatio: number;
+    /** 현재 달성 비율(%) — 온보딩 완료 유저 기준 집계 */
+    achievementRatio: number;
+    participantCount: number;
+    totalUserCount: number;
+    succeeded: boolean;
+    unlocked: boolean;
+    completed: boolean;
+    requiredProofCount: number;
+    submittedProofCount: number;
+    approvedProofCount: number;
+    readyToComplete: boolean;
+};
+
 /** BE 실제 prefix는 `/api/v1` */
 export const API_PATHS = {
     usersRegister: '/api/v1/users/register',
@@ -161,6 +209,9 @@ export const API_PATHS = {
     missionDetail: (id: number) => `/api/v1/missions/${id}`,
     missionVerify: (id: number) => `/api/v1/missions/${id}/verify`,
     missionCompletions: '/api/v1/missions/completions',
+    /** BE `POST /api/v1/missions/completions/{completionId}/claim` — UI 연동 전 경로만 맞춤 */
+    missionRewardClaim: (completionId: number) =>
+        `/api/v1/missions/completions/${completionId}/claim`,
     filesUpload: '/api/v1/files/upload',
     ingredients: '/api/v1/ingredients',
     recipes: '/api/v1/recipes',
@@ -174,6 +225,15 @@ export const API_PATHS = {
     ecoJamHistories: '/api/v1/histories/eco-jams',
     pointHistories: '/api/v1/histories/points',
     home: '/api/v1/home',
+    communityMissions: '/api/v1/community-missions',
+    communityMissionDetail: (id: number) => `/api/v1/community-missions/${id}`,
+    communityMissionProof: (missionId: number, requirementId: number) =>
+        `/api/v1/community-missions/${missionId}/proofs/${requirementId}`,
+    communityMissionComplete: (id: number) =>
+        `/api/v1/community-missions/${id}/complete`,
+    filesUploadCommunity: '/api/v1/files/upload/community-missions',
     testerLinkCurrent: '/api/v1/tester-link/current',
     adminTesterLink: '/api/v1/admin/tester-link',
+    adminUsers: '/api/v1/admin/users',
+    adminAssetsGrant: '/api/v1/admin/assets/grant',
 } as const;

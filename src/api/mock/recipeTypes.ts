@@ -8,6 +8,8 @@ export type Recipe = {
     hintDrip?: string;
     ingredientIds: string[];
     slotCount: number;
+    /** BE 목록의 recipeVisible — 없으면 로컬 unlock 로직 사용 */
+    recipeVisible?: boolean;
     ecoJamReward?: number;
     realRewardLabel?: string;
     weekKey?: string;
