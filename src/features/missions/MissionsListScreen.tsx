@@ -23,6 +23,7 @@ import { useUser } from '../user/UserProvider';
 import { missionStatusFor } from '../user/selectors';
 import type { MissionProgressStatus } from '../user/types';
 import { coopDifficultyStars, coopUnlockHint, isCoopMissionUnlocked } from './coopMissionLogic';
+import { MissionCompletedPanel } from './MissionCompletedPanel';
 import { MissionRewardsPanel } from './MissionRewardsPanel';
 import { RecipeListRowShell } from '../recipes/RecipeCompletedStamp';
 import { TDS_ICON } from '../../shared/constants/tdsAssets';
@@ -38,7 +39,7 @@ type MissionsListScreenProps = {
     onPressMission: (id: string) => void;
 };
 
-type MissionsListTab = 'missions' | 'rewards';
+type MissionsListTab = 'missions' | 'rewards' | 'completed';
 
 type CommunityListItem = {
     mission: CoopMission;
@@ -237,10 +238,13 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
         })),
     );
     const [loadingBe, setLoadingBe] = useState(isApiEnabled());
+    const [pendingRewardCount, setPendingRewardCount] = useState(0);
 
-    const claimableCount = Object.values(state.missionProgress).filter(
+    const localClaimableCount = Object.values(state.missionProgress).filter(
         (p) => p.status === 'claimable',
     ).length;
+    const claimableCount = Math.max(pendingRewardCount, localClaimableCount);
+
     useEffect(() => {
         if (!isApiEnabled()) {
             setLoadingBe(false);
@@ -342,11 +346,29 @@ export function MissionsListScreen({ onPressMission }: MissionsListScreenProps) 
                         {claimableCount > 0 ? `보상 (${claimableCount})` : '보상'}
                     </Txt>
                 </Pressable>
+                <Pressable
+                    onPress={() => setListTab('completed')}
+                    style={[styles.tab, listTab === 'completed' && styles.tabActive]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: listTab === 'completed' }}
+                >
+                    <Txt
+                        typography="t7"
+                        fontWeight="bold"
+                        color={listTab === 'completed' ? 'white' : 'grey700'}
+                    >
+                        완료
+                    </Txt>
+                </Pressable>
             </View>
 
             {listTab === 'rewards' ? (
                 <View style={styles.rewardsWrap}>
-                    <MissionRewardsPanel />
+                    <MissionRewardsPanel onPendingCountChange={setPendingRewardCount} />
+                </View>
+            ) : listTab === 'completed' ? (
+                <View style={styles.rewardsWrap}>
+                    <MissionCompletedPanel />
                 </View>
             ) : (
                 <>
