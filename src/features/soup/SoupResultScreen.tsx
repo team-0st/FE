@@ -4,7 +4,7 @@ import type { SoupCraftResponse } from '@api/notion/types';
 import { BottomCTA, Button, Txt } from '@toss/tds-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
-import { FEATURE_STAGE_HEIGHT } from '../../shared/constants/brandAssets';
+import { BRAND_EMOJI, FEATURE_STAGE_HEIGHT } from '../../shared/constants/brandAssets';
 import { getSoupImageSource } from '../../shared/constants/soupAssets';
 import {
     getSoupFailImageSource,
@@ -35,6 +35,9 @@ type SoupResultScreenProps = {
 
 const THUMB_SIZE = 56;
 const REROLL_ART_SIZE = 72;
+const REWARD_ICON_SIZE = 56;
+/** 재료 아이콘 나열 상한 — 비정상 amount 방어 */
+const MAX_INGREDIENT_ICONS = 8;
 
 export function SoupResultScreen({
     recipeId: recipeIdProp,
@@ -96,7 +99,30 @@ export function SoupResultScreen({
             ? getIngredientById(craft.rewardIngredientId)
             : undefined;
     const rewardIngredientCount =
-        rewardIngredient == null ? 0 : Math.max(1, Math.floor(craft.rewardAmount ?? 1));
+        rewardIngredient == null
+            ? 0
+            : Math.min(
+                  MAX_INGREDIENT_ICONS,
+                  Math.max(1, Math.floor(craft.rewardAmount ?? 1)),
+              );
+    const pointAmount = Math.max(
+        0,
+        Math.floor(
+            craft.rewardPoint ??
+                (craft.rewardType === 'ALMANG_POINT' ? (craft.rewardAmount ?? 0) : 0),
+        ),
+    );
+    const showPointReward = rewardIngredient == null && pointAmount > 0;
+    const ecoJamAmount = Math.max(
+        0,
+        Math.floor(
+            craft.rewardEcoJam ??
+                (craft.rewardType === 'ECO_JAM' && rewardIngredient == null
+                    ? (craft.rewardAmount ?? 0)
+                    : 0),
+        ),
+    );
+    const showEcoJamReward = rewardIngredient == null && !showPointReward && ecoJamAmount > 0;
 
     const mainTitle = isFail ? failPhrase : SOUP_GRADE_LABEL[grade];
 
@@ -110,17 +136,28 @@ export function SoupResultScreen({
         if (rewardIngredient != null) {
             return `${rewardIngredient.name} ${rewardIngredientCount}개`;
         }
+        if (showPointReward) {
+            return `알맹P ${pointAmount}개`;
+        }
+        if (showEcoJamReward) {
+            return `에코잼 ${ecoJamAmount}개`;
+        }
         if (craft.rewardType === 'REAL_ITEM') {
             return craft.rewardDescription ?? '리워드 지급 예정';
         }
-        if (craft.rewardType === 'ALMANG_POINT') {
-            return `알맹P +${craft.rewardAmount ?? 0}`;
-        }
-        if ((craft.rewardAmount ?? 0) > 0) {
-            return `에코잼 +${craft.rewardAmount ?? 0}개`;
-        }
         return displayName;
-    }, [isFail, failPhrase, displayName, craft, rewardIngredient, rewardIngredientCount]);
+    }, [
+        isFail,
+        failPhrase,
+        displayName,
+        craft,
+        rewardIngredient,
+        rewardIngredientCount,
+        showPointReward,
+        pointAmount,
+        showEcoJamReward,
+        ecoJamAmount,
+    ]);
 
     const shareRewardLabel = isFail ? failPhrase : oneLineSub;
 
@@ -204,22 +241,66 @@ export function SoupResultScreen({
                     </Txt>
 
                     {rewardIngredient != null ? (
-                        <View style={styles.ingredientRewards}>
-                            {Array.from({ length: rewardIngredientCount }, (_, index) => (
-                                <View key={`${rewardIngredient.id}-${index}`} style={styles.ingredientReward}>
-                                    {rewardIngredient.imageSource != null ? (
-                                        <BrandEmojiImage
-                                            source={rewardIngredient.imageSource}
-                                            size={56}
-                                            containerStyle={styles.ingredientImage}
-                                            accessibilityLabel={`${rewardIngredient.name} 보상 ${index + 1}`}
-                                        />
-                                    ) : null}
-                                    <Txt typography="t7" color="grey700" fontWeight="semibold">
-                                        {rewardIngredient.name}
-                                    </Txt>
-                                </View>
-                            ))}
+                        <View style={styles.rewardBlock} testID="soup-result-ingredient-reward">
+                            <View style={styles.ingredientIcons}>
+                                {Array.from({ length: rewardIngredientCount }, (_, index) => (
+                                    <View
+                                        key={`${rewardIngredient.id}-${index}`}
+                                        style={styles.ingredientIcon}
+                                    >
+                                        {rewardIngredient.imageSource != null ? (
+                                            <BrandEmojiImage
+                                                source={rewardIngredient.imageSource}
+                                                size={REWARD_ICON_SIZE}
+                                                containerStyle={styles.ingredientImage}
+                                                accessibilityLabel={`${rewardIngredient.name} 보상 ${index + 1}`}
+                                            />
+                                        ) : null}
+                                    </View>
+                                ))}
+                            </View>
+                            <Txt
+                                typography="t6"
+                                color="grey700"
+                                fontWeight="semibold"
+                                style={styles.rewardLabel}
+                            >
+                                {`${rewardIngredient.name} ${rewardIngredientCount}개`}
+                            </Txt>
+                        </View>
+                    ) : showPointReward ? (
+                        <View style={styles.rewardBlock} testID="soup-result-point-reward">
+                            <BrandEmojiImage
+                                source={BRAND_EMOJI.almangPoint}
+                                size={REWARD_ICON_SIZE}
+                                containerStyle={styles.ingredientImage}
+                                accessibilityLabel="알맹 포인트 보상"
+                            />
+                            <Txt
+                                typography="t6"
+                                color="grey700"
+                                fontWeight="semibold"
+                                style={styles.rewardLabel}
+                            >
+                                {`알맹P ${pointAmount}개`}
+                            </Txt>
+                        </View>
+                    ) : showEcoJamReward ? (
+                        <View style={styles.rewardBlock} testID="soup-result-ecojam-reward">
+                            <BrandEmojiImage
+                                source={BRAND_EMOJI.ecoJam}
+                                size={REWARD_ICON_SIZE}
+                                containerStyle={styles.ingredientImage}
+                                accessibilityLabel="에코잼 보상"
+                            />
+                            <Txt
+                                typography="t6"
+                                color="grey700"
+                                fontWeight="semibold"
+                                style={styles.rewardLabel}
+                            >
+                                {`에코잼 ${ecoJamAmount}개`}
+                            </Txt>
                         </View>
                     ) : (
                         <Txt typography="t6" color="grey600" style={styles.oneLine}>
@@ -330,20 +411,26 @@ const styles = StyleSheet.create({
     oneLine: {
         textAlign: 'center',
     },
-    ingredientRewards: {
+    rewardBlock: {
         width: '100%',
+        alignItems: 'center',
+        gap: 10,
+    },
+    ingredientIcons: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        gap: 16,
-    },
-    ingredientReward: {
         alignItems: 'center',
-        gap: 6,
+        justifyContent: 'center',
+        gap: 12,
+    },
+    ingredientIcon: {
+        alignItems: 'center',
     },
     ingredientImage: {
         marginRight: 0,
+    },
+    rewardLabel: {
+        textAlign: 'center',
     },
     rerollRow: {
         width: '100%',

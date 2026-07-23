@@ -118,6 +118,22 @@ describe('mapSoupRerollResponse (순수 응답 매핑)', () => {
         expect(mapped.rewardIngredientId).toBeDefined();
     });
 
+    it('INGREDIENT 등급이면 rewardAmount는 재료 quantity이고 에코잼과 섞지 않는다', () => {
+        const mapped = mapSoupRerollResponse(
+            baseBeResponse({
+                rewardGrade: 'INGREDIENT',
+                rewardPoint: 0,
+                rewardEcoJam: 50,
+                rewardedIngredients: [{ ingredientId: 1, ingredientName: '양파', quantity: 2 }],
+            }),
+            prevCraft,
+        );
+        expect(mapped.rewardGrade).toBe('INGREDIENT');
+        expect(mapped.rewardAmount).toBe(2);
+        expect(mapped.rewardEcoJam).toBe(50);
+        expect(mapped.rewardIngredientId).toBeDefined();
+    });
+
     it('보상이 전혀 없고 등급이 FAIL이면 result FAIL을 반환한다', () => {
         const mapped = mapSoupRerollResponse(
             baseBeResponse({ rewardGrade: 'CONSOLATION', rewardPoint: 0, rewardEcoJam: 0 }),
