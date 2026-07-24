@@ -39,7 +39,8 @@ if (entries.length === 0) {
 const meta = reader.metadata;
 const writer = AppsInTossBundle.writer({
     appName: reader.appName,
-    deploymentId: AppsInTossBundle.generateUUID7(),
+    // 빌드 deploymentId 유지 — strip마다 새 UUID면 테스터 링크·콘솔 추적이 어긋남
+    deploymentId: reader.deploymentId || AppsInTossBundle.generateUUID7(),
 });
 
 writer.setMetadata({
