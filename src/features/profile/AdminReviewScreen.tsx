@@ -1,17 +1,21 @@
 import { ApiClientError } from '@api/client';
 import {
     getAdminCommunityProofsPending,
+    getAdminCommunityProofsReviewed,
     getAdminMissionCompletionsPending,
+    getAdminMissionCompletionsReviewed,
     postAdminCommunityProofReview,
     postAdminMissionCompletionReview,
     resolveCommunityReviewPhotoUris,
     resolveDailyReviewPhotoUri,
     type AdminCommunityProofPendingItem,
+    type AdminCommunityProofReviewedItem,
     type AdminMissionPendingItem,
+    type AdminMissionReviewedItem,
     type AdminReviewStatus,
 } from '@api/adminMissionReview';
 import { Button, Top, Txt } from '@toss/tds-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Image,
     Modal,
@@ -25,7 +29,11 @@ import { Screen } from '../../shared/ui/Screen';
 import { CenterLoader } from '../../shared/ui/CenterLoader';
 import { colors } from '../../shared/theme/colors';
 
-type ReviewTab = 'daily' | 'community';
+type ReviewTab = 'daily' | 'community' | 'completed';
+
+type CompletedRow =
+    | { kind: 'daily'; item: AdminMissionReviewedItem }
+    | { kind: 'community'; item: AdminCommunityProofReviewedItem };
 
 type PhotoPreview = {
     title: string;
@@ -55,31 +63,56 @@ export function AdminReviewScreen() {
     const [communityItems, setCommunityItems] = useState<AdminCommunityProofPendingItem[]>(
         [],
     );
+    const [reviewedDaily, setReviewedDaily] = useState<AdminMissionReviewedItem[]>([]);
+    const [reviewedCommunity, setReviewedCommunity] = useState<
+        AdminCommunityProofReviewedItem[]
+    >([]);
     const [loading, setLoading] = useState(true);
     const [forbidden, setForbidden] = useState(false);
     const [actingId, setActingId] = useState<string | null>(null);
     const [preview, setPreview] = useState<PhotoPreview | null>(null);
     const [imageFailed, setImageFailed] = useState(false);
 
+    const completedRows = useMemo((): CompletedRow[] => {
+        const rows: CompletedRow[] = [
+            ...reviewedDaily.map((item) => ({ kind: 'daily' as const, item })),
+            ...reviewedCommunity.map((item) => ({ kind: 'community' as const, item })),
+        ];
+        rows.sort((a, b) => {
+            const aKey = a.item.reviewedAt ?? a.item.submittedAt;
+            const bKey = b.item.reviewedAt ?? b.item.submittedAt;
+            return bKey.localeCompare(aKey);
+        });
+        return rows;
+    }, [reviewedCommunity, reviewedDaily]);
+
     const refresh = useCallback(async () => {
         setLoading(true);
         try {
-            const [daily, community] = await Promise.all([
+            const [daily, community, dailyDone, communityDone] = await Promise.all([
                 getAdminMissionCompletionsPending(),
                 getAdminCommunityProofsPending({ page: 0, size: 50 }),
+                getAdminMissionCompletionsReviewed(),
+                getAdminCommunityProofsReviewed({ page: 0, size: 50 }),
             ]);
             if (daily == null || community == null) {
                 setForbidden(true);
                 setDailyItems([]);
                 setCommunityItems([]);
+                setReviewedDaily([]);
+                setReviewedCommunity([]);
                 return;
             }
             setForbidden(false);
             setDailyItems(daily);
             setCommunityItems(community.items ?? []);
+            setReviewedDaily(dailyDone ?? []);
+            setReviewedCommunity(communityDone?.items ?? []);
         } catch (error) {
             setDailyItems([]);
             setCommunityItems([]);
+            setReviewedDaily([]);
+            setReviewedCommunity([]);
             if (error instanceof ApiClientError) {
                 showError(error.message);
             } else {
@@ -140,7 +173,7 @@ export function AdminReviewScreen() {
         [refresh, showError, showSuccess],
     );
 
-    const openDailyPhoto = (item: AdminMissionPendingItem) => {
+    const openDailyPhoto = (item: AdminMissionPendingItem | AdminMissionReviewedItem) => {
         const uri = resolveDailyReviewPhotoUri(item);
         setImageFailed(false);
         setPreview({
@@ -150,7 +183,9 @@ export function AdminReviewScreen() {
         });
     };
 
-    const openCommunityPhoto = (item: AdminCommunityProofPendingItem) => {
+    const openCommunityPhoto = (
+        item: AdminCommunityProofPendingItem | AdminCommunityProofReviewedItem,
+    ) => {
         const uris = resolveCommunityReviewPhotoUris(item);
         setImageFailed(false);
         setPreview({
@@ -221,6 +256,20 @@ export function AdminReviewScreen() {
                         color={tab === 'community' ? 'white' : 'grey700'}
                     >
                         {`공동 (${communityItems.length})`}
+                    </Txt>
+                </Pressable>
+                <Pressable
+                    onPress={() => setTab('completed')}
+                    style={[styles.tab, tab === 'completed' && styles.tabActive]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: tab === 'completed' }}
+                >
+                    <Txt
+                        typography="t7"
+                        fontWeight="bold"
+                        color={tab === 'completed' ? 'white' : 'grey700'}
+                    >
+                        {`완료 (${completedRows.length})`}
                     </Txt>
                 </Pressable>
                 <Pressable
@@ -336,6 +385,63 @@ export function AdminReviewScreen() {
                                       </Button>
                                   </View>
                               </View>
+                          );
+                      })
+                    : null}
+
+                {tab === 'completed' && completedRows.length === 0 ? (
+                    <Txt typography="t7" color="grey500">
+                        검수 완료된 제출이 없어요.
+                    </Txt>
+                ) : null}
+                {tab === 'completed'
+                    ? completedRows.map((row) => {
+                          if (row.kind === 'daily') {
+                              const item = row.item;
+                              const statusLabel =
+                                  item.status === 'APPROVED' ? '승인' : '반려';
+                              return (
+                                  <Pressable
+                                      key={`rd-${item.completionId}`}
+                                      style={styles.row}
+                                      onPress={() => openDailyPhoto(item)}
+                                      accessibilityRole="button"
+                                      accessibilityLabel="검수 완료 사진 보기"
+                                  >
+                                      <View style={styles.rowMain}>
+                                          <Txt
+                                              typography="t6"
+                                              fontWeight="bold"
+                                              numberOfLines={1}
+                                          >
+                                              {`[일일] ${item.missionTitle}`}
+                                          </Txt>
+                                          <Txt typography="t7" color="grey600" numberOfLines={2}>
+                                              {`${statusLabel} · ${item.userNickname ?? `유저 ${item.userId}`} · ${formatSubmittedAt(item.reviewedAt ?? item.submittedAt)}`}
+                                          </Txt>
+                                      </View>
+                                  </Pressable>
+                              );
+                          }
+                          const item = row.item;
+                          const statusLabel = item.status === 'APPROVED' ? '승인' : '반려';
+                          return (
+                              <Pressable
+                                  key={`rc-${item.proofId}`}
+                                  style={styles.row}
+                                  onPress={() => openCommunityPhoto(item)}
+                                  accessibilityRole="button"
+                                  accessibilityLabel="검수 완료 사진 보기"
+                              >
+                                  <View style={styles.rowMain}>
+                                      <Txt typography="t6" fontWeight="bold" numberOfLines={1}>
+                                          {`[공동] ${item.communityMissionTitle}`}
+                                      </Txt>
+                                      <Txt typography="t7" color="grey600" numberOfLines={2}>
+                                          {`${statusLabel} · ${item.requirementTitle ?? `${item.proofOrder}단계`} · ${item.nickname ?? `유저 ${item.userId}`} · ${formatSubmittedAt(item.reviewedAt ?? item.submittedAt)}`}
+                                      </Txt>
+                                  </View>
+                              </Pressable>
                           );
                       })
                     : null}
