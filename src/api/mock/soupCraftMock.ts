@@ -114,7 +114,10 @@ export function mockRollSoupCraft(
     const soupId = nextSoupId++;
     const kind = soupRerollKindFor(recipe);
     const grade = rollInitialSoupGrade(kind, random);
-    return buildCraftForGrade(recipe, grade, soupId, random);
+    return {
+        ...buildCraftForGrade(recipe, grade, soupId, random),
+        persistedOnServer: false,
+    };
 }
 
 export function encodeSoupCraftForRoute(craft: SoupCraftResponse): {

@@ -144,7 +144,13 @@ function mapBrewResponse(data: BeBrewSoupResponse): SoupCraftResponse {
         recipeName: data.recipeName,
         ...rewardFields,
         rewardDescription: data.recipeName,
+        persistedOnServer: true,
     };
+}
+
+/** brew 직후 my-page/ingredients 서버 동기화 여부 — 서버에 실제 brew된 경우만 */
+export function shouldSyncBrewAssetsFromServer(craft: SoupCraftResponse): boolean {
+    return craft.persistedOnServer === true;
 }
 
 /** POST /api/v1/soups/brew — 조합 검증 + 보상 (API 없으면 mock) */
@@ -181,14 +187,21 @@ export async function postSoupCraft(
                         rewardGrade: 'FAIL',
                     };
                 }
-                // BE 레시피 미연동·입문 2칸 거부 등 — FE가 이미 맞춘 조합은 mock으로 진행
+                // BE에 없는 조합을 mock 성공 처리하면 결과는 보이지만 서버 재료가 안 줄어듦.
+                // API 모드에서는 매칭 실패로 돌려 FE가 no_match 처리하게 한다.
                 if (
                     error.code === 'SOUP_RECIPE_NOT_FOUND' ||
                     error.code === 'RECIPE_NOT_FOUND' ||
                     error.code === 'INVALID_INPUT_VALUE'
                 ) {
-                    await new Promise((r) => setTimeout(r, 40));
-                    return mockRollSoupCraft(recipe, random);
+                    return {
+                        soupId: 0,
+                        result: 'FAIL',
+                        rewardType: 'TRASH_ITEM',
+                        rewardDescription: '레시피가 없어요',
+                        rewardGrade: 'FAIL',
+                        persistedOnServer: false,
+                    };
                 }
             }
             throw error;

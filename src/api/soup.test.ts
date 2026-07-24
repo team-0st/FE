@@ -35,7 +35,8 @@ const clientMock = require('./client') as {
 };
 const { apiRequest, ApiClientError } = clientMock;
 
-import { mapSoupRerollResponse, postSoupReroll } from './soup';
+import { mapSoupRerollResponse, postSoupCraft, postSoupReroll, shouldSyncBrewAssetsFromServer } from './soup';
+import type { Recipe } from './mock/recipeTypes';
 
 const prevCraft: SoupCraftResponse = {
     soupId: 10,
@@ -45,6 +46,15 @@ const prevCraft: SoupCraftResponse = {
     rewardAmount: 40,
     rewardDescription: '소박한 보상',
     rewardGrade: 'SMALL',
+};
+
+const sampleRecipe: Recipe = {
+    id: 'tomato-soup',
+    name: '토마토 스프',
+    kind: 'weekly',
+    hint: 'test',
+    ingredientIds: ['tomato', 'onion'],
+    slotCount: 2,
 };
 
 function baseBeResponse(overrides: Partial<{
@@ -176,5 +186,52 @@ describe('postSoupReroll (공개 함수 계약)', () => {
     it('USER_NOT_FOUND는 처리하지 않고 그대로 다시 던진다 (호출측 복구 재시도용)', async () => {
         apiRequest.mockRejectedValueOnce(new ApiClientError('USER_NOT_FOUND', '유저 없음', 404));
         await expect(postSoupReroll(10, prevCraft)).rejects.toBeInstanceOf(ApiClientError);
+    });
+});
+
+describe('shouldSyncBrewAssetsFromServer', () => {
+    it('서버 brew 성공(persistedOnServer=true)만 원격 동기화한다', () => {
+        expect(shouldSyncBrewAssetsFromServer({ ...prevCraft, persistedOnServer: true })).toBe(
+            true,
+        );
+        expect(shouldSyncBrewAssetsFromServer({ ...prevCraft, persistedOnServer: false })).toBe(
+            false,
+        );
+        expect(shouldSyncBrewAssetsFromServer(prevCraft)).toBe(false);
+    });
+});
+
+describe('postSoupCraft (persistedOnServer)', () => {
+    beforeEach(() => {
+        apiRequest.mockReset();
+    });
+
+    it('BE brew 성공 시 persistedOnServer=true', async () => {
+        apiRequest.mockResolvedValueOnce({
+            soupId: 44,
+            recipeId: 4,
+            recipeName: '토마토 스프',
+            recipeType: 'COMMON',
+            rewardGrade: 'SMALL',
+            rewardEcoJam: 0,
+            rewardPoint: 500,
+            rewardedIngredients: [],
+        });
+        const craft = await postSoupCraft(sampleRecipe, ['tomato', 'onion']);
+        expect(craft.persistedOnServer).toBe(true);
+        expect(craft.soupId).toBe(44);
+    });
+
+    it('SOUP_RECIPE_NOT_FOUND면 레시피 없음 응답(성공 mock 없음)', async () => {
+        apiRequest.mockRejectedValueOnce(
+            new ApiClientError('SOUP_RECIPE_NOT_FOUND', '없음', 404),
+        );
+        const craft = await postSoupCraft(sampleRecipe, ['tomato', 'onion']);
+        expect(craft).toMatchObject({
+            soupId: 0,
+            rewardDescription: '레시피가 없어요',
+            persistedOnServer: false,
+        });
+        expect(shouldSyncBrewAssetsFromServer(craft)).toBe(false);
     });
 });
