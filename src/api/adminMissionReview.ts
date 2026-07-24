@@ -15,6 +15,11 @@ export type AdminMissionPendingItem = {
     submittedAt: string;
 };
 
+export type AdminMissionReviewedItem = AdminMissionPendingItem & {
+    status: AdminReviewStatus;
+    reviewedAt: string | null;
+};
+
 export type AdminCommunityProofPendingItem = {
     proofId: number;
     communityMissionId: number;
@@ -30,8 +35,22 @@ export type AdminCommunityProofPendingItem = {
     imageUrls?: string[] | null;
 };
 
+export type AdminCommunityProofReviewedItem = AdminCommunityProofPendingItem & {
+    status: AdminReviewStatus;
+    reviewedAt: string | null;
+};
+
 type CommunityPendingPage = {
     items: AdminCommunityProofPendingItem[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+    hasNext: boolean;
+};
+
+type CommunityReviewedPage = {
+    items: AdminCommunityProofReviewedItem[];
     page: number;
     size: number;
     totalElements: number;
@@ -102,6 +121,39 @@ export async function getAdminMissionCompletionsPending(): Promise<
     }
 }
 
+/** GET /api/v1/admin/missions/completions/reviewed */
+export async function getAdminMissionCompletionsReviewed(): Promise<
+    AdminMissionReviewedItem[] | null
+> {
+    if (!isApiEnabled()) {
+        return null;
+    }
+    try {
+        const items = await apiRequest<AdminMissionReviewedItem[]>(
+            API_PATHS.adminMissionCompletionsReviewed,
+        );
+        return [...items].sort((a, b) => {
+            const aKey = a.reviewedAt ?? a.submittedAt;
+            const bKey = b.reviewedAt ?? b.submittedAt;
+            return bKey.localeCompare(aKey);
+        });
+    } catch (error) {
+        if (
+            error instanceof ApiClientError &&
+            (error.status === 403 || error.code === 'ADMIN_ACCESS_DENIED')
+        ) {
+            return null;
+        }
+        if (
+            error instanceof ApiClientError &&
+            (error.status === 404 || error.code === 'RESOURCE_NOT_FOUND')
+        ) {
+            return [];
+        }
+        throw error;
+    }
+}
+
 /** POST /api/v1/admin/missions/completions/{id}/review */
 export async function postAdminMissionCompletionReview(
     completionId: number,
@@ -136,6 +188,51 @@ export async function getAdminCommunityProofsPending(params?: {
             (error.status === 403 || error.code === 'ADMIN_ACCESS_DENIED')
         ) {
             return null;
+        }
+        throw error;
+    }
+}
+
+/** GET /api/v1/admin/community-missions/proofs/reviewed */
+export async function getAdminCommunityProofsReviewed(params?: {
+    page?: number;
+    size?: number;
+}): Promise<CommunityReviewedPage | null> {
+    if (!isApiEnabled()) {
+        return null;
+    }
+    const page = params?.page ?? 0;
+    const size = params?.size ?? 50;
+    const path = `${API_PATHS.adminCommunityProofsReviewed}?page=${page}&size=${size}`;
+    try {
+        const data = await apiRequest<CommunityReviewedPage>(path);
+        return {
+            ...data,
+            items: [...(data.items ?? [])].sort((a, b) => {
+                const aKey = a.reviewedAt ?? a.submittedAt;
+                const bKey = b.reviewedAt ?? b.submittedAt;
+                return bKey.localeCompare(aKey);
+            }),
+        };
+    } catch (error) {
+        if (
+            error instanceof ApiClientError &&
+            (error.status === 403 || error.code === 'ADMIN_ACCESS_DENIED')
+        ) {
+            return null;
+        }
+        if (
+            error instanceof ApiClientError &&
+            (error.status === 404 || error.code === 'RESOURCE_NOT_FOUND')
+        ) {
+            return {
+                items: [],
+                page,
+                size,
+                totalElements: 0,
+                totalPages: 0,
+                hasNext: false,
+            };
         }
         throw error;
     }
