@@ -14,7 +14,7 @@ export const AVATAR_OPTIONS: readonly AvatarOption[] = [
     { id: 'mushroom', source: BRAND_EMOJI.mushroom, label: '버섯' },
     { id: 'broccoli', source: BRAND_EMOJI.broccoli, label: '브로콜리' },
     { id: 'paprika', source: BRAND_EMOJI.paprika, label: '파프리카' },
-    { id: 'lettuce', source: BRAND_EMOJI.lettuce, label: '상추' },
+    { id: 'lettuce', source: BRAND_EMOJI.lettuce, label: '양배추' },
 ] as const;
 
 const FALLBACK_AVATAR_OPTION = AVATAR_OPTIONS[0] as AvatarOption;

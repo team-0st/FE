@@ -152,6 +152,11 @@ export type SoupCraftResponse = {
     /** BE brew — 에코잼·포인트를 동시에 줄 수 있음 */
     rewardEcoJam?: number;
     rewardPoint?: number;
+    /**
+     * true면 BE `POST /soups/brew`가 성공해 서버에 재료 차감·보상이 반영됨.
+     * false/undefined면 mock 등 로컬 결과 — 서버 재고로 덮어쓰면 안 됨.
+     */
+    persistedOnServer?: boolean;
 };
 
 export type GachaResponse = {

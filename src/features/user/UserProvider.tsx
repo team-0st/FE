@@ -51,7 +51,7 @@ import {
     findMatchingBrewRecipe,
     postUnlockHiddenRecipe,
 } from '@api/recipes';
-import { postSoupCraft, postSoupReroll } from '@api/soup';
+import { postSoupCraft, postSoupReroll, shouldSyncBrewAssetsFromServer } from '@api/soup';
 import { clearAuthSession } from '@api/authSession';
 import type { MissionVerifyUploadInput } from '@api/files';
 import { ECO_JAM_HIDDEN_RECIPE_UNLOCK_COST } from '../../shared/constants/ecoJamPolicy';
@@ -511,18 +511,43 @@ export function UserProvider({ children }: PropsWithChildren) {
                             if (!loggedIn.onboardingCompleted) {
                                 return { ok: false, code: 'SYNC_FAILED' };
                             }
-                            await persist((prev) =>
-                                finishOnboardingState(
-                                    applyLoginUser(prev, {
-                                        userId: loggedIn.userId,
-                                        nickname: loggedIn.nickname,
-                                        phoneNumber: loggedIn.phoneNumber,
-                                        phoneMasked: prev.phoneMasked ?? loggedIn.phoneNumber,
-                                        onboardingCompleted: true,
-                                    }),
-                                    shopId,
-                                ),
-                            );
+                            let synced = applyLoginUser(stateRef.current, {
+                                userId: loggedIn.userId,
+                                nickname: loggedIn.nickname,
+                                phoneNumber: loggedIn.phoneNumber,
+                                phoneMasked:
+                                    stateRef.current.phoneMasked ?? loggedIn.phoneNumber,
+                                onboardingCompleted: true,
+                            });
+                            synced = {
+                                ...synced,
+                                ingredientInventory: {},
+                                ecoJam: 0,
+                                totalPoints: 0,
+                            };
+                            try {
+                                const [remoteIngredients, myPage] = await Promise.all([
+                                    getUserIngredients(),
+                                    getMyPage(),
+                                ]);
+                                if (remoteIngredients != null) {
+                                    synced = {
+                                        ...synced,
+                                        ingredientInventory:
+                                            inventoryFromUserIngredients(remoteIngredients),
+                                    };
+                                }
+                                if (myPage != null) {
+                                    synced = {
+                                        ...synced,
+                                        ecoJam: myPage.ecoJam,
+                                        totalPoints: myPage.point,
+                                    };
+                                }
+                            } catch {
+                                // finish onboarding with cleared local assets
+                            }
+                            await persist(() => finishOnboardingState(synced, shopId));
                             return { ok: true };
                         } catch {
                             return { ok: false, code: 'SYNC_FAILED' };
@@ -538,13 +563,49 @@ export function UserProvider({ children }: PropsWithChildren) {
                         return { ok: false, code: 'NETWORK_ERROR' };
                     }
                     const loggedIn = await postLogin(phoneNumber, password);
-                    const next = applyLoginUser(stateRef.current, {
+                    let next = applyLoginUser(stateRef.current, {
                         userId: loggedIn.userId,
                         nickname: loggedIn.nickname,
                         phoneNumber: loggedIn.phoneNumber,
                         phoneMasked: maskPhone(phoneDigits),
                         onboardingCompleted: loggedIn.onboardingCompleted,
                     });
+                    // 이전 게스트/계정 로컬 재고·포인트를 비우고 서버 스냅샷으로 맞춤
+                    next = {
+                        ...next,
+                        ingredientInventory: {},
+                        ecoJam: 0,
+                        totalPoints: 0,
+                    };
+                    try {
+                        const [remoteIngredients, myPage] = await Promise.all([
+                            getUserIngredients(),
+                            getMyPage(),
+                        ]);
+                        if (remoteIngredients != null) {
+                            next = {
+                                ...next,
+                                ingredientInventory:
+                                    inventoryFromUserIngredients(remoteIngredients),
+                            };
+                        } else if (myPage?.ingredients != null) {
+                            next = {
+                                ...next,
+                                ingredientInventory: inventoryFromUserIngredients(
+                                    myPage.ingredients,
+                                ),
+                            };
+                        }
+                        if (myPage != null) {
+                            next = {
+                                ...next,
+                                ecoJam: myPage.ecoJam,
+                                totalPoints: myPage.point,
+                            };
+                        }
+                    } catch {
+                        // 계정 전환은 유지하고 자산은 다음 hydrate에서 재시도
+                    }
                     stateRef.current = next;
                     setState(next);
                     await saveUserState(next);
@@ -999,7 +1060,9 @@ export function UserProvider({ children }: PropsWithChildren) {
                             rerollUsed: false,
                         },
                     };
-                    if (isApiEnabled()) {
+                    // 서버 brew 성공일 때만 원격 재고·포인트로 맞춤.
+                    // mock fallback은 서버 미차감이라 덮어쓰면 재료가 안 줄어든 것처럼 보임.
+                    if (isApiEnabled() && shouldSyncBrewAssetsFromServer(craft)) {
                         try {
                             const [remoteIngredients, myPage] = await Promise.all([
                                 getUserIngredients(),
